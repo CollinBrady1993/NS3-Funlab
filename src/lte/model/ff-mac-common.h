@@ -204,7 +204,10 @@ struct SlDiscMsg
   uint16_t  m_rnti; ///< added for modeling
   uint8_t   m_resPsdch; ///< added for modeling
   uint8_t m_msgType; ///< Message Type
-  std::bitset <184> m_proSeAppCode; ///< ProSe application code
+  /* Payload variable may contain different content for different purposes.
+  For example, Payload for 'ProSe Open Discovery announce for Model A' contains 184 bit Prose Application Code. 
+  Payload for 'ProSe Restricted UE-to-Network Relay Discovery announce for Model A' contains 24 bit Relay Service Code, 48 bit Announcer Info, 24 bit Prose Relay UE ID, 8 bit Status Indicator, 80 bit Spare. */
+  uint8_t m_pc5_disc_payload[23];
   uint32_t m_mic; ///< Message Integrity Check (MIC)
   uint8_t m_utcBasedCounter; ///< UTC-based counter
 };

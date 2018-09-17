@@ -36,6 +36,7 @@
 #include <ns3/phy-tx-stats-calculator.h>
 #include <ns3/phy-rx-stats-calculator.h>
 #include <ns3/mac-stats-calculator.h>
+#include <ns3/rrc-stats-calculator.h>
 #include <ns3/radio-bearer-stats-calculator.h>
 #include <ns3/radio-bearer-stats-connector.h>
 #include <ns3/epc-tft.h>
@@ -733,41 +734,6 @@ public:
 
   void DeactivateSidelinkBearer (Ptr<NetDevice> ueDevice, Ptr<LteSlTft> tft);
 
- /**
-   * Activate Sidelink Discovery for given UEs for certain applications
-   *
-   * \param ueDevices The set of UE devices
-   * \param apps The applications to start
-   * \param rxtx The interest in monitoring or announcing (0 for rx and 1 for tx)
-   */
-  void StartDiscovery (NetDeviceContainer ueDevices, std::list<uint32_t> apps, bool rxtx);
-
-  /**
-   * Deactivate discovery for given UEs for certain applications
-   *
-   * \param ueDevices the set of UE devices
-   * \param apps The applications to stop
-   * \param rxtx The interest in monitoring or announcing (0 for rx and 1 for tx)
-   */
-  void StopDiscovery (NetDeviceContainer ueDevices, std::list<uint32_t> apps, bool rxtx);
-
-  /**
-   *  Activate discovery for one UE for given applications
-   *
-   * \param ueDevice The UE device
-   * \param apps The applications to start
-   * \param rxtx The interest in monitoring or announcing (0 for rx and 1 for tx)
-   */
-  void StartDiscovery (Ptr<NetDevice> ueDevice, std::list<uint32_t> apps, bool rxtx);
-
-  /**
-   *  Deactivate discovery for one UE for given applications
-   *  \param ueDevice the UE device
-   *  \param apps The applications to stop
-   *  \param rxtx The interest in monitoring or announcing (0 for rx and 1 for tx)
-   */
-  void StopDiscovery (Ptr<NetDevice> ueDevice, std::list<uint32_t> apps, bool rxtx);
-
   /**
    * Enable trace sinks for Sidelink reception PHY layer.
    */
@@ -788,6 +754,21 @@ public:
    */
   void EnableSlPsschMacTraces (void);
 
+  /**
+   * Enable trace sinks for Discovery Announcement at MAC layer.
+   */
+  void EnableSlPsdchMacTraces (void);
+
+  /**
+   * Enable trace sinks for RRC layer
+   */
+  void EnableRrcTraces (void);
+  
+  /**
+   * Enable trace sinks for ProSe discovery monitoring at RRC layer.
+   */
+  void EnableDiscoveryMonitoringRrcTraces (void);
+ 
   /**
    * Deploys the Sidelink configuration to the eNodeBs
    *
@@ -943,6 +924,9 @@ private:
   Ptr<RadioBearerStatsCalculator> m_rlcStats;
   /// Container of PDCP layer statistics.
   Ptr<RadioBearerStatsCalculator> m_pdcpStats;
+  /// Container of RRC layer statistics.
+  Ptr<RrcStatsCalculator> m_rrcStats;
+
   /// Connects RLC and PDCP statistics containers to appropriate trace sources
   RadioBearerStatsConnector m_radioBearerStatsConnector;
 

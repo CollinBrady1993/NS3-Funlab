@@ -36,7 +36,8 @@ MacStatsCalculator::MacStatsCalculator ()
   : m_dlFirstWrite (true),
     m_ulFirstWrite (true),
     m_slUeCchFirstWrite (true),
-    m_slUeSchFirstWrite (true)
+    m_slUeSchFirstWrite (true),
+    m_slUeDchFirstWrite (true)
 {
   NS_LOG_FUNCTION (this);
 
@@ -73,6 +74,11 @@ MacStatsCalculator::GetTypeId (void)
                    "Name of the file where the Sidelink results will be saved.",
                    StringValue ("SlSchUeMacStats.txt"),
                    MakeStringAccessor (&MacStatsCalculator::SetSlUeSchOutputFilename),
+                   MakeStringChecker ())
+    .AddAttribute ("SlUeDchOutputFilename",
+                   "Name of the file where the Sidelink results will be saved.",
+                   StringValue ("SlDchUeMacStats.txt"),
+                   MakeStringAccessor (&MacStatsCalculator::SetSlUeDchOutputFilename),
                    MakeStringChecker ())
   ;
   return tid;
@@ -124,6 +130,18 @@ std::string
 MacStatsCalculator::GetSlUeSchOutputFilename (void)
 {
   return LteStatsCalculator::GetSlOutputFilename ();
+}
+
+void
+MacStatsCalculator::SetSlUeDchOutputFilename (std::string outputFilename)
+{
+  LteStatsCalculator::SetSlPsdchOutputFilename (outputFilename);
+}
+
+std::string
+MacStatsCalculator::GetSlUeDchOutputFilename (void)
+{
+  return LteStatsCalculator::GetSlPsdchOutputFilename ();
 }
 
 void
@@ -306,6 +324,80 @@ MacStatsCalculator::SlUeSchScheduling (SlUeMacStatParameters params)
   outFile.close ();
 }
 
+void 
+MacStatsCalculator::SlUeDchScheduling (SlUeMacStatParameters params, SlDiscMsg discMsg)
+{
+  NS_LOG_FUNCTION (this << params.m_cellId << params.m_imsi << params.m_rnti);
+  NS_LOG_INFO ("Writing SL Discovery Channel UE Mac Stats in " << GetSlUeDchOutputFilename ().c_str ());
+  	
+  std::ofstream outFile;
+  if ( m_slUeDchFirstWrite == true )
+    {
+      outFile.open (GetSlUeDchOutputFilename ().c_str ());
+      if (!outFile.is_open ())
+        {
+          NS_LOG_ERROR ("Can't open file " << GetSlUeDchOutputFilename ().c_str ());
+          return;
+        }
+      m_slUeDchFirstWrite = false;
+      outFile << "Time\tIMSI\tRNTI\tDiscType\tContentType\tDiscModel\tContent (hex)" << std::endl;
+    }
+  else
+    {
+      outFile.open (GetSlUeDchOutputFilename ().c_str (),  std::ios_base::app);
+      if (!outFile.is_open ())
+        {
+          NS_LOG_ERROR ("Can't open file " << GetSlUeDchOutputFilename ().c_str ());
+          return;
+        }
+    }
+
+	
+  outFile << Simulator::Now ().GetSeconds () << "\t" << params.m_imsi << "\t" << params.m_rnti << "\t";
+
+  outFile << (uint16_t) (discMsg.m_msgType >> 6) << "\t" << (uint16_t) ((discMsg.m_msgType >> 2) & 0xF) << "\t" << (uint16_t) (discMsg.m_msgType & 0x3) << "\t";
+
+  switch (discMsg.m_msgType)
+    {
+    case 0x91://UE-to-Network Relay Discovery Announcement in model A
+    case 0x92://UE-to-Network Relay Discovery Response in model B
+      {  
+        std::bitset<24> relayServiceCode(0x0);
+        std::bitset<48> announcerInfo(0x0);
+        std::bitset<24> proseRelayUeId(0x0);
+        std::bitset<8> statusIndicator(0x0);
+        std::bitset<80> spare(0x0);
+		
+        std::memcpy(&relayServiceCode,&discMsg.m_pc5_disc_payload[0],3); 		//Relay Service Code = [0],[1],[2]
+        std::memcpy(&announcerInfo,&discMsg.m_pc5_disc_payload[3],6); 			//Announcer Info = User Info = [3],[4],[5],[6],[7],[8]
+        std::memcpy(&proseRelayUeId,&discMsg.m_pc5_disc_payload[9],3); 			//ProSe Relay UE ID = [9],[10],[11]
+        std::memcpy(&statusIndicator,&discMsg.m_pc5_disc_payload[12],1); 		//Status Indicator = [12]
+        std::memcpy(&spare,&discMsg.m_pc5_disc_payload[13],10);					//Spare = [13]..[22]
+		
+        outFile << std::hex << relayServiceCode.to_ulong() << ";" << std::hex << announcerInfo.to_ulong() << ";" << std::hex << proseRelayUeId.to_ulong() << ";" << std::hex << statusIndicator.to_ulong() << ";" << std::hex << spare.to_ulong() << std::endl;
+      }
+      break;
+    case 0x41:
+    case 0x81:
+      { //open or restricted announcement
+        bool nonzero = false;
+        for (uint8_t i =0 ; i < 23 ; i++)
+          {
+            uint16_t val = discMsg.m_pc5_disc_payload[22-i];
+            nonzero = nonzero || (val!=0);
+            if (nonzero || i == 22)
+              {
+                outFile << std::hex << val;
+              }
+          }
+        outFile << std::endl;
+      }
+      break;
+    default:
+      NS_LOG_ERROR ("Invalid discovery message type " << discMsg.m_msgType);
+    }
+}
+
 void
 MacStatsCalculator::DlSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, DlSchedulingCallbackInfo dlSchedulingCallbackInfo)
 {
@@ -419,6 +511,32 @@ MacStatsCalculator::SlUeSchSchedulingCallback (Ptr<MacStatsCalculator> macStats,
   params.m_cellId = 0;
 
   macStats->SlUeSchScheduling (params);
+}
+
+void 
+MacStatsCalculator::SlUeDchSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, SlUeMacStatParameters params, SlDiscMsg discMsg)
+{
+  NS_LOG_FUNCTION (macStats << path);
+  
+std::ostringstream pathAndRnti;
+  pathAndRnti << path << "/" << params.m_rnti;
+  if (macStats->ExistsImsiPath (pathAndRnti.str ()) == true)
+    {
+      NS_LOG_LOGIC("Existing IMSI path. Getting IMSI...");
+      params.m_imsi = macStats->GetImsiPath (pathAndRnti.str ());
+      NS_LOG_LOGIC("IMSI= " << params.m_imsi);
+    }
+  else
+    {
+      NS_LOG_LOGIC("NON-existing IMSI path. Finding IMSI from UE LteNetDevice...");
+      std::string ueNetDevicePath = path.substr (0, path.find("/ComponentCarrierMapUe"));
+      params.m_imsi = FindImsiFromLteNetDevice (ueNetDevicePath);
+      NS_LOG_LOGIC("Found IMSI= " << params.m_imsi);
+      macStats->SetImsiPath (pathAndRnti.str (), params.m_imsi);
+    }
+  params.m_cellId = 0;
+  
+  macStats->SlUeDchScheduling (params, discMsg);
 }
 
 } // namespace ns3

@@ -307,8 +307,8 @@ struct SlUeMacStatParameters
   uint16_t m_psschTxStartRB;   ///< PSSCH transmission start RB
   uint16_t m_psschTxLengthRB;  ///< PSSCH transmission length RB
   uint16_t m_psschItrp;   ///< PSSCH I_TRP
-  uint32_t m_psschFrame;    ///< PSSCH frame used to transmitt
-  uint32_t m_psschSubframe;    ///< PSSCH subframe used to transmitt
+  uint32_t m_psschFrame;    ///< PSSCH frame used to transmit
+  uint32_t m_psschSubframe;    ///< PSSCH subframe used to transmit
   uint32_t m_psschFrameStart;    ///< PSSCH frame start
   uint32_t m_psschSubframeStart;    ///< PSSCH frame start
 

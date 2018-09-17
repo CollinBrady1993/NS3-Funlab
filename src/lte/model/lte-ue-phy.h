@@ -361,16 +361,6 @@ public:
     (uint16_t rnti, uint16_t cellId, double rsrp, double rsrq,
      bool isServingCell, uint8_t componentCarrierId);
 
-  /**
-   * TracedCallback signature for transmission of discovery message.
-   *
-   * \param [in] cellId
-   * \param [in] rnti
-   * \param [in] proSeAppCode
-   */
-  typedef void (* DiscoveryAnnouncementTracedCallback)
-      (const uint16_t cellId, const uint16_t rnti, const uint32_t proSeAppCode);
-
 private:
 
   /**
@@ -558,20 +548,8 @@ private:
    * \param resPsdch A randomly chosen resource index from the PSDCH resource pool by UE MAC
    */
   void DoSetDiscGrantInfo (uint8_t resPsdch);
-  /**
-   * Add discovery transmission applications function
-   *
-   * \param apps The applications we are interested in announcing
-   */
-  void DoAddDiscTxApps (std::list<uint32_t> apps);
-  /**
-   * Add discovery reception applications function
-   *
-   * \param apps The applications we are interested in monitoring
-   */
-  void DoAddDiscRxApps (std::list<uint32_t> apps);
 
-    //communication
+  //communication
   /**
    * Set Sidelink Tx Pool function
    *
@@ -675,11 +653,6 @@ private:
    * transition. Exporting the serving cell ID, RNTI, old state, and new state.
    */
   TracedCallback<uint16_t, uint16_t, State, State> m_stateTransitionTrace;
-  /**
-   * The `DiscoveryMsgSent` trace source. Track the transmission of discovery message (announce)
-   * Exporting the cellId, RNTI and ProSe App Code.
-   */
-  TracedCallback<uint16_t, uint16_t, uint32_t> m_discoveryAnnouncementTrace;
 
   /// \todo Can be removed.
   uint8_t m_subframeNo;
@@ -863,13 +836,10 @@ private:
    std::map<uint16_t, DiscGrantInfo> m_currentGrants; ///< Current Sidelink discovery grants
  };
 
- DiscPoolInfo m_discTxPools; ///< Discovery Tx pool information
+ DiscPoolInfo m_discTxPools;  ///< Discovery Tx pool information
  std::list <DiscPoolInfo> m_discRxPools; ///< List of Sidelink discovery Rx pools
 
  uint8_t m_discResPsdch; ///< A randomly chosen resource index from the PSDCH resource pool by UE MAC
-
- std::list<uint32_t> m_discTxApps; ///< List of discovery Tx applications
- std::list<uint32_t> m_discRxApps; ///< List of discovery Rx applications
 
  /**
   * Summary results of measuring a specific SyncRef. Used for layer-1 filtering.

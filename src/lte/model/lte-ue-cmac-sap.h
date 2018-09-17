@@ -185,20 +185,6 @@ public:
   virtual void SetSlDiscRxPools (std::list<Ptr<SidelinkRxDiscResourcePool> > pools) = 0;
 
   /**
-   * Push announcing applications to MAC
-   *
-   * \param apps The applications to announce
-   */
-  virtual void ModifyDiscTxApps (std::list<uint32_t> apps) = 0;
-
-  /**
-   * Push monitoring applications to MAC
-   *
-   * \param apps The applications to monitor
-   */
-  virtual void ModifyDiscRxApps (std::list<uint32_t> apps) = 0;
-
-  /**
    * Sets the RNTI of the UE
    *
    * \param rnti The cell-specific UE identifier

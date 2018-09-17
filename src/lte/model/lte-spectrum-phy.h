@@ -684,20 +684,6 @@ public:
   void SetRxPool (Ptr<SidelinkDiscResourcePool> newpool);
 
   /**
-   * Add Discovery Tx applications function
-   *
-   * \param apps The list of applications to be added
-   */
-  void AddDiscTxApps (std::list<uint32_t> apps);
-
-  /**
-   * Add Discovery Rx applications function
-   *
-   * \param apps The list of applications to be added
-   */
-  void AddDiscRxApps (std::list<uint32_t> apps);
-
-  /**
    * Set Discovery number of retransmission function
    * Sets the number of retransmissions for Sidelink Discovery messages
    *
@@ -766,17 +752,6 @@ private:
    * \return The average SINR per RB in linear scale
    */
   double GetMeanSinr (const SpectrumValue& sinr, const std::vector<int>& rbBitMap);
-
-  /**
-   * \brief Filter Rx applications function
-   *
-   * \param disc The Sidelink Discovery message
-   * \return True if the discovery APP code of
-   * the received discovery message matches
-   * with the APP code of any discovery application
-   * which UE is interested to monitor.
-   */
-  bool FilterRxApps (SlDiscMsg disc);
 
   /**
    * \brief Receive discovery message function
@@ -860,9 +835,6 @@ private:
   Ptr<LteSpectrumPhy> m_halfDuplexPhy; ///< Pointer to a UL LteSpectrumPhy object
 
   std::list< Ptr<SidelinkDiscResourcePool> > m_discRxPools; ///< List of discovery Rx pools
-
-  std::list<uint32_t> m_discTxApps; ///< List of discovery Tx applications
-  std::list<uint32_t> m_discRxApps; ///< List of discovery Rx applications
 
   uint64_t m_slssId; ///< the Sidelink Synchronization Signal Identifier (SLSSID)
 

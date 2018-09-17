@@ -154,6 +154,7 @@ LteRlcTm::DoNotifyTxOpportunity (LteMacSapUser::TxOpportunityParameters txOpPara
   params.layer = txOpParams.layer;
   params.harqProcessId = txOpParams.harqId;
   params.componentCarrierId = txOpParams.componentCarrierId;
+  params.discMsg = false;
 
   m_macSapProvider->TransmitPdu (params);
 

@@ -31,6 +31,10 @@
 #include <string>
 #include <fstream>
 #include "ns3/lte-enb-mac.h"
+#include <bitset>
+#include <ns3/ff-mac-common.h>
+#include <ns3/config.h>
+#include <ns3/lte-ue-net-device.h>
 
 namespace ns3 {
 
@@ -121,6 +125,19 @@ public:
    */
   std::string GetSlUeSchOutputFilename (void);
 
+  /**
+   * Set the name of the file where the Sidelink PSDCH UE MAC statistics will be stored.
+   *
+   * \param outputFilename string with the name of the file
+   */
+  void SetSlUeDchOutputFilename (std::string outputFilename);
+
+  /**
+   * Get the name of the file where the Sidelink PSDCH UE MAC statistics will be stored.
+   * @return the name of the file where the Sidelink statistics will be stored
+   */
+  std::string GetSlUeDchOutputFilename (void);
+
 
   /**
    * Notifies the stats calculator that an downlink scheduling has occurred.
@@ -196,6 +213,11 @@ public:
    */
   static void SlUeSchSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, SlUeMacStatParameters params);
 
+  /** 
+   * Notifies the stats calculator that a Sidelink PSDCH UE MAC transmission has occurred.
+   */
+  static void SlUeDchSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, SlUeMacStatParameters params, SlDiscMsg discMsg);
+
   /**
    * Notifies the stats calculator that a Sidelink PSCCH UE MAC scheduling has occurred.
    * \param params The SlUeMacStatParameters
@@ -208,7 +230,10 @@ public:
    */
   void SlUeSchScheduling (SlUeMacStatParameters params);
 
-
+  /**
+   * Notifies the stats calculator that a Sidelink PSDCH UE MAC scheduling has occurred.
+   */
+  void SlUeDchScheduling (SlUeMacStatParameters params, SlDiscMsg discMsg);
 
 private:
   /**
@@ -242,6 +267,14 @@ private:
    * files have not been opened yet
    */
   bool m_slUeSchFirstWrite;
+
+  /**
+   * When writing Discovery Announcement messages first time to file,
+   * columns description is added. Then next lines are
+   * appended to file. This value is true if output
+   * files have not been opened yet
+   */
+  bool m_slUeDchFirstWrite;
 
 };
 

@@ -49,16 +49,6 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("wns3-2017-discovery");
 
-void SlStartDiscovery (Ptr<LteHelper> helper, Ptr<NetDevice> ue, std::list<uint32_t> apps, bool rxtx)
-{
-  helper->StartDiscovery (ue, apps, rxtx);
-}
-
-void SlStopDiscovery (Ptr<LteHelper> helper, Ptr<NetDevice> ue, std::list<uint32_t> apps, bool rxtx)
-{
-  helper->StopDiscovery (ue, apps, rxtx);
-}
-
 void DiscoveryMonitoringTrace (Ptr<OutputStreamWrapper> stream, uint64_t imsi, uint16_t cellId, uint16_t rnti, uint32_t proSeAppCode)
 {
   *stream->GetStream () << Simulator::Now ().GetSeconds () << "\t" << imsi << "\t" << cellId << "\t" << rnti << "\t" << proSeAppCode << std::endl;
@@ -122,6 +112,8 @@ main (int argc, char *argv[])
   Ptr<LteHelper> lteHelper = CreateObject<LteHelper> ();
   Ptr<PointToPointEpcHelper>  epcHelper = CreateObject<PointToPointEpcHelper> ();
   lteHelper->SetEpcHelper (epcHelper);
+  Ptr<LteSidelinkHelper> sidelinkHelper = CreateObject<LteSidelinkHelper> ();
+  sidelinkHelper->SetLteHelper (lteHelper);
 
   // Set pathloss model
   lteHelper->SetAttribute ("PathlossModel", StringValue ("ns3::FriisPropagationLossModel"));
@@ -212,29 +204,38 @@ main (int argc, char *argv[])
   lteHelper->InstallSidelinkConfiguration (ueDevs, ueSidelinkConfiguration);
 
   NS_LOG_INFO ("Configuring discovery applications");
-  std::map<Ptr<NetDevice>, std::list<uint32_t> > announceApps;
-  std::map<Ptr<NetDevice>, std::list<uint32_t> > monitorApps;
-  for (uint32_t i = 1; i <= nbUes; ++i)
-    {
-      announceApps[ueDevs.Get (i - 1)].push_back ((uint32_t)i);
-      for (uint32_t j = 1; j <= nbUes; ++j)
-        {
-          if (i != j)
-            {
-              monitorApps[ueDevs.Get (i - 1)].push_back ((uint32_t)j);
-            }
-        }
-    }
+  std::map<Ptr<NetDevice>, std::list<LteSlUeRrc::ProseApplicationCode> > announcePayloads; 
+  std::map<Ptr<NetDevice>, std::list<LteSlUeRrc::ProseApplicationCode> > monitorPayloads; 
 
-  for (uint32_t i = 0; i < nbUes; ++i)
+  for (uint32_t i = 1; i <= nbUes; ++i)
+  {
+    LteSlUeRrc::ProseApplicationCode announcePayload;
+    memset (announcePayload.payload, 0, sizeof (announcePayload));
+    std::memcpy (announcePayload.payload, &i, sizeof (i));
+    announcePayloads[ueDevs.Get(i-1)].push_back(announcePayload);
+	
+	for (uint32_t j = 1; j<=nbUes; ++j)
+          {
+            if (i != j)
+              {
+		LteSlUeRrc::ProseApplicationCode monitorPayload;
+                memset (monitorPayload.payload, 0, sizeof (monitorPayload));
+		std::memcpy (monitorPayload.payload, &j, sizeof (j));
+                monitorPayloads[ueDevs.Get (i-1)].push_back(monitorPayload);
+              }
+          } 
+  }
+
+  for (uint32_t i = 0; i <nbUes; i++)
     {
-      Simulator::Schedule (Seconds (2.0), &SlStartDiscovery, lteHelper, ueDevs.Get (i),announceApps.find (ueDevs.Get (i))->second, true); // true for announce
-      Simulator::Schedule (Seconds (2.0), &SlStartDiscovery, lteHelper, ueDevs.Get (i), monitorApps.find (ueDevs.Get (i))->second, false); // false for monitor
+      Simulator::Schedule (Seconds(2.0), &LteSidelinkHelper::StartDiscoveryApps, sidelinkHelper, ueDevs.Get(i), announcePayloads[ueDevs.Get(i)], LteSlUeRrc::Discovered); 
+      Simulator::Schedule (Seconds(2.0),&LteSidelinkHelper::StartDiscoveryApps, sidelinkHelper, ueDevs.Get(i), monitorPayloads[ueDevs.Get(i)], LteSlUeRrc::Discoveree); 
     }
 
   ///*** End of application configuration ***///
 
   // Set Discovery Traces
+  /*
   AsciiTraceHelper ascii;
   Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("discovery-out-monitoring.tr");
   *stream->GetStream () << "Time\tIMSI\tCellId\tRNTI\tProSeAppCode" << std::endl;
@@ -260,6 +261,9 @@ main (int argc, char *argv[])
       ueMac->TraceConnect ("DiscoveryAnnouncement", oss.str (), MakeBoundCallback (&DiscoveryAnnouncementMacTrace, stream2));
       oss.str ("");
     }
+  */
+  //lteHelper->EnableTraces();
+  
   NS_LOG_INFO ("Starting simulation...");
   Simulator::Stop (Seconds (simTime));
 

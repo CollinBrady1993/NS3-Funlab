@@ -39,6 +39,7 @@
 #include <ns3/lte-sl-pool.h>
 
 #include <cmath>
+#include <algorithm>
 
 namespace ns3 {
 
@@ -178,6 +179,7 @@ LteUeRrc::LteUeRrc ()
     m_hasReceivedSib2 (false),
     m_csgWhiteList (0),
     m_sidelinkConfiguration (0),
+    m_txPool(0),
     m_slssTransmissionActive(false),
     m_txSlSyncOffsetIndicator(0),
     m_hasSyncRef (false),
@@ -733,7 +735,7 @@ LteUeRrc::DoNotifyRandomAccessSuccessful ()
               m_sidelinkConfiguration->IsCellBroadcastingSIB19 (m_cellId))
               && m_sidelinkConfiguration->GetTimeSinceLastTransmissionOfSidelinkUeInformation () < 1.0)
               {
-                SendSidelinkUeInformation ();
+                SendSidelinkUeInformation (true, true, true, true);
               }
           }
         SwitchToState (CONNECTED_NORMALLY);
@@ -1074,6 +1076,7 @@ LteUeRrc::DoRecvSystemInformation (LteRrcSap::SystemInformation msg)
                 cellConfig.cellId = m_cellId;
                 cellConfig.haveSib18 = true;
                 cellConfig.sib18 = msg.sib18;
+                cellConfig.haveSib19 = false;
                 m_sidelinkConfiguration->m_slMap.insert (std::pair<uint16_t, LteSlUeRrc::LteSlCellConfiguration> (m_cellId, cellConfig));
               }
             else
@@ -1132,6 +1135,7 @@ LteUeRrc::DoRecvSystemInformation (LteRrcSap::SystemInformation msg)
                 cellConfig.cellId = m_cellId;
                 cellConfig.haveSib19 = true;
                 cellConfig.sib19 = msg.sib19;
+                cellConfig.haveSib18 = false;
                 m_sidelinkConfiguration->m_slMap.insert (std::pair<uint16_t, LteSlUeRrc::LteSlCellConfiguration> (m_cellId, cellConfig));
               }
               else
@@ -1318,7 +1322,7 @@ LteUeRrc::DoRecvRrcConnectionReestablishment (LteRrcSap::RrcConnectionReestablis
              m_sidelinkConfiguration->IsCellBroadcastingSIB19 (m_cellId))
              && m_sidelinkConfiguration->GetTimeSinceLastTransmissionOfSidelinkUeInformation () < 1.0)
           {
-            SendSidelinkUeInformation ();
+            SendSidelinkUeInformation (true, true, true, true);
           }
       }
       break;
@@ -3379,6 +3383,14 @@ LteUeRrc::SaveScellUeMeasurements (uint16_t sCellId, double rsrp, double rsrq,
 }   // end of void SaveUeMeasurements
 
 void
+LteUeRrc::ActivateSidelinkRadioBearer (uint32_t destination)
+{
+  NS_LOG_FUNCTION (this);
+  //procedure to setup the sidelink radio bearer is the same for group or one to one communication
+  DoActivateSidelinkRadioBearer (destination, true, true);
+}
+
+void
 LteUeRrc::DoActivateSidelinkRadioBearer (uint32_t group, bool tx, bool rx)
 {
   NS_LOG_FUNCTION (this);
@@ -3482,7 +3494,7 @@ LteUeRrc::DoActivateSidelinkRadioBearer (uint32_t group, bool tx, bool rx)
         m_cmacSapProvider.at (0)->AddSlDestination (group);
       }
     //Try to send to eNodeB
-    SendSidelinkUeInformation ();
+    SendSidelinkUeInformation (tx, rx, false, false);
     break;
 
   default: // i.e. IDLE_RANDOM_ACCESS
@@ -3518,7 +3530,8 @@ LteUeRrc::DoDeactivateSidelinkRadioBearer (uint32_t group)
       case CONNECTED_REESTABLISHING:
         NS_LOG_INFO ("Considering in coverage");
         //Try to send to eNodeB
-        SendSidelinkUeInformation ();
+        //TODO: check if the communication for for tx only, rx only, or both
+        SendSidelinkUeInformation (true, false, false, false); 
         break;
 
       default: // i.e. IDLE_RANDOM_ACCESS
@@ -3596,12 +3609,15 @@ LteUeRrc::AddSlrb (uint32_t source, uint32_t destination, uint8_t lcid)
 }
 
 void
-LteUeRrc::DoAddDiscoveryApps (std::list<uint32_t> apps, bool rxtx)
+LteUeRrc::StartDiscoveryApps (std::list<LteSlUeRrc::DiscPayload> appCodes, LteSlUeRrc::DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
 
+  bool wasAnnouncingInterested = m_sidelinkConfiguration->IsAnnouncingInterested();
+  bool wasMonitoringInterested = m_sidelinkConfiguration->IsMonitoringInterested();
+  
   switch (m_state)
-  {
+    {
     case IDLE_START:
     case IDLE_CELL_SEARCH:
     case IDLE_WAIT_MIB_SIB1:
@@ -3618,102 +3634,250 @@ LteUeRrc::DoAddDiscoveryApps (std::list<uint32_t> apps, bool rxtx)
           //propagate to the MAC (normally the MAC indicates the RNTI when receiving message from the eNodeB)
           m_cmacSapProvider.at (0)->SetRnti (m_rnti);
           //since it is first time, configure the physical layer as well
-          m_cphySapProvider.at (0)->ConfigureUplink (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigGeneral.carrierFreq, m_sidelinkConfiguration->GetSlPreconfiguration().preconfigGeneral.slBandwidth);
+          m_cphySapProvider.at(0)->ConfigureUplink (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigGeneral.carrierFreq, m_sidelinkConfiguration->GetSlPreconfiguration().preconfigGeneral.slBandwidth);
         }
+        m_sidelinkConfiguration->StartDiscoveryApps (appCodes, role);
+        NS_LOG_INFO ("Created new discovery app for UE " << m_rnti );
 
-      m_sidelinkConfiguration->AddDiscoveryApps (apps, rxtx);
-      NS_LOG_INFO ("Created new discovery Applications for UE " << m_rnti );
-      //Inform MAC about new disc apps
-      m_cmacSapProvider.at (0)->ModifyDiscTxApps (m_sidelinkConfiguration->m_announceApps);
-      m_cmacSapProvider.at (0)->ModifyDiscRxApps (m_sidelinkConfiguration->m_monitorApps);
-
-      //Set pool using preconfigured one if it exits
-      if (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.nbPools >0)
-      {
-        //announce: Tx
-        if (rxtx)
-        {
-          NS_LOG_INFO ("Configuring Tx preconfigured pool");
-          Ptr<SidelinkTxDiscResourcePool> txPool = CreateObject<SidelinkTxDiscResourcePool>();
-          txPool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
-          //inform MAC and PHY about the pool
-          m_cmacSapProvider.at (0)->SetSlDiscTxPool (txPool);
-          m_cphySapProvider.at (0)->SetSlDiscTxPool (txPool);
-        }
-        //monitor: Rx
-        else
-        {
-          std::list< Ptr<SidelinkRxDiscResourcePool> > pools;
-          Ptr<SidelinkRxDiscResourcePool> pool = CreateObject <SidelinkRxDiscResourcePool> ();
-          pool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
-          pools.push_back (pool);
-          m_cmacSapProvider.at (0)->SetSlDiscRxPools (pools);
-          m_cphySapProvider.at (0)->SetSlDiscRxPools (pools);
-        }
-      }
+        //Set pool using preconfigured one if it exits
+        if (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.nbPools >0)
+          {
+            //announce
+            if (!wasAnnouncingInterested && m_sidelinkConfiguration->IsAnnouncingInterested())
+              {
+                NS_LOG_INFO ("Configuring Tx preconfigured pool");
+                Ptr<SidelinkTxDiscResourcePool> txPool = CreateObject<SidelinkTxDiscResourcePool>();
+                txPool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
+                m_sidelinkConfiguration->SetActiveTxDiscoveryPool (txPool);
+                //inform MAC and PHY about the pool
+                m_cmacSapProvider.at (0)->SetSlDiscTxPool (txPool);
+                m_cphySapProvider.at(0)->SetSlDiscTxPool (txPool);
+                m_sidelinkConfiguration->StartAnnouncing ();
+              }
+            //monitor
+            if (!wasMonitoringInterested && m_sidelinkConfiguration->IsMonitoringInterested())
+              {
+                NS_LOG_INFO ("Configuring Rx preconfigured pool");
+                std::list< Ptr<SidelinkRxDiscResourcePool> > pools;
+                Ptr<SidelinkRxDiscResourcePool> pool = CreateObject <SidelinkRxDiscResourcePool> ();
+                pool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
+                pools.push_back (pool);            
+                m_cmacSapProvider.at (0)->SetSlDiscRxPools (pools);
+                m_cphySapProvider.at(0)->SetSlDiscRxPools (pools);
+              }
+          }
 
       break;
-
+      
     case IDLE_WAIT_SIB2:
     case IDLE_CONNECTING:
       NS_LOG_INFO ("Connecting, must wait to send message");
       break;
-
+      
     case CONNECTED_NORMALLY:
     case CONNECTED_HANDOVER:
     case CONNECTED_PHY_PROBLEM:
     case CONNECTED_REESTABLISHING:
       NS_LOG_INFO ("Considering in coverage");
-      m_sidelinkConfiguration->AddDiscoveryApps (apps, rxtx);
-      NS_LOG_INFO ("Created new discovery Applications for UE " << m_rnti );
-      //Inform MAC about new disc apps
-      m_cmacSapProvider.at (0)->ModifyDiscTxApps (m_sidelinkConfiguration->m_announceApps);
-      m_cmacSapProvider.at (0)->ModifyDiscRxApps (m_sidelinkConfiguration->m_monitorApps);
-      //Try to send to eNodeB
-      SendSidelinkUeInformation ();
-      break;
 
+      m_sidelinkConfiguration->StartDiscoveryApps (appCodes, role);
+      NS_LOG_INFO ("Created new discovery Payloads for UE " << m_rnti );
+      //Inform MAC about new disc payloads
+      //m_cmacSapProvider.at (0)->ModifyDiscTxPayloads (m_sidelinkConfiguration->m_announcePayloads);
+      //m_cmacSapProvider.at (0)->ModifyDiscRxPayloads (m_sidelinkConfiguration->m_monitorPayloads);
+      //Try to send to eNodeB
+      SendSidelinkUeInformation (false, false, wasAnnouncingInterested != m_sidelinkConfiguration->IsAnnouncingInterested(), wasMonitoringInterested != m_sidelinkConfiguration->IsMonitoringInterested() );
+      break;
+        
     default: // i.e. IDLE_RANDOM_ACCESS
       NS_FATAL_ERROR ("method unexpected in state " << ToString (m_state));
       break;
     }
+  
 }
 
 void
-LteUeRrc::DoRemoveDiscoveryApps (std::list<uint32_t> apps, bool rxtx)
+LteUeRrc::StopDiscoveryApps (std::list<LteSlUeRrc::DiscPayload> appCodes, LteSlUeRrc::DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
+  
+  bool wasAnnouncingInterested = m_sidelinkConfiguration->IsAnnouncingInterested();
+  bool wasMonitoringInterested = m_sidelinkConfiguration->IsMonitoringInterested();
 
-  m_sidelinkConfiguration->RemoveDiscoveryApps (apps, rxtx);
-  NS_LOG_INFO ("deleting new discovery Applications for UE " << m_rnti );
-  // Inform MAC
-  m_cmacSapProvider.at (0)->ModifyDiscTxApps (m_sidelinkConfiguration->m_announceApps);
-  m_cmacSapProvider.at (0)->ModifyDiscRxApps (m_sidelinkConfiguration->m_monitorApps);
+  m_sidelinkConfiguration->StopDiscoveryApps (appCodes, role);
+  NS_LOG_INFO ("deleting new discovery Payloads for UE " << m_rnti );
+  // Inform MAC: if no longer interested in announcing or monitoring, remove discovery pools
+  //m_cmacSapProvider.at (0)->ModifyDiscTxPayloads (m_sidelinkConfiguration->m_announcePayloads);
+  //m_cmacSapProvider.at (0)->ModifyDiscRxPayloads (m_sidelinkConfiguration->m_monitorPayloads);
 
       switch (m_state)
       {
-        case IDLE_START:
-        case IDLE_CELL_SEARCH:
-        case IDLE_WAIT_MIB_SIB1:
-        case IDLE_WAIT_MIB:
-        case IDLE_WAIT_SIB1:
-        case IDLE_CAMPED_NORMALLY:
-          NS_LOG_INFO ("Considering out of network");
-          //Activate bearer using preconfiguration if available
-          //TBD
-          break;
-        case CONNECTED_NORMALLY:
-        case CONNECTED_HANDOVER:
-        case CONNECTED_PHY_PROBLEM:
-        case CONNECTED_REESTABLISHING:
-          NS_LOG_INFO ("Considering in coverage");
-          //Try to send to eNodeB
-          SendSidelinkUeInformation ();
-          break;
+      case IDLE_START:
+      case IDLE_CELL_SEARCH:
+      case IDLE_WAIT_MIB_SIB1:
+      case IDLE_WAIT_MIB:
+      case IDLE_WAIT_SIB1:
+      case IDLE_CAMPED_NORMALLY:
+        NS_LOG_INFO ("Considering out of network");
+        //Activate bearer using preconfiguration if available
+        //TBD    
+        break;                
+      case CONNECTED_NORMALLY:
+      case CONNECTED_HANDOVER:
+      case CONNECTED_PHY_PROBLEM:
+      case CONNECTED_REESTABLISHING:
+        NS_LOG_INFO ("Considering in coverage");
+        //Try to send to eNodeB
+        SendSidelinkUeInformation (false, false, wasAnnouncingInterested != m_sidelinkConfiguration->IsAnnouncingInterested(), wasMonitoringInterested != m_sidelinkConfiguration->IsMonitoringInterested());
+        break;
+        
+      default: // i.e. IDLE_RANDOM_ACCESS
+        NS_FATAL_ERROR ("method unexpected in state " << ToString (m_state));
+        break;
+      }
+}  
 
-        default: // i.e. IDLE_RANDOM_ACCESS
-          NS_FATAL_ERROR ("method unexpected in state " << ToString (m_state));
-          break;
+void
+LteUeRrc::StartRelayService (uint32_t serviceCode, LteSlUeRrc::DiscoveryModel model, LteSlUeRrc::RelayRole role)
+{
+  NS_LOG_FUNCTION (this);
+
+  bool wasAnnouncingInterested = m_sidelinkConfiguration->IsAnnouncingInterested();
+  bool wasMonitoringInterested = m_sidelinkConfiguration->IsMonitoringInterested();
+  bool rxSelf = (std::find(m_sidelinkConfiguration->m_rxGroup.begin(), m_sidelinkConfiguration->m_rxGroup.end(), m_sidelinkConfiguration->m_sourceL2Id) != m_sidelinkConfiguration->m_rxGroup.end());    
+      
+  switch (m_state)
+    {
+    case IDLE_START:
+    case IDLE_CELL_SEARCH:
+    case IDLE_WAIT_MIB_SIB1:
+    case IDLE_WAIT_MIB:
+    case IDLE_WAIT_SIB1:
+    case IDLE_CAMPED_NORMALLY:
+      NS_LOG_INFO ("Considering out of network");
+
+      if (m_rnti == 0)
+        {
+          NS_LOG_INFO (this << " Setting RNTI to " <<  (uint16_t) (m_imsi & 0xFFFF));
+          //preconfigure the RNTI to the IMSI's 16 LSB for uniqueness
+          DoSetTemporaryCellRnti ( (uint16_t) (m_imsi & 0xFFFF));
+          //propagate to the MAC (normally the MAC indicates the RNTI when receiving message from the eNodeB)
+          m_cmacSapProvider.at (0)->SetRnti (m_rnti);
+          //since it is first time, configure the physical layer as well
+          m_cphySapProvider.at(0)->ConfigureUplink (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigGeneral.carrierFreq, m_sidelinkConfiguration->GetSlPreconfiguration().preconfigGeneral.slBandwidth);
+        }
+        m_sidelinkConfiguration->StartRelayService (serviceCode, model, role);
+        NS_LOG_INFO ("Created new discovery app for UE " << m_rnti );
+
+        //Set pool using preconfigured one if it exits
+        if (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.nbPools >0)
+          {
+            //announce
+            if (!wasAnnouncingInterested && m_sidelinkConfiguration->IsAnnouncingInterested())
+              {
+                NS_LOG_INFO ("Configuring Tx preconfigured pool");
+                Ptr<SidelinkTxDiscResourcePool> txPool = CreateObject<SidelinkTxDiscResourcePool>();
+                txPool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
+                m_sidelinkConfiguration->SetActiveTxDiscoveryPool (txPool);
+                //inform MAC and PHY about the pool
+                m_cmacSapProvider.at (0)->SetSlDiscTxPool (txPool);
+                m_cphySapProvider.at(0)->SetSlDiscTxPool (txPool);
+              }
+            //monitor
+            if (!wasMonitoringInterested && m_sidelinkConfiguration->IsMonitoringInterested())
+              {
+                std::list< Ptr<SidelinkRxDiscResourcePool> > pools;
+                Ptr<SidelinkRxDiscResourcePool> pool = CreateObject <SidelinkRxDiscResourcePool> ();
+                pool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
+                pools.push_back (pool);            
+                m_cmacSapProvider.at (0)->SetSlDiscRxPools (pools);
+                m_cphySapProvider.at(0)->SetSlDiscRxPools (pools);
+              }
+            //must enable reception of direct communication messages                                                                                           
+            if (!rxSelf) 
+              { 
+                NS_LOG_INFO ("Notify lower layers to accept incoming message");                                                                             
+                //Add to the list of group to monitor for sidelink             
+                m_sidelinkConfiguration->m_rxGroup.push_back (m_sidelinkConfiguration->m_sourceL2Id);
+                //tell the phy to listen for the group
+                m_cphySapProvider.at(0)->AddSlDestination (m_sidelinkConfiguration->m_sourceL2Id);                                               
+                m_cmacSapProvider.at (0)->AddSlDestination (m_sidelinkConfiguration->m_sourceL2Id);                            
+              }                                                                                                                  
+          }
+
+      break;
+      
+    case IDLE_WAIT_SIB2:
+    case IDLE_CONNECTING:
+      NS_LOG_INFO ("Connecting, must wait to send message");
+      break;
+      
+    case CONNECTED_NORMALLY:
+    case CONNECTED_HANDOVER:
+    case CONNECTED_PHY_PROBLEM:
+    case CONNECTED_REESTABLISHING:
+      NS_LOG_INFO ("Considering in coverage");
+
+      m_sidelinkConfiguration->StartRelayService (serviceCode, model, role);
+      //must enable reception of direct communication messages 
+      if (!rxSelf)
+        {
+          NS_LOG_INFO ("Notify lower layers to accept incoming message");
+          //Add to the list of group to monitor for sidelink                                                      
+          m_sidelinkConfiguration->m_rxGroup.push_back (m_sidelinkConfiguration->m_sourceL2Id);                                                   
+          //tell the phy to listen for the group                                                                  
+          m_cphySapProvider.at(0)->AddSlDestination (m_sidelinkConfiguration->m_sourceL2Id);                                                            
+          m_cmacSapProvider.at (0)->AddSlDestination (m_sidelinkConfiguration->m_sourceL2Id);   
+        }
+      //Try to send to eNodeB
+      SendSidelinkUeInformation (false, !rxSelf, wasAnnouncingInterested != m_sidelinkConfiguration->IsAnnouncingInterested(), wasMonitoringInterested != m_sidelinkConfiguration->IsMonitoringInterested());
+      break;
+        
+    default: // i.e. IDLE_RANDOM_ACCESS
+      NS_FATAL_ERROR ("method unexpected in state " << ToString (m_state));
+      break;
+    }
+    
+}
+
+void
+LteUeRrc::StopRelayService (uint32_t serviceCode)
+{
+  NS_LOG_FUNCTION (this);
+
+  bool wasAnnouncingInterested = m_sidelinkConfiguration->IsAnnouncingInterested();
+  bool wasMonitoringInterested = m_sidelinkConfiguration->IsMonitoringInterested();
+
+  m_sidelinkConfiguration->StopRelayService (serviceCode);
+  NS_LOG_INFO ("deleting new relay service for UE " << m_rnti );
+  // Inform MAC: if no longer interested in announcing or monitoring, remove discovery pools
+  //m_cmacSapProvider.at (0)->ModifyDiscTxPayloads (m_sidelinkConfiguration->m_announcePayloads);
+  //m_cmacSapProvider.at (0)->ModifyDiscRxPayloads (m_sidelinkConfiguration->m_monitorPayloads);
+
+      switch (m_state)
+      {
+      case IDLE_START:
+      case IDLE_CELL_SEARCH:
+      case IDLE_WAIT_MIB_SIB1:
+      case IDLE_WAIT_MIB:
+      case IDLE_WAIT_SIB1:
+      case IDLE_CAMPED_NORMALLY:
+        NS_LOG_INFO ("Considering out of network");
+        //Activate bearer using preconfiguration if available
+        //TBD    
+        break;                
+      case CONNECTED_NORMALLY:
+      case CONNECTED_HANDOVER:
+      case CONNECTED_PHY_PROBLEM:
+      case CONNECTED_REESTABLISHING:
+        NS_LOG_INFO ("Considering in coverage");
+        //Try to send to eNodeB
+        SendSidelinkUeInformation (false, false, wasAnnouncingInterested != m_sidelinkConfiguration->IsAnnouncingInterested(), wasMonitoringInterested != m_sidelinkConfiguration->IsMonitoringInterested());
+        break;
+        
+      default: // i.e. IDLE_RANDOM_ACCESS
+        NS_FATAL_ERROR ("method unexpected in state " << ToString (m_state));
+        break;
       }
 }
 
@@ -3748,24 +3912,33 @@ LteUeRrc::ApplySidelinkDedicatedConfiguration (LteRrcSap::SlCommConfig config)
             //configure lower layers to transmit the Sidelink control information and the corresponding data using the pool of resources indicated by the first entry in commTxPoolNormalDedicated;
             txPool->SetPool (config.setup.ueSelected.poolToAddModList.pools[0].pool);
           }
-
-          std::list <uint32_t>::iterator it;
-          std::list <uint32_t> destinations = m_sidelinkConfiguration->GetTxDestinations ();
-          //int index = 0;
-          //currently we can only use one pool so all groups will use the same one
-          for (it = destinations.begin() ; it != destinations.end() ; it++)
-            {
-              m_cmacSapProvider.at (0)->AddSlCommTxPool (*it, txPool);
+      if (!m_txPool)
+        {
+          //previous pool was configure, let's see if it changed configuration
+          if (m_txPool == txPool)
+            { //TODO: check if we can avoid pushing pool again if not changed
+              NS_LOG_DEBUG ("Pool configuration unchanged");
             }
-            //inform PHY about pool
-            m_cphySapProvider.at (0)->SetSlCommTxPool (txPool);
+        }
+      m_txPool = txPool;
+    
+      std::list <uint32_t>::iterator it;
+      std::list <uint32_t> destinations = m_sidelinkConfiguration->GetTxDestinations ();
+      //int index = 0;
+      //currently we can only use one pool so all groups will use the same one
+      for (it = destinations.begin() ; it != destinations.end() ; it++)
+        {
+          m_cmacSapProvider.at (0)->AddSlCommTxPool (*it, txPool);
+        }
+      //inform PHY about pool
+      m_cphySapProvider.at (0)->SetSlCommTxPool (txPool);
 
-            //indicate NAS that bearer was established
-            //TODO: we should only indicate this once per bearer
-            for (std::list <uint32_t>::iterator it = destinations.begin() ; it != destinations.end() ; it++)
-              {
-                m_asSapUser->NotifySidelinkRadioBearerActivated (*it);
-              }
+      //indicate NAS that bearer was established
+      //TODO: we should only indicate this once per bearer
+      for (std::list <uint32_t>::iterator it = destinations.begin() ; it != destinations.end() ; it++)
+        {
+          m_asSapUser->NotifySidelinkRadioBearerActivated (*it);
+        }
     }
   else
     {
@@ -3871,6 +4044,9 @@ LteUeRrc::ApplySidelinkDedicatedConfiguration (LteRrcSap::SlDiscConfig config)
                 txPool->SetPool (config.setup.ueSelected.poolToAddModList.pools[m_sidelinkConfiguration->m_rand->GetInteger (0, config.setup.ueSelected.poolToAddModList.nbPools - 1)].pool);
               }
           }//end else (UE Selected)
+
+      m_sidelinkConfiguration->SetActiveTxDiscoveryPool (txPool);
+      m_sidelinkConfiguration->StartAnnouncing ();
       //inform MAC about the pool
       m_cmacSapProvider.at (0)->SetSlDiscTxPool (txPool);
       //inform PHY about the pool
@@ -3885,7 +4061,7 @@ LteUeRrc::ApplySidelinkDedicatedConfiguration (LteRrcSap::SlDiscConfig config)
 }
 
 void
-LteUeRrc::SendSidelinkUeInformation ()
+LteUeRrc::SendSidelinkUeInformation (bool txComm, bool rxComm, bool txDisc, bool rxDisc)
 {
   NS_LOG_FUNCTION (this);
 
@@ -3908,12 +4084,12 @@ LteUeRrc::SendSidelinkUeInformation ()
         {
           if (it->second.haveSib18)
             {
-              if (m_sidelinkConfiguration->IsRxInterested ())
-                {
+	          if (rxComm)
+				{
                   sidelinkUeInformation.haveCommRxInterestedFreq = true;
                   sidelinkUeInformation.commRxInterestedFreq = GetUlEarfcn ();
                 }
-              if (m_sidelinkConfiguration->IsTxInterested ())
+	          if (txComm)
                 {
                   std::list <uint32_t> destinations = m_sidelinkConfiguration->GetTxDestinations ();
                   sidelinkUeInformation.haveCommTxResourceReq = true;
@@ -3933,26 +4109,26 @@ LteUeRrc::SendSidelinkUeInformation ()
       if (m_sidelinkConfiguration->IsDiscEnabled ())
         {
           if (it->second.haveSib19)
-            {
-              // UE interested in monitoring discovery announcements
-              if ((m_sidelinkConfiguration->IsMonitoringInterested ()) && (m_sidelinkConfiguration->GetDiscInterFreq () ==  GetUlEarfcn ()))
-                {
-                  sidelinkUeInformation.haveDiscRxInterest = true;
-                  sidelinkUeInformation.discRxInterest = true;
-                }
-              // UE interested in transmit discovery announcements
-              if (m_sidelinkConfiguration->IsAnnouncingInterested ())
-                {
-                  sidelinkUeInformation.haveDiscTxResourceReq = true;
-                  NS_ASSERT_MSG (m_sidelinkConfiguration->GetDiscTxResources () > 0, "can't have 0 or negative resources for the discovery announcement. Check if DiscTxResources is defined for in-coverage or eNBs disabled for ou-of-coverage");
-                  sidelinkUeInformation.discTxResourceReq = m_sidelinkConfiguration->GetDiscTxResources ();
-                }
-            }
-        }
-      // Record time
-      m_sidelinkConfiguration->RecordTransmissionOfSidelinkUeInformation ();
-      // send the message to eNodeB
-      m_rrcSapUser->SendSidelinkUeInformation (sidelinkUeInformation);
+	          {
+	            // UE interested in monitoring discovery announcements
+	            if ((rxDisc) && (m_sidelinkConfiguration->GetDiscInterFreq () ==  GetUlEarfcn ()))
+	              {
+	                sidelinkUeInformation.haveDiscRxInterest = true;
+	                sidelinkUeInformation.discRxInterest = true;
+	              }
+	            // UE interested in transmit discovery announcements
+	            if (txDisc)
+	              {
+	                sidelinkUeInformation.haveDiscTxResourceReq = true;
+	                NS_ASSERT_MSG (m_sidelinkConfiguration->GetDiscTxResources ()>0, "can't have 0 or negative resources for the discovery announcement. Check if DiscTxResources is defined for in-coverage or eNBs disabled for ou-of-coverage");
+	                sidelinkUeInformation.discTxResourceReq = m_sidelinkConfiguration->GetDiscTxResources ();
+	              }
+	          }
+	      }
+        // Record time
+        m_sidelinkConfiguration->RecordTransmissionOfSidelinkUeInformation ();
+        // send the message to eNodeB
+        m_rrcSapUser->SendSidelinkUeInformation (sidelinkUeInformation);
     }
 }
 
@@ -3968,15 +4144,37 @@ void LteUeRrc::DoNotifyDiscoveryReception (Ptr<LteControlMessage> msg)
 {
   NS_LOG_FUNCTION (this << msg);
   Ptr<SlDiscMessage> msg2 = DynamicCast<SlDiscMessage> (msg);
-  SlDiscMsg disc = msg2->GetSlDiscMessage ();
-  for (std::list<uint32_t>::iterator it = m_sidelinkConfiguration->m_monitorApps.begin (); it != m_sidelinkConfiguration->m_monitorApps.end (); ++it)
-  {
-    if ((std::bitset <184>)*it == disc.m_proSeAppCode)
-    {
-      NS_LOG_INFO ("discovery message received by " << m_rnti << ", proSeAppCode = " << *it);
-      m_discoveryMonitoringTrace (m_imsi, m_cellId, m_rnti, *it);
+  SlDiscMsg discMsg = msg2->GetSlDiscMessage ();
+
+  if (discMsg.m_msgType == 0x41 || discMsg.m_msgType == 0x81)
+    { //open or restricted announcement
+      LteSlUeRrc::DiscPayload appCode;
+      std::memcpy (appCode.payload, &discMsg.m_pc5_disc_payload,23);
+      if (m_sidelinkConfiguration->IsMonitoringApp (appCode))
+        {
+          NS_LOG_INFO ("discovery message received by " << m_rnti);
+          m_discoveryMonitoringTrace (m_imsi, m_cellId, m_rnti, discMsg);
+        }
     }
-  }
+  else if (discMsg.m_msgType == 0x91)
+    {
+      uint32_t serviceCode = 0;
+      std::memcpy (&serviceCode,  &discMsg.m_pc5_disc_payload, 3);
+      if (m_sidelinkConfiguration->IsMonitoringRelayServiceCode (serviceCode))
+        {
+          NS_LOG_INFO ("Relay announcement message received by " << m_rnti);
+          m_discoveryMonitoringTrace (m_imsi, m_cellId, m_rnti, discMsg);
+          //extract remaining fields
+          uint64_t announcerInfo = 0;
+          uint32_t proseRelayUeId = 0;
+          uint8_t statusIndicator = 0;
+          std::memcpy(&announcerInfo,&discMsg.m_pc5_disc_payload[3],6); 			//Announcer Info = User Info = [3],[4],[5],[6],[7],[8]
+          std::memcpy(&proseRelayUeId,&discMsg.m_pc5_disc_payload[9],3); 			//ProSe Relay UE ID = [9],[10],[11]
+          std::memcpy(&statusIndicator,&discMsg.m_pc5_disc_payload[12],1);
+          m_sidelinkConfiguration->RecvRelayServiceDiscovery (serviceCode, announcerInfo, proseRelayUeId, statusIndicator);
+        }
+    }
+  //todo: expand to cover all cases
 }
 
 void
@@ -4747,6 +4945,27 @@ LteUeRrc::DoNotifyMacHasNoSlDataToSend ()
       NS_LOG_LOGIC(this <<" The MAC notified that it does not have anymore data to send, and SLSS transmissions are enabled... Stoping SLSS transmissions" );
       StopSlssTransmission ();
     }
+}
+
+void
+LteUeRrc::TransmitDiscoveryMessage (LteSlDiscHeader discHeader)
+{
+  NS_LOG_FUNCTION (this << m_rnti);
+  //create message
+  Ptr<Packet> p = Create<Packet>();
+
+  p->AddHeader (discHeader);
+  
+  LteMacSapProvider::TransmitPduParameters params;
+  params.rnti = m_rnti;
+  params.srcL2Id = 0; //not used for discovery messages
+  params.dstL2Id = 0; //not used for discovery messages
+  params.lcid = 0; //not used  for discovery messages
+  params.harqProcessId = 0; //not used for discovery messages
+  params.discMsg = true;
+  params.componentCarrierId = 0;
+  params.pdu = p;
+  m_macSapProvider->TransmitPdu (params);
 }
 
 } // namespace ns3

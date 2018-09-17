@@ -87,8 +87,6 @@ public:
   virtual void SendMacPdu (Ptr<Packet> p);
   virtual void SendLteControlMessage (Ptr<LteControlMessage> msg);
   virtual void SendRachPreamble (uint32_t prachId, uint32_t raRnti);
-  virtual void AddDiscTxApps (std::list<uint32_t> apps);
-  virtual void AddDiscRxApps (std::list<uint32_t> apps);
   virtual void SetDiscGrantInfo (uint8_t resPsdch);
 
 private:
@@ -116,18 +114,6 @@ void
 UeMemberLteUePhySapProvider::SendRachPreamble (uint32_t prachId, uint32_t raRnti)
 {
   m_phy->DoSendRachPreamble (prachId, raRnti);
-}
-
-void
-UeMemberLteUePhySapProvider::AddDiscTxApps (std::list<uint32_t> apps)
-{
-  m_phy->DoAddDiscTxApps (apps);
-}
-
-void
-UeMemberLteUePhySapProvider::AddDiscRxApps (std::list<uint32_t> apps)
-{
-  m_phy->DoAddDiscRxApps (apps);
 }
 
 void
@@ -213,9 +199,6 @@ LteUePhy::LteUePhy (Ptr<LteSpectrumPhy> dlPhy, Ptr<LteSpectrumPhy> ulPhy)
   m_discTxPools.m_currentDiscPeriod.subframeNo = 0;
   m_discTxPools.m_nextDiscPeriod.frameNo = 0;
   m_discTxPools.m_nextDiscPeriod.subframeNo = 0;
-
-  m_discRxApps.clear ();
-  m_discTxApps.clear ();
 
   DoReset ();
 }
@@ -413,11 +396,6 @@ LteUePhy::GetTypeId (void)
                    DoubleValue(-125),
                    MakeDoubleAccessor (&LteUePhy::m_minSrsrp),
                    MakeDoubleChecker<double>())
-//Sidelink discovery
-    .AddTraceSource ("DiscoveryAnnouncement",
-                     "trace to track the announcement of discovery messages",
-                     MakeTraceSourceAccessor (&LteUePhy::m_discoveryAnnouncementTrace),
-                     "ns3::LteUePhy::DiscoveryAnnouncementTracedCallback")
   ;
   return tid;
 }
@@ -1881,14 +1859,14 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                           //
                           m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, ctrlMsg, UL_DATA_DURATION,0);
 
+                          //todo: remove this section since it does not do anything (used to have trace)
                           for (std::list<Ptr<LteControlMessage> >::iterator msg = ctrlMsg.begin (); msg != ctrlMsg.end (); ++msg)
                             {
                               NS_LOG_LOGIC (this << ((*msg)->GetMessageType ()) << " discovery msg");
                               Ptr<SlDiscMessage> msg2 = DynamicCast<SlDiscMessage> ((*msg));
                               if (msg2)
                                 {
-                                  SlDiscMsg disc = msg2->GetSlDiscMessage ();
-                                  m_discoveryAnnouncementTrace (m_cellId, m_rnti,(uint32_t)disc.m_proSeAppCode.to_ulong ());
+                                  //SlDiscMsg disc = msg2->GetSlDiscMessage ();
                                 }
                             }
 
@@ -2401,22 +2379,6 @@ LteUePhy::DoSetDiscGrantInfo (uint8_t resPsdch)
 {
   NS_LOG_FUNCTION (this << resPsdch);
   m_discResPsdch = resPsdch;
-}
-
-void
-LteUePhy::DoAddDiscTxApps (std::list<uint32_t> apps)
-{
-  NS_LOG_FUNCTION (this);
-  m_discTxApps = apps;
-  m_sidelinkSpectrumPhy->AddDiscTxApps (apps);
-}
-
-void
-LteUePhy::DoAddDiscRxApps (std::list<uint32_t> apps)
-{
-  NS_LOG_FUNCTION (this);
-  m_discRxApps = apps;
-  m_sidelinkSpectrumPhy->AddDiscRxApps (apps);
 }
 
 void

@@ -420,21 +420,6 @@ EmuEpcHelper::DeactivateSidelinkBearer (Ptr<NetDevice> ueDevice, Ptr<LteSlTft> t
   ueLteDevice->GetNas ()->DeactivateSidelinkBearer (tft);
 }
 
-void
-EmuEpcHelper::StartDiscovery (Ptr<NetDevice> ueDevice, std::list<uint32_t> apps, bool rxtx)
-{
-  NS_LOG_FUNCTION (this << ueDevice);
-  ueDevice->GetObject<LteUeNetDevice> ()->GetNas ()->AddDiscoveryApps (apps, rxtx);
-}
-
-void
-EmuEpcHelper::StopDiscovery (Ptr<NetDevice> ueDevice, std::list<uint32_t> apps, bool rxtx)
-{
-  NS_LOG_FUNCTION (this << ueDevice);
-  ueDevice->GetObject<LteUeNetDevice> ()->GetNas ()->RemoveDiscoveryApps (apps, rxtx);
-}
-
-
 Ptr<Node>
 EmuEpcHelper::GetPgwNode ()
 {

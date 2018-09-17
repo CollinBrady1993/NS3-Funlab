@@ -273,6 +273,7 @@ LteRlcAm::DoNotifyTxOpportunity (LteMacSapUser::TxOpportunityParameters txOpPara
       params.layer = txOpParams.layer;
       params.harqProcessId = txOpParams.harqId;
       params.componentCarrierId = txOpParams.componentCarrierId;
+      params.discMsg = false;
 
       m_macSapProvider->TransmitPdu (params);
 
@@ -361,7 +362,8 @@ LteRlcAm::DoNotifyTxOpportunity (LteMacSapUser::TxOpportunityParameters txOpPara
                   params.layer = txOpParams.layer;
                   params.harqProcessId = txOpParams.harqId;
                   params.componentCarrierId = txOpParams.componentCarrierId;
-                  
+                  params.discMsg = false;
+
                   m_macSapProvider->TransmitPdu (params);
 
                   m_retxBuffer.at (seqNumberValue).m_retxCount++;
@@ -744,6 +746,7 @@ LteRlcAm::DoNotifyTxOpportunity (LteMacSapUser::TxOpportunityParameters txOpPara
   params.layer = txOpParams.layer;
   params.harqProcessId = txOpParams.harqId;
   params.componentCarrierId = txOpParams.componentCarrierId;
+  params.discMsg = false;
 
   m_macSapProvider->TransmitPdu (params);
 }

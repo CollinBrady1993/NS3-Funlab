@@ -2326,35 +2326,6 @@ LteSpectrumPhy::SetRxPool (Ptr<SidelinkDiscResourcePool> newpool)
 }
 
 void
-LteSpectrumPhy::AddDiscTxApps (std::list<uint32_t> apps)
-{
-  NS_LOG_FUNCTION (this);
-  m_discTxApps = apps;
-}
-
-void
-LteSpectrumPhy::AddDiscRxApps (std::list<uint32_t> apps)
-{
-  NS_LOG_FUNCTION (this);
-  m_discRxApps = apps;
-}
-
-bool
-LteSpectrumPhy::FilterRxApps (SlDiscMsg disc)
-{
-  NS_LOG_FUNCTION (this << disc.m_proSeAppCode);
-  bool exist = false;
-  for (std::list<uint32_t>::iterator it = m_discRxApps.begin (); it != m_discRxApps.end (); ++it)
-    {
-      if ((std::bitset <184>)*it == disc.m_proSeAppCode)
-        {
-          exist = true;
-        }
-    }
-  return exist;
-}
-
-void
 LteSpectrumPhy::SetDiscNumRetx (uint8_t retx)
 {
   NS_LOG_FUNCTION (this << retx);
@@ -2397,89 +2368,85 @@ LteSpectrumPhy::RxDiscovery ()
           Ptr<LteControlMessage> rxCtrlMsg = m_rxPacketInfo[i].m_rxControlMessage;
           Ptr<SlDiscMessage> msg = DynamicCast<SlDiscMessage> (rxCtrlMsg);
           SlDiscMsg disc = msg->GetSlDiscMessage ();
-          bool exist = FilterRxApps (disc);
-          if (exist)
+          // retrieve TB info of this packet
+          SlDiscTbId_t tbId;
+          tbId.m_rnti = disc.m_rnti;
+          tbId.m_resPsdch = disc.m_resPsdch;
+          expectedTbToSinrDiscIndex.insert (std::pair<SlDiscTbId_t, uint8_t> (tbId, i));
+
+          std::list<Ptr<SidelinkDiscResourcePool> >::iterator discIt;
+          uint16_t txCount = 0;
+          std::vector <int> rbMap;
+          for (discIt = m_discRxPools.begin (); discIt != m_discRxPools.end (); discIt++)
             {
-              // retrieve TB info of this packet
-              SlDiscTbId_t tbId;
-              tbId.m_rnti = disc.m_rnti;
-              tbId.m_resPsdch = disc.m_resPsdch;
-              expectedTbToSinrDiscIndex.insert (std::pair<SlDiscTbId_t, uint8_t> (tbId, i));
-
-              std::list<Ptr<SidelinkDiscResourcePool> >::iterator discIt;
-              uint16_t txCount = 0;
-              std::vector <int> rbMap;
-              for (discIt = m_discRxPools.begin (); discIt != m_discRxPools.end (); discIt++)
+              std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx = (*discIt)->GetPsdchTransmissions (disc.m_resPsdch);
+              NS_LOG_DEBUG (this << " Total number of discovery transmissions = " << m_psdchTx.size ());
+              std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator txIt = m_psdchTx.begin ();
+              if (txIt != m_psdchTx.end ())
                 {
-                  std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx = (*discIt)->GetPsdchTransmissions (disc.m_resPsdch);
-                  NS_LOG_DEBUG (this << " Total number of discovery transmissions = " << m_psdchTx.size ());
-                  std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator txIt = m_psdchTx.begin ();
-                  if (txIt != m_psdchTx.end ())
+                  //There can be more than one (max 4) PSDCH transmissions, therefore, we need to
+                  //match the RBs of all the possible PSDCH with the RBs of the received discovery
+                  //message. This way will make sure that we construct the correct RB map
+                  while (txIt != m_psdchTx.end ())
                     {
-                      //There can be more than one (max 4) PSDCH transmissions, therefore, we need to
-                      //match the RBs of all the possible PSDCH with the RBs of the received discovery
-                      //message. This way will make sure that we construct the correct RB map
-                      while (txIt != m_psdchTx.end ())
+                      for (int i = txIt->rbStart; i < txIt->rbStart + txIt->nbRb; i++)
                         {
-                          for (int i = txIt->rbStart; i < txIt->rbStart + txIt->nbRb; i++)
-                            {
-                              NS_LOG_LOGIC (this << " Checking PSDCH RB " << i);
-                              rbMap.push_back (i);
-                            }
-                          if (m_rxPacketInfo [i].rbBitmap == rbMap)
-                            {
-                              //Here, it may happen that the first transmission and the retransmission is
-                              //on the identical RBs but different subframes. If this happens, this while
-                              //loop will break on txCount == 1 (Note, we don't have access to the subframe
-                              //number here). The code starting with if (m_psdchTx.size () > 1)
-                              //will take care of such conditions.
-                              txCount++;
-                              NS_LOG_DEBUG (this << " PSDCH RB matched");
-                              break;
-                            }
-                          else
-                            {
-                              rbMap.clear ();
-                            }
-
-                          txIt++;
+                          NS_LOG_LOGIC (this << " Checking PSDCH RB " << i);
+                          rbMap.push_back (i);
+                        }
+                      if (m_rxPacketInfo [i].rbBitmap == rbMap)
+                        {
+                          //Here, it may happen that the first transmission and the retransmission is
+                          //on the identical RBs but different subframes. If this happens, this while
+                          //loop will break on txCount == 1 (Note, we don't have access to the subframe
+                          //number here). The code starting with if (m_psdchTx.size () > 1)
+                          //will take care of such conditions.
+                          txCount++;
+                          NS_LOG_DEBUG (this << " PSDCH RB matched");
+                          break;
+                        }
+                      else
+                        {
+                          rbMap.clear ();
                         }
 
-                      //If there are retransmissions we need to keep track of all the transmissions to properly
-                      //compute the NDI and RV.
-                      if (m_psdchTx.size () > 1)
-                        {
-                          std::map <uint16_t, uint16_t>::iterator it;
-                          it = m_slDiscTxCount.find (disc.m_rnti);
-                          if (it == m_slDiscTxCount.end ())
-                            {
-                              m_slDiscTxCount.insert (std::pair <uint16_t, uint16_t > (disc.m_rnti, 1));
-                            }
-                          else
-                            {
-                              it->second++;
-                              txCount = it->second;
-                              NS_LOG_DEBUG ("It is a Retransmission. Transmission count = " << txCount);
-                            }
-
-                          if (it->second == m_psdchTx.size ())
-                            {
-                              NS_LOG_DEBUG ("We reached the maximum Transmissions (Tx + ReTx) = " << txCount);
-                              it->second = 0;
-                            }
-                        }
-                      NS_LOG_DEBUG (this << " PSDCH transmission " << txCount);
-                      //reception
-                      NS_LOG_DEBUG (this << " Expecting PSDCH reception on PSDCH resource " << (uint16_t) (disc.m_resPsdch));
-                      NS_ABORT_MSG_IF (txCount == 0, "PSDCH txCount should be greater than zero");
-                      uint8_t rv = txCount - 1;
-                      NS_ABORT_MSG_IF (rv > m_psdchTx.size (), " RV number can not be greater than total number of transmissions");
-                      bool ndi = txCount == 1 ? true : false;
-                      NS_LOG_DEBUG (this << " Adding expected TB.");
-                      AddExpectedTb (disc.m_rnti, disc.m_resPsdch, ndi, rbMap, rv);
-                      txCount = 0;
-                      rbMap.clear ();
+                      txIt++;
                     }
+
+                  //If there are retransmissions we need to keep track of all the transmissions to properly
+                  //compute the NDI and RV.
+                  if (m_psdchTx.size () > 1)
+                    {
+                      std::map <uint16_t, uint16_t>::iterator it;
+                      it = m_slDiscTxCount.find (disc.m_rnti);
+                      if (it == m_slDiscTxCount.end ())
+                        {
+                          m_slDiscTxCount.insert (std::pair <uint16_t, uint16_t > (disc.m_rnti, 1));
+                        }
+                      else
+                        {
+                          it->second++;
+                          txCount = it->second;
+                          NS_LOG_DEBUG ("It is a Retransmission. Transmission count = " << txCount);
+                        }
+
+                      if (it->second == m_psdchTx.size ())
+                        {
+                          NS_LOG_DEBUG ("We reached the maximum Transmissions (Tx + ReTx) = " << txCount);
+                          it->second = 0;
+                        }
+                    }
+                  NS_LOG_DEBUG (this << " PSDCH transmission " << txCount);
+                  //reception
+                  NS_LOG_DEBUG (this << " Expecting PSDCH reception on PSDCH resource " << (uint16_t) (disc.m_resPsdch));
+                  NS_ABORT_MSG_IF (txCount == 0, "PSDCH txCount should be greater than zero");
+                  uint8_t rv = txCount - 1;
+                  NS_ABORT_MSG_IF (rv > m_psdchTx.size (), " RV number can not be greater than total number of transmissions");
+                  bool ndi = txCount == 1 ? true : false;
+                  NS_LOG_DEBUG (this << " Adding expected TB.");
+                  AddExpectedTb (disc.m_rnti, disc.m_resPsdch, ndi, rbMap, rv);
+                  txCount = 0;
+                  rbMap.clear ();
                 }
             }
         }

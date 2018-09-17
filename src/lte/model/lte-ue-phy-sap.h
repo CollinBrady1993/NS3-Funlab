@@ -64,18 +64,6 @@ public:
   //Sidelink Communication
 
   /**
-   * Set discovery announcement apps
-   * \param apps The applications we are interested in announcing
-   */
-   virtual void AddDiscTxApps (std::list<uint32_t> apps) = 0;
-
-  /**
-   * Set discovery monitoring apps
-   * \param apps The applications we are interested in monitoring
-   */
-   virtual void AddDiscRxApps (std::list<uint32_t> apps) = 0;
-
-  /**
    * Set grant for discovery
    * \param resPsdch The resource to use in the discovery pool
    */

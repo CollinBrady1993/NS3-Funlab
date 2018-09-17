@@ -34,6 +34,7 @@
 #include "lte-ue-mac.h"
 #include "lte-ue-net-device.h"
 #include "lte-radio-bearer-tag.h"
+#include "lte-sl-header.h"
 #include <ns3/ff-mac-common.h>
 #include <ns3/lte-control-messages.h>
 #include <ns3/simulator.h>
@@ -84,9 +85,6 @@ public:
   virtual void SetSlDiscTxPool (Ptr<SidelinkTxDiscResourcePool> pool);
   virtual void RemoveSlDiscTxPool ();
   virtual void SetSlDiscRxPools (std::list<Ptr<SidelinkRxDiscResourcePool> > pools);
-  virtual void ModifyDiscTxApps (std::list<uint32_t> apps);
-  virtual void ModifyDiscRxApps (std::list<uint32_t> apps);
-
 
 private:
   LteUeMac* m_mac; ///< the UE MAC
@@ -198,18 +196,6 @@ void
 UeMemberLteUeCmacSapProvider::SetSlDiscRxPools (std::list<Ptr<SidelinkRxDiscResourcePool> > pools)
 {
   m_mac->DoSetSlDiscRxPools (pools);
-}
-
-void
-UeMemberLteUeCmacSapProvider::ModifyDiscTxApps (std::list<uint32_t> apps)
-{
-  m_mac->DoModifyDiscTxApps (apps);
-}
-
-void
-UeMemberLteUeCmacSapProvider::ModifyDiscRxApps (std::list<uint32_t> apps)
-{
-  m_mac->DoModifyDiscRxApps (apps);
 }
 
 
@@ -360,10 +346,10 @@ LteUeMac::GetTypeId (void)
                      "Information regarding SL Shared Channel UE scheduling",
                      MakeTraceSourceAccessor (&LteUeMac::m_slPsschScheduling),
                      "ns3::SlUeMacStatParameters::TracedCallback")
-    .AddTraceSource ("DiscoveryAnnouncement",
-                     "trace to track the announcement of discovery messages",
-                     MakeTraceSourceAccessor (&LteUeMac::m_discoveryAnnouncementTrace),
-                     "ns3::LteUeMac::DiscoveryAnnouncementTracedCallback")
+    .AddTraceSource ("SlPsdchScheduling",
+                     "Information regarding SL discovery message transmisssions",
+                     MakeTraceSourceAccessor (&LteUeMac::m_slPsdchScheduling),
+                     "ns3::SlUeMacStatParameters::TracedCallback")
     ;
   return tid;
 }
@@ -382,7 +368,6 @@ LteUeMac::LteUeMac ()
      m_freshSlBsr (false),
      m_setTrpIndex (0),
      m_useSetTrpIndex (false),
-     m_slHasDataToTx (false),
      m_sidelinkEnabled (false)
   
 {
@@ -404,6 +389,7 @@ LteUeMac::LteUeMac ()
   m_p1UniformVariable = CreateObject<UniformRandomVariable> ();
   m_resUniformVariable = CreateObject<UniformRandomVariable> ();
   m_componentCarrierId = 0;
+  m_discTxPool.m_pool = NULL;
   m_discTxPool.m_nextDiscPeriod.frameNo = 0;
   m_discTxPool.m_nextDiscPeriod.subframeNo = 0;
 }
@@ -468,29 +454,48 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
 {
   NS_LOG_FUNCTION (this);
   NS_ASSERT_MSG (m_rnti == params.rnti, "RNTI mismatch between RLC and MAC");
-  if (params.srcL2Id == 0)
+
+  if (params.discMsg)
     {
-      LteRadioBearerTag tag (params.rnti, params.lcid, 0 /* UE works in SISO mode*/);
-      params.pdu->AddPacketTag (tag);
-      // store pdu in HARQ buffer
-      m_miUlHarqProcessesPacket.at (m_harqProcessId)->AddPacket (params.pdu);
-      m_miUlHarqProcessesPacketTimer.at (m_harqProcessId) = HARQ_PERIOD;
-      m_uePhySapProvider->SendMacPdu (params.pdu);
+      //queue message until next discovery period
+      LteSlDiscHeader discHeader;
+      params.pdu->RemoveHeader (discHeader);
+      NS_ASSERT ( m_discTxMsgs.size() == 0); //currently at most one discovery message per period
+      SlDiscMsg msg;
+      msg.m_rnti = params.rnti;
+      msg.m_resPsdch = 0;//updated later
+      msg.m_msgType = discHeader.GetMessageType ();
+      //std::memcpy (msg.m_pc5_disc_payload, discHeader.GetPayload().data(), 23);
+      discHeader.GetPayload(msg.m_pc5_disc_payload);
+      msg.m_mic = discHeader.GetMic ();
+      msg.m_utcBasedCounter = discHeader.GetUtcBaseCounter();
+      m_discTxMsgs.push_back (msg);
     }
   else
     {
-      NS_LOG_INFO ("Transmitting Sidelink PDU");
-      //find transmitting pool
-      std::map <uint32_t, PoolInfo>::iterator poolIt = m_sidelinkTxPoolsMap.find (params.dstL2Id);
-      NS_ASSERT (poolIt!= m_sidelinkTxPoolsMap.end());
+      if (params.srcL2Id == 0)
+        {
+          LteRadioBearerTag tag (params.rnti, params.lcid, 0 /* UE works in SISO mode*/);
+          params.pdu->AddPacketTag (tag);
+          // store pdu in HARQ buffer
+          m_miUlHarqProcessesPacket.at (m_harqProcessId)->AddPacket (params.pdu);
+          m_miUlHarqProcessesPacketTimer.at (m_harqProcessId) = HARQ_PERIOD;
+          m_uePhySapProvider->SendMacPdu (params.pdu);
+        }
+      else
+        {
+          NS_LOG_INFO ("Transmitting Sidelink PDU");
+          //find transmitting pool
+          std::map <uint32_t, PoolInfo>::iterator poolIt = m_sidelinkTxPoolsMap.find (params.dstL2Id);
+          NS_ASSERT (poolIt!= m_sidelinkTxPoolsMap.end());
 
-      LteRadioBearerTag tag (params.rnti, params.lcid, params.srcL2Id, params.dstL2Id);
-      params.pdu->AddPacketTag (tag);
-      // store pdu in HARQ buffer
-      poolIt->second.m_miSlHarqProcessPacket->AddPacket (params.pdu);
-      m_uePhySapProvider->SendMacPdu (params.pdu);
+          LteRadioBearerTag tag (params.rnti, params.lcid, params.srcL2Id, params.dstL2Id);
+          params.pdu->AddPacketTag (tag);
+          // store pdu in HARQ buffer
+          poolIt->second.m_miSlHarqProcessPacket->AddPacket (params.pdu);
+          m_uePhySapProvider->SendMacPdu (params.pdu);
+        }
     }
-
 }
 
 void
@@ -891,7 +896,7 @@ void
 LteUeMac::DoSetSlDiscTxPool (Ptr<SidelinkTxDiscResourcePool> pool)
 {
   NS_LOG_FUNCTION (this);
-  //NS_ASSERT_MSG (m_discTxPools.m_pool != NULL, "Cannot add discovery transmission pool for " << m_rnti << ". Pool already exist for destination");
+  //NS_ASSERT_MSG (m_discTxPool.m_pool != NULL, "Cannot add discovery transmission pool for " << m_rnti << ". Pool already exist for destination");
   DiscPoolInfo info;
   info.m_pool = pool;
   info.m_npsdch = info.m_pool->GetNPsdch();
@@ -920,22 +925,6 @@ LteUeMac::DoSetSlDiscRxPools (std::list<Ptr<SidelinkRxDiscResourcePool> > pools)
 {
   NS_LOG_FUNCTION (this);
   m_discRxPools = pools;
-}
-
-void
-LteUeMac::DoModifyDiscTxApps (std::list<uint32_t> apps)
-{
-  NS_LOG_FUNCTION (this);
-  m_discTxApps = apps;
-  m_uePhySapProvider->AddDiscTxApps (apps);
-}
-
-void
-LteUeMac::DoModifyDiscRxApps (std::list<uint32_t> apps)
-{
-  NS_LOG_FUNCTION (this);
-  m_discRxApps = apps;
-  m_uePhySapProvider->AddDiscRxApps (apps);
 }
 
 void
@@ -1376,7 +1365,7 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
       NS_LOG_INFO ("Adjusted Frame no. " << frameNo << " Subframe no. " << subframeNo);
 
       //Sidelink Discovery
-      if (m_discTxApps.size () > 0)
+      if (m_discTxPool.m_pool != NULL)
         {
           if (frameNo == m_discTxPool.m_nextDiscPeriod.frameNo && subframeNo == m_discTxPool.m_nextDiscPeriod.subframeNo)
             {
@@ -1442,32 +1431,51 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                     }
                 }
             }
-        }
 
-      std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator allocIt;
-      //check if we need to transmit PSDCH
-      allocIt = m_discTxPool.m_psdchTx.begin ();
-      if (allocIt != m_discTxPool.m_psdchTx.end () && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
-        {
-          NS_LOG_INFO ("PSDCH transmission");
-          for (std::list<uint32_t>::iterator txApp = m_discTxApps.begin (); txApp != m_discTxApps.end (); ++txApp)
+          std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator allocIt;
+          //check if we need to transmit PSDCH
+          allocIt = m_discTxPool.m_psdchTx.begin();
+          if (allocIt != m_discTxPool.m_psdchTx.end() && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
             {
-              //Create Discovery message for each discovery application announcing
-              SlDiscMsg discMsg;
-              discMsg.m_rnti = m_rnti;
-              discMsg.m_resPsdch = m_discTxPool.m_currentGrant.m_resPsdch;
+              NS_LOG_INFO (this << "PSDCH transmission");
+              for (std::list<SlDiscMsg>::iterator discMsg = m_discTxMsgs.begin (); discMsg != m_discTxMsgs.end (); ++discMsg)
+                {
+                  //Create Discovery message for each discovery payload announcing
+                  Ptr<SlDiscMessage> msg = Create<SlDiscMessage> ();
+                  discMsg->m_resPsdch = m_discTxPool.m_currentGrant.m_resPsdch;
+                  msg->SetSlDiscMessage (*discMsg);
+                  NS_LOG_INFO ("discovery message sent by " << m_rnti);
+                  
+                  // Collect statistics for SL share channel UE MAC scheduling trace
+                  SlUeMacStatParameters stats_dch_params;
+                  stats_dch_params.m_frameNo = frameNo;
+                  stats_dch_params.m_subframeNo = subframeNo;
+                  stats_dch_params.m_mcs = 0;
+                  stats_dch_params.m_tbSize = 29;
+                  stats_dch_params.m_psschTxStartRB = 0;
+                  stats_dch_params.m_psschTxLengthRB = 0;
+                  stats_dch_params.m_psschFrame = 0;
+                  stats_dch_params.m_psschSubframe = 0;
+                  stats_dch_params.m_cellId = 0;
+                  stats_dch_params.m_imsi = 0;
+                  stats_dch_params.m_pscchRi = 0;
+                  stats_dch_params.m_pscchFrame1 = 0;
+                  stats_dch_params.m_pscchSubframe1 = 0;
+                  stats_dch_params.m_pscchFrame2 = 0;
+                  stats_dch_params.m_pscchSubframe2 = 0;
+                  stats_dch_params.m_psschItrp = 0;
+                  stats_dch_params.m_psschFrameStart = 0;
+                  stats_dch_params.m_psschSubframeStart = 0;
+                  stats_dch_params.m_rnti = m_rnti;
+                  stats_dch_params.m_timestamp = Simulator::Now ().GetMilliSeconds ();
 
-              discMsg.m_proSeAppCode =  (std::bitset <184>) * txApp;
-
-              Ptr<SlDiscMessage> msg = Create<SlDiscMessage> ();
-              msg->SetSlDiscMessage (discMsg);
-              NS_LOG_INFO ("discovery message sent by " << m_rnti << ", proSeAppCode = " << *txApp);
-              m_discoveryAnnouncementTrace (m_rnti, *txApp);
-              m_uePhySapProvider->SendLteControlMessage (msg);
+                  m_slPsdchScheduling (stats_dch_params, *discMsg);
+                  m_uePhySapProvider->SendLteControlMessage (msg);
+                }
+              m_discTxMsgs.clear ();
+              m_discTxPool.m_psdchTx.erase (allocIt);
             }
-          m_discTxPool.m_psdchTx.erase (allocIt);
         }
-
       //Sidelink Communication
       if ((Simulator::Now () >= m_slBsrLast + m_slBsrPeriodicity) && (m_freshSlBsr == true))
         {

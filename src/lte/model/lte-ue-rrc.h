@@ -36,6 +36,7 @@
 #include "ns3/component-carrier-ue.h"
 #include <ns3/lte-ue-ccm-rrc-sap.h>
 #include <ns3/lte-sl-ue-rrc.h>
+#include <ns3/lte-sl-header.h>
 #include <vector>
 
 #include <map>
@@ -384,26 +385,52 @@ public:
    * \brief Set the SLSSID for the UE
    * \param slssid
    */
-
   void SetSlssid (uint64_t slssid);
   /**
    * \brief Get the SLSSID of the UE
    * \return slssid
    */
-
   uint64_t GetSlssid ();
+   /**
+   * Starts discovery process for given applications depending on the interest (monitoring or announcing)
+   * \param appCodes app code payloads to be removed
+   * \param role UE role (discovered or discoveree)
+   */
+  void StartDiscoveryApps (std::list<LteSlUeRrc::DiscPayload> appCodes, LteSlUeRrc::DiscoveryRole role);
+  
+  /**
+   * Stops discovery process for given applications depending on the interest (monitoring or announcing)
+   * \param appCodes app code payloads to be removed
+   * \param role UE role (discovered or discoveree)
+   */
+  void StopDiscoveryApps (std::list<LteSlUeRrc::DiscPayload> appCodes, LteSlUeRrc::DiscoveryRole role);
+
+  /**
+   * Starts UE-to-Network relay process
+   * \param serviceCode relay service code to use
+   * \param model discovery model (A or B)
+   * \param role UE role (remote UE or relay node)
+   */
+  void StartRelayService (uint32_t serviceCode, LteSlUeRrc::DiscoveryModel model, LteSlUeRrc::RelayRole role); 
+
+  /**
+   * Stops UE-to-Network relay process
+   * \param serviceCode relay service code to use
+   */
+  void StopRelayService (uint32_t serviceCode);
+
   /**
    * \brief Get the current frame number reported to the RRC
    * \return the frame number value
    */
-
   uint64_t GetFrameNumber ();
+
   /**
    * \brief Get the current subframe number reported to the RRC
    * \return the subframe number value
    */
-
   uint64_t GetSubFrameNumber ();
+
   /**
    * TracedCallback signature for Change of SyncRef events
    *
@@ -431,12 +458,24 @@ public:
    * \param [in] imsi
    * \param [in] cellId
    * \param [in] rnti
-   * \param [in] proSeAppCode
+   * \param [in] SlDiscMsg
    */
-
   typedef void (* DiscoveryMonitoringTracedCallback)
-    (const uint64_t imsi, const uint16_t cellId, const uint16_t rnti, const uint32_t proSeAppCode);
+    (const uint64_t imsi, const uint16_t cellId, const uint16_t rnti, const SlDiscMsg discMsg);
 
+  /**
+   * Sends a discovery message
+   * \param discHeader The discovery message
+   */
+  void TransmitDiscoveryMessage (LteSlDiscHeader discHeader);
+
+  /**
+   * Method called to activate a sidelink radio bearer for one to one communication
+   * \param destination The layer 2 ID
+   */
+  void ActivateSidelinkRadioBearer (uint32_t destination);
+
+  
 private:
 
 
@@ -551,23 +590,6 @@ private:
    * \param group the group id
    */
   void DoDeactivateSidelinkRadioBearer (uint32_t group);
-  // Sidelink discovery
-  /**
-   * Add discovery applications function
-   *
-   * \param apps the list containing the code of prose applications
-   * \param rxtx true if the applications added to the list are used for announcing purpose
-   *             false if the applications added to the list are used for monitoring purpose
-   */
-  void DoAddDiscoveryApps (std::list<uint32_t> apps, bool rxtx);
-  /**
-   * Remove discovery applications function
-   *
-   * \param apps the list containing the code of prose applications
-   * \param rxtx true if the announcing applications to be removed
-   *             false if the monitoring applications to be removed
-   */
-  void DoRemoveDiscoveryApps (std::list<uint32_t> apps, bool rxtx);
 
   // CPHY SAP methods
   /**
@@ -914,8 +936,12 @@ private:
    * Send sidelink UE information function
    *
    * Transmits a SidelinkUEInformation message to the eNodeB
+    \param txComm Indicates if there has been a change in sidelink communication related parameters for transmission
+   * \param rxComm Indicates if there has been a change in sidelink communication related parameters for reception
+   * \param txDisc Indicates if there has been a change in sidelink discovery related parameters for transmission
+   * \param rxDisc Indicates if there has been a change in sidelink discovery related parameters for reception
    */
-  void SendSidelinkUeInformation ();
+  void SendSidelinkUeInformation (bool txComm, bool rxComm, bool txDisc, bool rxDisc);
   /**
    * Add sidelink radio bearer function
    *
@@ -1002,9 +1028,9 @@ private:
   TracedCallback<uint64_t, uint16_t, uint16_t, uint16_t> m_mibReceivedTrace;
   /**
    * The `m_discoveryMsgReceived` trace source. Track the reception of discovery message (monitor)
-   * Exporting IMSI, cell ID, RNTI and ProSe App Code.
+   * Exporting IMSI, cell ID, RNTI and SlDiscMsg.
    */
-  TracedCallback<uint64_t, uint16_t, uint16_t, uint32_t> m_discoveryMonitoringTrace;
+  TracedCallback<uint64_t, uint16_t, uint16_t, SlDiscMsg> m_discoveryMonitoringTrace;
   /**
    * The `Sib1Received` trace source. Fired upon reception of System
    * Information Block Type 1. Exporting IMSI, the serving cell ID, RNTI, and
@@ -1391,7 +1417,10 @@ private:
   void ConnectionTimeout ();
 
 //Sidelink related code
-
+  /**
+   * Used to detect changes in tx pool
+   */
+  Ptr<SidelinkTxCommResourcePool> m_txPool; 
   /**
    * True if the transmission of SLSS is enabled for the UE
    * (out of coverage sidelink synchronization procedure is enabled)

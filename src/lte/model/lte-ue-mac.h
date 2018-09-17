@@ -134,10 +134,10 @@ public:
    * TracedCallback signature for transmission of discovery message.
    *
    * \param [in] rnti The RNTI of the UE
-   * \param [in] proSeAppCode The ProSe application code
+   * \param [in] discMsg The discovery message
    */
   typedef void (* DiscoveryAnnouncementTracedCallback)
-    (const uint16_t rnti, const uint32_t proSeAppCode);
+    (const uint16_t rnti, const SlDiscMsg discMsg);
 
 private:
   // forwarded from MAC SAP
@@ -276,20 +276,6 @@ private:
    * \param pools The pointer to the SidelinkRxDiscResourcePool
    */
   void DoSetSlDiscRxPools (std::list<Ptr<SidelinkRxDiscResourcePool> > pools);
-  /**
-   * Modify Sidelink discovery transmission applications function
-   * Modifies/Sets the Sidelink discovery transmission applications
-   *
-   * \param apps The list of Sidelink discovery transmission applications
-   */
-  void DoModifyDiscTxApps (std::list<uint32_t> apps);
-  /**
-   * Modify Sidelink discovery reception applications function
-   * Modifies/Sets the Sidelink discovery reception applications
-   *
-   * \param apps The list of Sidelink discovery reception applications
-   */
-  void DoModifyDiscRxApps (std::list<uint32_t> apps);
 
   // forwarded from PHY SAP
   /**
@@ -509,8 +495,7 @@ private:
   DiscPoolInfo m_discTxPool; ///< Sidelink discovery transmission pool
   std::list <Ptr<SidelinkRxDiscResourcePool> > m_discRxPools; ///< Sidelink discovery reception pool
 
-  std::list<uint32_t> m_discTxApps; ///< List of Sidelink discovery transmission applications
-  std::list<uint32_t> m_discRxApps; ///< List of Sidelink discovery reception applications
+  std::list<SlDiscMsg> m_discTxMsgs; ///< List of discovery messages to send
 
   Ptr<UniformRandomVariable> m_p1UniformVariable; ///< A uniform random variable to compare with the Tx probability of UE selected pool
   Ptr<UniformRandomVariable> m_resUniformVariable;///< A uniform random variable to randomly choose the resource index from the PSDCH resource pool
@@ -527,15 +512,16 @@ private:
   */
  TracedCallback<SlUeMacStatParameters> m_slPsschScheduling; //m_slSharedChUeScheduling
 
- bool m_slHasDataToTx; ///< True if there is data to transmit in the PSSCH
-
- bool m_sidelinkEnabled; ///< True if Sidelink is used
-
   /**
-   * The `DiscoveryMsgSent` trace source. Track the transmission of discovery message (announce)
-   * Exporting RNTI, ProSe App Code.
+   * Trace information regarding Sidelink PSDCH UE scheduling
+   * SlUeMacStatParameters (see lte-common.h)
    */
- TracedCallback<uint16_t, uint32_t> m_discoveryAnnouncementTrace;
+  TracedCallback<SlUeMacStatParameters, SlDiscMsg> m_slPsdchScheduling; //m_slPsdchScheduling
+
+  bool m_slHasDataToTx; ///< True if there is data to transmit in the PSSCH
+
+  bool m_sidelinkEnabled; ///< True if Sidelink is used
+
 };
 
 } // namespace ns3
