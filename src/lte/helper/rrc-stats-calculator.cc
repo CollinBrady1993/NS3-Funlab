@@ -1,7 +1,7 @@
 /* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
 /*
  * NIST-developed software is provided by NIST as a public
- * service. You may use, copy and distribute copies of the software in 
+ * service. You may use, copy and distribute copies of the software in
  * any medium, provided that you keep intact this entire notice. You
  * may improve, modify and create derivative works of the software or
  * any portion of the software, and you may copy and distribute such
@@ -65,11 +65,11 @@ RrcStatsCalculator::GetTypeId (void)
   return tid;
 }
 
-void 
+void
 RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, SlDiscMsg discMsg)
 {
   NS_LOG_INFO ("Writing Discovery Monitoring Stats in SlDiscRxRrcStats.txt");
-  	
+
   std::ofstream outFile;
   if ( rrcStats->m_discoveryMonitoringRrcFirstWrite == true )
     {
@@ -92,39 +92,39 @@ RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator>
         }
     }
 
-	
+
   outFile << Simulator::Now ().GetSeconds () << "\t" << imsi << "\t" << cellId << "\t" << rnti << "\t";
-	
+
   outFile << (uint16_t) (discMsg.m_msgType >> 6) << "\t" << (uint16_t) ((discMsg.m_msgType >> 2) & 0xF) << "\t" << (uint16_t) (discMsg.m_msgType & 0x3) << "\t";
-	
+
   switch (discMsg.m_msgType)
     {
     case 0x91://UE-to-Network Relay Discovery Announcement in model A
     case 0x92://UE-to-Network Relay Discovery Response in model B
-      {  
-        std::bitset<24> relayServiceCode(0x0);
-        std::bitset<48> announcerInfo(0x0);
-        std::bitset<24> proseRelayUeId(0x0);
-        std::bitset<8> statusIndicator(0x0);
-        std::bitset<80> spare(0x0);
-		
-        std::memcpy(&relayServiceCode,&discMsg.m_pc5_disc_payload[0],3); 		//Relay Service Code = [0],[1],[2]
-        std::memcpy(&announcerInfo,&discMsg.m_pc5_disc_payload[3],6); 			//Announcer Info = User Info = [3],[4],[5],[6],[7],[8]
-        std::memcpy(&proseRelayUeId,&discMsg.m_pc5_disc_payload[9],3); 			//ProSe Relay UE ID = [9],[10],[11]
-        std::memcpy(&statusIndicator,&discMsg.m_pc5_disc_payload[12],1); 		//Status Indicator = [12]
-        std::memcpy(&spare,&discMsg.m_pc5_disc_payload[13],10);					//Spare = [13]..[22]
-		
-        outFile << std::hex << relayServiceCode.to_ulong() << ";" << std::hex << announcerInfo.to_ulong() << ";" << std::hex << proseRelayUeId.to_ulong() << ";" << std::hex << statusIndicator.to_ulong() << ";" << std::hex << spare.to_ulong() << std::endl;
+      {
+        std::bitset<24> relayServiceCode (0x0);
+        std::bitset<48> announcerInfo (0x0);
+        std::bitset<24> proseRelayUeId (0x0);
+        std::bitset<8> statusIndicator (0x0);
+        std::bitset<80> spare (0x0);
+
+        std::memcpy (&relayServiceCode,&discMsg.m_pc5_disc_payload[0],3);                //Relay Service Code = [0],[1],[2]
+        std::memcpy (&announcerInfo,&discMsg.m_pc5_disc_payload[3],6);                   //Announcer Info = User Info = [3],[4],[5],[6],[7],[8]
+        std::memcpy (&proseRelayUeId,&discMsg.m_pc5_disc_payload[9],3);                  //ProSe Relay UE ID = [9],[10],[11]
+        std::memcpy (&statusIndicator,&discMsg.m_pc5_disc_payload[12],1);                //Status Indicator = [12]
+        std::memcpy (&spare,&discMsg.m_pc5_disc_payload[13],10);                                 //Spare = [13]..[22]
+
+        outFile << std::hex << relayServiceCode.to_ulong () << ";" << std::hex << announcerInfo.to_ulong () << ";" << std::hex << proseRelayUeId.to_ulong () << ";" << std::hex << statusIndicator.to_ulong () << ";" << std::hex << spare.to_ulong () << std::endl;
       }
       break;
     case 0x41:
     case 0x81:
       { //open or restricted announcement
         bool nonzero = false;
-        for (uint8_t i =0 ; i < 23 ; i++)
+        for (uint8_t i = 0; i < 23; i++)
           {
-            uint16_t val = discMsg.m_pc5_disc_payload[22-i];
-            nonzero = nonzero || (val!=0);
+            uint16_t val = discMsg.m_pc5_disc_payload[22 - i];
+            nonzero = nonzero || (val != 0);
             if (nonzero || i == 22)
               {
                 outFile << std::hex << val;

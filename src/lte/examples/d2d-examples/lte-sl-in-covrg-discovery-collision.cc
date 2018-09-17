@@ -247,19 +247,19 @@ int main (int argc, char *argv[])
     {
       if (i != ueNodes.GetN ())
         {
-           LteSlUeRrc::ProseApplicationCode announcePayload;
-           memset (announcePayload.payload, 0, sizeof (announcePayload));
-           std::memcpy (announcePayload.payload, &i, sizeof (i));
-           announceApps[ueDevs.Get (i - 1)].push_back(announcePayload);
+          LteSlUeRrc::ProseApplicationCode announcePayload;
+          memset (announcePayload.payload, 0, sizeof (announcePayload));
+          std::memcpy (announcePayload.payload, &i, sizeof (i));
+          announceApps[ueDevs.Get (i - 1)].push_back (announcePayload);
         }
       for (uint32_t j = 1; j <= ueNodes.GetN (); ++j)
         {
           if (i == ueNodes.GetN () && j < ueNodes.GetN ())
             {
-               LteSlUeRrc::ProseApplicationCode monitorPayload;
-               memset (monitorPayload.payload, 0, sizeof (monitorPayload));
-               std::memcpy (monitorPayload.payload, &j, sizeof (j));
-               monitorApps[ueDevs.Get (i - 1)].push_back(monitorPayload);
+              LteSlUeRrc::ProseApplicationCode monitorPayload;
+              memset (monitorPayload.payload, 0, sizeof (monitorPayload));
+              std::memcpy (monitorPayload.payload, &j, sizeof (j));
+              monitorApps[ueDevs.Get (i - 1)].push_back (monitorPayload);
             }
         }
     }
@@ -289,7 +289,7 @@ int main (int argc, char *argv[])
           std::cout << "Monitoring App code = " << (uint32_t) *itAppList.payload << std::endl;
         }
 
-      Simulator::Schedule (Seconds(2.0),&LteSidelinkHelper::StartDiscoveryApps, proseHelper, ueNetDevice, apps, LteSlUeRrc::Discoveree);
+      Simulator::Schedule (Seconds (2.0),&LteSidelinkHelper::StartDiscoveryApps, proseHelper, ueNetDevice, apps, LteSlUeRrc::Discoveree);
     }
 
   ///*** End of application configuration ***///
