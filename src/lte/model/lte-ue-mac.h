@@ -490,12 +490,14 @@ private:
     DiscGrant m_nextGrant; ///< Grant received for the next discovery period
 
     std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx; ///< List of PSDCH transmissions within the pool
+
+    std::list<SlDiscMsg> m_discTxMsgs; ///< List of discovery messages to send within the period
   };
 
   DiscPoolInfo m_discTxPool; ///< Sidelink discovery transmission pool
   std::list <Ptr<SidelinkRxDiscResourcePool> > m_discRxPools; ///< Sidelink discovery reception pool
 
-  std::list<SlDiscMsg> m_discTxMsgs; ///< List of discovery messages to send
+  std::list<SlDiscMsg> m_discPendingTxMsgs; ///< List of discovery messages to send
 
   Ptr<UniformRandomVariable> m_p1UniformVariable; ///< A uniform random variable to compare with the Tx probability of UE selected pool
   Ptr<UniformRandomVariable> m_resUniformVariable;///< A uniform random variable to randomly choose the resource index from the PSDCH resource pool

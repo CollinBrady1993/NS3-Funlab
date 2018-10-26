@@ -460,7 +460,7 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
       //queue message until next discovery period
       LteSlDiscHeader discHeader;
       params.pdu->RemoveHeader (discHeader);
-      NS_ASSERT ( m_discTxMsgs.size() == 0); //currently at most one discovery message per period
+      NS_ASSERT ( m_discPendingTxMsgs.size() == 0); //currently at most one discovery message per period
       SlDiscMsg msg;
       msg.m_rnti = params.rnti;
       msg.m_resPsdch = 0;//updated later
@@ -469,7 +469,7 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
       discHeader.GetPayload(msg.m_pc5_disc_payload);
       msg.m_mic = discHeader.GetMic ();
       msg.m_utcBasedCounter = discHeader.GetUtcBaseCounter();
-      m_discTxMsgs.push_back (msg);
+      m_discPendingTxMsgs.push_back (msg);
     }
   else
     {
@@ -1407,6 +1407,10 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   m_discTxPool.m_currentGrant = m_discTxPool.m_nextGrant;
                   NS_LOG_INFO ("Discovery grant received resource " << (uint32_t) m_discTxPool.m_currentGrant.m_resPsdch);
 
+                  //move pending message to list of messages to sent in the new period
+                  m_discTxPool.m_discTxMsgs = m_discPendingTxMsgs;
+                  m_discPendingTxMsgs.clear ();
+
                   SidelinkDiscResourcePool::SubframeInfo tmp;
                   tmp.frameNo = m_discTxPool.m_currentDiscPeriod.frameNo - 1;
                   tmp.subframeNo = m_discTxPool.m_currentDiscPeriod.subframeNo - 1;
@@ -1438,7 +1442,7 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           if (allocIt != m_discTxPool.m_psdchTx.end() && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
             {
               NS_LOG_INFO (this << "PSDCH transmission");
-              for (std::list<SlDiscMsg>::iterator discMsg = m_discTxMsgs.begin (); discMsg != m_discTxMsgs.end (); ++discMsg)
+              for (std::list<SlDiscMsg>::iterator discMsg =  m_discTxPool.m_discTxMsgs.begin (); discMsg !=  m_discTxPool.m_discTxMsgs.end (); ++discMsg)
                 {
                   //Create Discovery message for each discovery payload announcing
                   Ptr<SlDiscMessage> msg = Create<SlDiscMessage> ();
@@ -1472,8 +1476,12 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   m_slPsdchScheduling (stats_dch_params, *discMsg);
                   m_uePhySapProvider->SendLteControlMessage (msg);
                 }
-              m_discTxMsgs.clear ();
               m_discTxPool.m_psdchTx.erase (allocIt);
+              if (m_discTxPool.m_psdchTx.empty())
+                {
+                  NS_LOG_INFO ("was last transmission, clear messages");
+                  m_discTxPool.m_discTxMsgs.clear ();
+                }
             }
         }
       //Sidelink Communication
