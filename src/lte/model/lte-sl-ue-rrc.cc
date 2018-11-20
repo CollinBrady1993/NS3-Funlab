@@ -321,10 +321,10 @@ LteSlUeRrc::GetSidelinkRadioBearer (uint32_t group)
 }
 
 void 
-LteSlUeRrc::StartDiscoveryApps (std::list<DiscPayload> appCodes, DiscoveryRole role)
+LteSlUeRrc::StartDiscoveryApps (std::list<uint64_t> appCodes, DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
-  for (std::list<DiscPayload>::iterator it = appCodes.begin (); it != appCodes.end (); ++it)
+  for (std::list<uint64_t>::iterator it = appCodes.begin (); it != appCodes.end (); ++it)
   {
     AppServiceInfo info;
     info.role = role;
@@ -332,24 +332,24 @@ LteSlUeRrc::StartDiscoveryApps (std::list<DiscPayload> appCodes, DiscoveryRole r
     if (role == Discoveree)
     {
       NS_LOG_DEBUG ("Adding monitoring app code");
-      m_monitoringAppsMap.insert ( std::pair <ProseApplicationCode, AppServiceInfo> (*it, info) );
+      m_monitoringAppsMap.insert ( std::pair <uint64_t, AppServiceInfo> (*it, info) );
     }
     else 
     {
       NS_LOG_DEBUG ("Adding announcing app code");
-      m_announcingAppsMap.insert ( std::pair <ProseApplicationCode, AppServiceInfo> (*it, info) );
+      m_announcingAppsMap.insert ( std::pair <uint64_t, AppServiceInfo> (*it, info) );
     }
   }
 }
 
 
 void 
-LteSlUeRrc::StopDiscoveryApps (std::list<DiscPayload> appCodes, DiscoveryRole role)
+LteSlUeRrc::StopDiscoveryApps (std::list<uint64_t> appCodes, DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
-  std::map <ProseApplicationCode, AppServiceInfo>::iterator itInfo;
+  std::map <uint64_t, AppServiceInfo>::iterator itInfo;
     
-  for (std::list<DiscPayload>::iterator it = appCodes.begin (); it != appCodes.end (); ++it)
+  for (std::list<uint64_t>::iterator it = appCodes.begin (); it != appCodes.end (); ++it)
   {
     if (role == Discoveree)
     {
@@ -379,14 +379,14 @@ LteSlUeRrc::StopDiscoveryApps (std::list<DiscPayload> appCodes, DiscoveryRole ro
 }
 
 bool
-LteSlUeRrc::IsMonitoringApp (DiscPayload appCode)
+LteSlUeRrc::IsMonitoringApp (uint64_t appCode)
 {
   NS_LOG_FUNCTION (this);
   return m_monitoringAppsMap.find (appCode) != m_monitoringAppsMap.end();
 }
 
 bool
-LteSlUeRrc::IsAnnouncingApp (DiscPayload appCode)
+LteSlUeRrc::IsAnnouncingApp (uint64_t appCode)
 {
   NS_LOG_FUNCTION (this);  
   return m_announcingAppsMap.find (appCode) != m_announcingAppsMap.end();
@@ -398,7 +398,7 @@ LteSlUeRrc::StartAnnouncing ()
   NS_LOG_FUNCTION (this);
   Time period = MilliSeconds (m_activeDiscTxPool->GetDiscPeriod ());
   //Applications
-  for (std::map<DiscPayload, AppServiceInfo>::iterator itInfo = m_announcingAppsMap.begin (); itInfo != m_announcingAppsMap.end (); ++itInfo)
+  for (std::map<uint64_t, AppServiceInfo>::iterator itInfo = m_announcingAppsMap.begin (); itInfo != m_announcingAppsMap.end (); ++itInfo)
     {
       if (!itInfo->second.txTimer.IsRunning())
         { 
@@ -490,19 +490,18 @@ LteSlUeRrc::GetActiveTxDiscoveryPool ()
 }
 
 void
-LteSlUeRrc::TransmitApp (ProseApplicationCode appCode)
+LteSlUeRrc::TransmitApp (uint64_t appCode)
 {
   NS_LOG_FUNCTION (this);
   
-  std::map <ProseApplicationCode, AppServiceInfo>::iterator it;
+  std::map <uint64_t, AppServiceInfo>::iterator it;
 
   it = m_announcingAppsMap.find (appCode);
   NS_ASSERT (it != m_announcingAppsMap.end());
   //build message to transmit
   LteSlDiscHeader discHeader;
 
-  discHeader.SetMessageType (65); //Open Discovery announcement
-  discHeader.SetPayload (appCode.payload);
+  discHeader.SetOpenDiscoveryAnnounceParameters (appCode); //Open Discovery announcement
   
   m_rrc->TransmitDiscoveryMessage (discHeader);
   //reschedule
@@ -556,15 +555,8 @@ LteSlUeRrc::TransmitRelayMessage (uint32_t serviceCode)
   LteSlDiscHeader discHeader;
 
   //Right now we only have model A, but additional cases will be added for model B
-  NS_ASSERT (it->second.model == ModelA && it->second.role == RelayUE);
-  discHeader.SetMessageType (0x91); //Open Discovery announcement
-
-  uint8_t payload[23];
-  std::memset (payload, 0, 23);
-  std::memcpy(payload,&serviceCode,3);
-  std::memcpy(&payload[9], &m_sourceL2Id, 3);
-  
-  discHeader.SetPayload (payload);
+  NS_ASSERT (it->second.model == ModelA && it->second.role == RelayUE);  
+  discHeader.SetRelayAnnouncementParameters (serviceCode, 0, m_sourceL2Id, 1);
   
   m_rrc->TransmitDiscoveryMessage (discHeader);
    

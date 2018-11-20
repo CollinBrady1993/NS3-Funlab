@@ -465,8 +465,14 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
       msg.m_rnti = params.rnti;
       msg.m_resPsdch = 0;//updated later
       msg.m_msgType = discHeader.GetMessageType ();
+      Buffer buf;
+      buf.AddAtStart (discHeader.GetSerializedSize ());
+      discHeader.Serialize (buf.Begin ());
+      buf.RemoveAtStart (1);
+      buf.RemoveAtEnd (5);
+      buf.CopyData (msg.m_pc5_disc_payload, discHeader.GetSerializedSize ());
       //std::memcpy (msg.m_pc5_disc_payload, discHeader.GetPayload().data(), 23);
-      discHeader.GetPayload(msg.m_pc5_disc_payload);
+      //discHeader.GetPayload(msg.m_pc5_disc_payload);
       msg.m_mic = discHeader.GetMic ();
       msg.m_utcBasedCounter = discHeader.GetUtcBaseCounter();
       m_discPendingTxMsgs.push_back (msg);

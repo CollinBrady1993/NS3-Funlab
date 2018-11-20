@@ -1,7 +1,7 @@
 /* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
 /*
  * NIST-developed software is provided by NIST as a public
- * service. You may use, copy and distribute copies of the software in 
+ * service. You may use, copy and distribute copies of the software in
  * any medium, provided that you keep intact this entire notice. You
  * may improve, modify and create derivative works of the software or
  * any portion of the software, and you may copy and distribute such
@@ -51,6 +51,15 @@ namespace ns3 {
 class LteSlDiscHeader : public Header
 {
 public:
+  enum DiscoveryMsgType : uint8_t
+  {
+    DISC_OPEN_ANNOUNCEMENT = 0x41, /* Open discovery announce model A */
+    DISC_RESTRICTED_ANNOUNCEMENT = 0x81, /* Restricted discovery announce model A */
+    DISC_RESTRICTED_RESPONSE = 0x82, /* Restricted discovery response model B */
+    DISC_RELAY_ANNOUNCEMENT = 0x91, /* Relay Discovery Announcement in model A */
+    DISC_RELAY_SOLICITATION = 0x96, /* Relay Discovery Announcement in model A */
+    DISC_RELAY_RESPONSE = 0x92, /* UE-to-Network Relay Discovery Response in model B */
+  };
 
   /**
    * \brief Constructor
@@ -60,15 +69,30 @@ public:
   LteSlDiscHeader ();
   ~LteSlDiscHeader ();
 
-  void SetMessageType (uint8_t msgType);
-  void SetPayload (uint8_t payload[23]);
   void SetMic (uint32_t mic);
   void SetUtcBaseCounder (uint8_t counter);
 
   uint8_t GetMessageType () const;
-  void GetPayload (uint8_t* payload) const;
   uint32_t GetMic () const;
   uint8_t GetUtcBaseCounter () const;
+
+  uint64_t GetApplicationCode () const;
+  uint32_t GetRelayServiceCode () const;
+  uint64_t GetInfo () const;
+  uint32_t GetRelayUeId () const;
+  uint8_t GetStatusIndicator () const;
+  uint8_t GetURDSCommposition () const;
+  uint32_t GetGroup () const;
+  uint32_t GetGroupInfo () const;
+
+
+  void SetOpenDiscoveryAnnounceParameters (uint64_t appCode);
+  void SetRestrictedDiscoveryAnnounceParameters (uint64_t appCode);
+
+  void SetRelayAnnouncementParameters (uint32_t serviceCode, uint64_t announcerInfo, uint32_t relayUeId, uint32_t status);
+  void SetRelaySoliciationParameters (uint32_t serviceCode, uint64_t discovererInfo, uint32_t relayUeId);
+  void SetRelayResponseParameters (uint32_t serviceCode, uint64_t discovereeInfo, uint32_t relayUeId, uint32_t status);
+
 
   static TypeId GetTypeId (void);
   virtual TypeId GetInstanceTypeId (void) const;
@@ -81,14 +105,21 @@ private:
   /* Message Type variable shall have the following values:
      65 for ProSe Open Discovery announce for Model A.
      145 for ProSe Restricted UE-to-Network Relay Discovery announce for Model A. */
-  uint8_t m_msgType; 
-  /*Payload variable may contain different content for different purposes.
-    For example, Payload for 'ProSe Open Discovery announce for Model A' contains 184 bit Prose Application Code. 
-    Payload for 'ProSe Restricted UE-to-Network Relay Discovery announce for Model A' contains 24 bit Relay Service Code, 48 bit Announcer Info, 24 bit Prose Relay UE ID, 8 bit Status Indicator, 80 bit Spare. */
-  uint8_t m_pc5_disc_payload [23];
+  uint8_t m_msgType;
+
+  uint64_t m_appCode;
+  uint32_t m_relayServiceCode;
+  uint64_t m_info; //announcer, or discoverer, or discoveree, or user
+  uint32_t m_relayUeId;
+  uint8_t m_statusIndicator;
+
+  //variables for group member discovery
+  uint32_t m_group;
+  uint32_t m_groupInfo;
+
   uint32_t m_mic;
   uint8_t m_utcBasedCounter;
-  
+
 };
 
 } // namespace ns3

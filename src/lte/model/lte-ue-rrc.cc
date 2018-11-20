@@ -3609,7 +3609,7 @@ LteUeRrc::AddSlrb (uint32_t source, uint32_t destination, uint8_t lcid)
 }
 
 void
-LteUeRrc::StartDiscoveryApps (std::list<LteSlUeRrc::DiscPayload> appCodes, LteSlUeRrc::DiscoveryRole role)
+LteUeRrc::StartDiscoveryApps (std::list<uint64_t> appCodes, LteSlUeRrc::DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
 
@@ -3697,7 +3697,7 @@ LteUeRrc::StartDiscoveryApps (std::list<LteSlUeRrc::DiscPayload> appCodes, LteSl
 }
 
 void
-LteUeRrc::StopDiscoveryApps (std::list<LteSlUeRrc::DiscPayload> appCodes, LteSlUeRrc::DiscoveryRole role)
+LteUeRrc::StopDiscoveryApps (std::list<uint64_t> appCodes, LteSlUeRrc::DiscoveryRole role)
 {
   NS_LOG_FUNCTION (this);
   
@@ -4148,8 +4148,8 @@ void LteUeRrc::DoNotifyDiscoveryReception (Ptr<LteControlMessage> msg)
 
   if (discMsg.m_msgType == 0x41 || discMsg.m_msgType == 0x81)
     { //open or restricted announcement
-      LteSlUeRrc::DiscPayload appCode;
-      std::memcpy (appCode.payload, &discMsg.m_pc5_disc_payload,23);
+      uint64_t appCode;
+      std::memcpy (&appCode, &discMsg.m_pc5_disc_payload,8);
       if (m_sidelinkConfiguration->IsMonitoringApp (appCode))
         {
           NS_LOG_INFO ("discovery message received by " << m_rnti);

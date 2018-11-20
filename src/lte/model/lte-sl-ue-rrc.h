@@ -75,25 +75,7 @@ class LteSlUeRrc : public Object
 public:
   LteSlUeRrc ();
   virtual ~LteSlUeRrc (void);
-
-  struct DiscPayload
-    {
-      static const unsigned DISC_PAYLOAD_SIZE = 23;
-      uint8_t payload [DISC_PAYLOAD_SIZE];
-      friend bool operator < (const DiscPayload& l, const DiscPayload& r)
-      {
-        for (unsigned i = 1; i <= DISC_PAYLOAD_SIZE; ++i) {
-          if (l.payload[DISC_PAYLOAD_SIZE-i] < r.payload[DISC_PAYLOAD_SIZE-i]) 
-            return true;
-          if (l.payload[DISC_PAYLOAD_SIZE-i] > r.payload[DISC_PAYLOAD_SIZE-i]) 
-            return false;
-        }
-        return false;
-      }
-    };
     
-    typedef DiscPayload ProseApplicationCode;
-
     enum DiscoveryModel
       {
         ModelA = 0, //announce
@@ -115,7 +97,7 @@ public:
     struct AppServiceInfo {
       //DiscoveryModel model; //Only model A supported for ProSe application
       DiscoveryRole role;
-      DiscPayload appCode;
+      uint64_t appCode;
       EventId txTimer; //timer for transmitting announcement or requests
     };
 
@@ -265,7 +247,7 @@ protected:
    * \param payloads payloads to be added
    * \param role Indicates if announcing or monitoring
    */
-  void StartDiscoveryApps (std::list<DiscPayload> payloads, DiscoveryRole role);
+  void StartDiscoveryApps (std::list<uint64_t> payloads, DiscoveryRole role);
   
   /**
    * \brief Remove Sidelink discovery applications
@@ -273,7 +255,7 @@ protected:
    * \param payloads payloads to be removed
    * \param role Indicates if announcing or monitoring
    */
-  void StopDiscoveryApps (std::list<DiscPayload> payloads, DiscoveryRole role);
+  void StopDiscoveryApps (std::list<uint64_t> payloads, DiscoveryRole role);
   /**
    * \brief Record transmission time of the Sidelink UE information
    */
@@ -306,13 +288,13 @@ protected:
    * Checks if the given app must be discovered
    * \param appCode The application code
    */
-  bool IsMonitoringApp (DiscPayload appCode);
+  bool IsMonitoringApp (uint64_t appCode);
     
   /**
    * Checks if the given app must be announced
    * \param appCode The application code
    */
-  bool IsAnnouncingApp (DiscPayload appCode);
+  bool IsAnnouncingApp (uint64_t appCode);
 
   /**
    * Set active discovery pool
@@ -330,7 +312,7 @@ protected:
    * Trigger transmission of application discovery message
    * \param appCode The Prose Application Code
    */
-  void TransmitApp (ProseApplicationCode appCode);
+  void TransmitApp (uint64_t appCode);
 
   /**
    * Starts UE-to-Network relay process
@@ -426,11 +408,11 @@ private:
   /**
    * list of IDs of applications to monitor/request
    */
-  std::map <ProseApplicationCode, AppServiceInfo> m_monitoringAppsMap;
+  std::map <uint64_t, AppServiceInfo> m_monitoringAppsMap;
   /**
    * list of IDs of applications to announce/response
    */
-  std::map <ProseApplicationCode, AppServiceInfo> m_announcingAppsMap;
+  std::map <uint64_t, AppServiceInfo> m_announcingAppsMap;
   /**
    * list of relay services used by this device 
    */
