@@ -204,24 +204,18 @@ main (int argc, char *argv[])
   lteHelper->InstallSidelinkConfiguration (ueDevs, ueSidelinkConfiguration);
 
   NS_LOG_INFO ("Configuring discovery applications");
-  std::map<Ptr<NetDevice>, std::list<LteSlUeRrc::ProseApplicationCode> > announcePayloads; 
-  std::map<Ptr<NetDevice>, std::list<LteSlUeRrc::ProseApplicationCode> > monitorPayloads; 
+  std::map<Ptr<NetDevice>, std::list<uint64_t> > announcePayloads; 
+  std::map<Ptr<NetDevice>, std::list<uint64_t> > monitorPayloads; 
 
   for (uint32_t i = 1; i <= nbUes; ++i)
   {
-    LteSlUeRrc::ProseApplicationCode announcePayload;
-    memset (announcePayload.payload, 0, sizeof (announcePayload));
-    std::memcpy (announcePayload.payload, &i, sizeof (i));
-    announcePayloads[ueDevs.Get(i-1)].push_back(announcePayload);
+    announcePayloads[ueDevs.Get(i-1)].push_back(i);
 	
 	for (uint32_t j = 1; j<=nbUes; ++j)
           {
             if (i != j)
               {
-		LteSlUeRrc::ProseApplicationCode monitorPayload;
-                memset (monitorPayload.payload, 0, sizeof (monitorPayload));
-		std::memcpy (monitorPayload.payload, &j, sizeof (j));
-                monitorPayloads[ueDevs.Get (i-1)].push_back(monitorPayload);
+		monitorPayloads[ueDevs.Get (i-1)].push_back(j);
               }
           } 
   }

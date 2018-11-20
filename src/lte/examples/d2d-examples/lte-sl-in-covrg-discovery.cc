@@ -226,24 +226,18 @@ int main (int argc, char *argv[])
   lteHelper->Attach (ueDevs);
 
   NS_LOG_INFO ("Configuring discovery applications");
-  std::map<Ptr<NetDevice>, std::list<LteSlUeRrc::ProseApplicationCode> > announceApps;
-  std::map<Ptr<NetDevice>, std::list<LteSlUeRrc::ProseApplicationCode> > monitorApps;
+  std::map<Ptr<NetDevice>, std::list<uint64_t> > announceApps;
+  std::map<Ptr<NetDevice>, std::list<uint64_t> > monitorApps;
   for (uint32_t i = 1; i <= ueNodes.GetN (); ++i)
     {
-      LteSlUeRrc::ProseApplicationCode announcePayload;
-      memset (announcePayload.payload, 0, sizeof (announcePayload));
-      std::memcpy (announcePayload.payload, &i, sizeof (i));
-      announceApps[ueDevs.Get (i - 1)].push_back(announcePayload);
+      announceApps[ueDevs.Get (i - 1)].push_back(i);
        
       NS_LOG_DEBUG ("Ue Device " << i - 1 << " announce app = " << i);
       for (uint32_t j = 1; j <= ueNodes.GetN (); ++j)
         {
           if (i != j)
             {
-               LteSlUeRrc::ProseApplicationCode monitorPayload;
-               memset (monitorPayload.payload, 0, sizeof (monitorPayload));
-               std::memcpy (monitorPayload.payload, &j, sizeof (j));
-               monitorApps[ueDevs.Get (i - 1)].push_back(monitorPayload);
+               monitorApps[ueDevs.Get (i - 1)].push_back(j);
                NS_LOG_DEBUG ("Ue Device " << i - 1 << " monitor app = " << j);
             }
         }
@@ -252,12 +246,12 @@ int main (int argc, char *argv[])
   for (auto itAnnounceApps : announceApps)
     {
       Ptr<LteUeNetDevice> ueNetDevice = DynamicCast<LteUeNetDevice> (itAnnounceApps.first);
-      std::list<LteSlUeRrc::ProseApplicationCode> apps = itAnnounceApps.second;
+      std::list<uint64_t> apps = itAnnounceApps.second;
       std::cout << "Scheduling " << apps.size () << " announce apps for UE with IMSI = " << ueNetDevice->GetImsi () << std::endl;
-      std::list<LteSlUeRrc::ProseApplicationCode>::iterator itAppList;
+      std::list<uint64_t>::iterator itAppList;
       for (auto itAppList : apps)
         {
-          std::cout << "Announcing App code = " << (uint32_t) *itAppList.payload << std::endl;
+          std::cout << "Announcing App code = " << itAppList << std::endl;
         }
 
       Simulator::Schedule (Seconds (2.0), &LteSidelinkHelper::StartDiscoveryApps, proseHelper, ueNetDevice, apps, LteSlUeRrc::Discovered);
@@ -266,12 +260,12 @@ int main (int argc, char *argv[])
   for (auto itMonitorApps : monitorApps)
     {
       Ptr<LteUeNetDevice> ueNetDevice = DynamicCast<LteUeNetDevice> (itMonitorApps.first);
-      std::list<LteSlUeRrc::ProseApplicationCode> apps = itMonitorApps.second;
+      std::list<uint64_t> apps = itMonitorApps.second;
       std::cout << "Scheduling " << apps.size () << " monitor apps for UE with IMSI = " << ueNetDevice->GetImsi () << std::endl;
-      std::list<LteSlUeRrc::ProseApplicationCode>::iterator itAppList;
+      std::list<uint64_t>::iterator itAppList;
       for (auto itAppList : apps)
         {
-          std::cout << "Monitoring App code = " << (uint32_t) *itAppList.payload << std::endl;
+          std::cout << "Monitoring App code = " << itAppList << std::endl;
         }
 
       Simulator::Schedule (Seconds(2.0),&LteSidelinkHelper::StartDiscoveryApps, proseHelper, ueNetDevice, apps, LteSlUeRrc::Discoveree);
