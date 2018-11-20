@@ -42,10 +42,30 @@ public:
   virtual ~LteUePhySapProvider ();
 
   /**
+   * Parameters for LteUePhySapProvider::TransmitPhySdu
+   */
+  struct TransmitSlPhySduParameters
+  {
+    uint32_t resourceNo; ///< the resource index from the communication/discovery pool 
+    
+    uint8_t   m_hopping; ///< hopping flag
+    uint8_t   m_rbStart; ///< models rb assignment
+    uint8_t   m_rbLen;   ///< models rb assignment
+    uint8_t   m_hoppingInfo; ///< models rb assignment when hopping is enabled
+  };
+
+  /**
   * \brief Send The MAC PDU to the channel
   * \param p The MAC PDU to send
   */
   virtual void SendMacPdu (Ptr<Packet> p) = 0;
+
+  /**
+  * \brief Send a sidelink MAC PDU to the channel
+  * \param p The sidelink MAC PDU
+  * \param params Additional information about the PDU
+  */
+  virtual void SendSlMacPdu (Ptr<Packet> p, TransmitSlPhySduParameters params) = 0;
 
   /**
   * \brief Send SendLteControlMessage (PDCCH map, CQI feedbacks) using the ideal control channel

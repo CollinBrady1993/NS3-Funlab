@@ -85,6 +85,7 @@ public:
 
   // inherited from LtePhySapProvider
   virtual void SendMacPdu (Ptr<Packet> p);
+  virtual void SendSlMacPdu (Ptr<Packet> p, TransmitSlPhySduParameters params);
   virtual void SendLteControlMessage (Ptr<LteControlMessage> msg);
   virtual void SendRachPreamble (uint32_t prachId, uint32_t raRnti);
   virtual void SetDiscGrantInfo (uint8_t resPsdch);
@@ -102,6 +103,12 @@ void
 UeMemberLteUePhySapProvider::SendMacPdu (Ptr<Packet> p)
 {
   m_phy->DoSendMacPdu (p);
+}
+
+void
+UeMemberLteUePhySapProvider::SendSlMacPdu (Ptr<Packet> p, TransmitSlPhySduParameters params)
+{
+  m_phy->DoSendSlMacPdu (p, params);
 }
 
 void
@@ -213,6 +220,7 @@ void
 LteUePhy::DoDispose ()
 {
   NS_LOG_FUNCTION (this);
+  m_packetParamsQueue.clear ();
   delete m_uePhySapProvider;
   delete m_ueCphySapProvider;
   if (m_sidelinkSpectrumPhy)
@@ -562,6 +570,36 @@ LteUePhy::DoSendMacPdu (Ptr<Packet> p)
   SetMacPdu (p);
 }
 
+void
+LteUePhy::DoSendSlMacPdu (Ptr<Packet> p, LteUePhySapProvider::TransmitSlPhySduParameters params)
+{
+  NS_LOG_FUNCTION (this);
+
+  SetMacPdu (p);
+  m_packetParamsQueue.at (m_packetParamsQueue.size () - 1).push_back (params);
+}
+
+std::list<LteUePhySapProvider::TransmitSlPhySduParameters> 
+LteUePhy::GetSlPhyParameters (void)
+{
+  NS_LOG_FUNCTION (this);
+  if (m_packetParamsQueue.at (0).size () > 0)
+    {
+      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > ret = m_packetParamsQueue.at (0);
+      m_packetParamsQueue.erase (m_packetParamsQueue.begin ());
+      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > newlist;
+      m_packetParamsQueue.push_back (newlist);
+      return (ret);
+    }
+  else
+    {
+      m_packetParamsQueue.erase (m_packetParamsQueue.begin ());
+      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > newlist;
+      m_packetParamsQueue.push_back (newlist);
+      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > emptylist;
+      return (emptylist);
+    }
+}
 
 void
 LteUePhy::PhyPduReceived (Ptr<Packet> p)
@@ -1535,6 +1573,8 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
       std::list<Ptr<LteControlMessage> > ctrlMsg = GetControlMessages ();
       // retrieve the current burst of packets from UL data queue at LtePhy
       Ptr<PacketBurst> pb = GetPacketBurst ();
+      // retrieve meta data associated with packet burst for sidelink
+      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > slParam = GetSlPhyParameters ();
 
       bool sciDiscFound = false;
       bool mibSlFound = false;
@@ -2000,6 +2040,8 @@ LteUePhy::DoReset ()
       m_packetBurstQueue.push_back (pb);
       std::list<Ptr<LteControlMessage> > l;
       m_controlMessagesQueue.push_back (l);
+      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > l2;
+      m_packetParamsQueue.push_back (l2);
     }
   std::vector <int> ulRb;
   m_subChannelsForTransmissionQueue.resize (m_macChTtiDelay, ulRb);

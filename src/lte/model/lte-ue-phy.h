@@ -581,6 +581,7 @@ private:
 
   // UE PHY SAP methods 
   virtual void DoSendMacPdu (Ptr<Packet> p);
+  virtual void DoSendSlMacPdu (Ptr<Packet> p, LteUePhySapProvider::TransmitSlPhySduParameters params);
   /**
    * Send LTE control message function
    * \param msg the LTE control message
@@ -593,6 +594,12 @@ private:
    */
   virtual void DoSendRachPreamble (uint32_t prachId, uint32_t raRnti);
 
+  /**
+  * \returns the list of sidelink messages information to be sent
+  */
+  std::list<LteUePhySapProvider::TransmitSlPhySduParameters> GetSlPhyParameters (void);
+
+  
   /// A list of sub channels to use in TX.
   std::vector <int> m_subChannelsForTransmission;
   /// A list of sub channels to use in RX.
@@ -766,6 +773,10 @@ private:
    */
   bool m_chooseFrameAndSubframeRandomly;
 
+  /// A queue of packet parameters to be sent.
+  std::vector< std::list<LteUePhySapProvider::TransmitSlPhySduParameters> > m_packetParamsQueue;
+  
+  
   /// Sidelink communication grant related  parameters
  struct SidelinkGrant
  {
