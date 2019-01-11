@@ -412,6 +412,12 @@ public:
   void SetScheduledTxParameters (uint16_t slrnti, LteRrcSap::SlMacMainConfigSl macMainConfig, LteRrcSap::SlCommResourcePool commTxConfig, uint8_t index, uint8_t mcs);
 
   /**
+   * Set parameters for UE selected pool
+   * \param identity The pool identity
+   */
+  void SetUeSelectedTxParameters (uint8_t identity);
+  
+  /**
    * Returns the index of the resource pool
    * \return the index of the resource pool
    */
@@ -422,11 +428,19 @@ public:
    * \return The MCS to use
    */
   uint8_t GetMcs ();
+  
+  /**
+   * Returns the pool identity
+   * \return The pool identity
+   */
+  uint8_t GetPoolIdentity ();
+  
 protected:
   //Fields for UE selected pools
   LteRrcSap::SlTxParameters m_scTxParameters; ///< configuration of the control channel
   LteRrcSap::SlTxParameters m_dataTxParameters; ///< configuration of the shared channel
-
+  uint8_t m_poolIdentity;
+  
   //Fields for scheduled pools
   uint16_t m_slrnti; ///< Sidelink RNTI
   LteRrcSap::SlMacMainConfigSl m_macMainConfig; ///< MAC layer configuration
@@ -701,6 +715,12 @@ public:
   void SetScheduledTxParameters (LteRrcSap::SlDiscResourcePool discPool, LteRrcSap::SlTfIndexPairList discResources, LteRrcSap::SlHoppingConfigDisc discHopping);
 
   /**
+   * Set parameters for UE selected pool
+   * \param identity The pool identity
+   */
+  void SetUeSelectedTxParameters (uint8_t identity);
+ 
+  /**
    * Returns the transmission probability
    * \return The transmission probability
    */
@@ -712,6 +732,12 @@ public:
    */
   void SetTxProbability (uint32_t theta);
 
+  /**
+   * Returns the pool identity
+   * \return The pool identity
+   */
+  uint8_t GetPoolIdentity ();
+  
 protected:
   //Fields for UE selected pools
   LteRrcSap::PoolSelection m_poolSelection; ///< method for selecting the pool
@@ -719,6 +745,7 @@ protected:
   LteRrcSap::PoolSelectionRsrpBased m_poolSelectionRsrpBased; ///< parameters for the RSRP based selection
   LteRrcSap::TxProbability m_txProbability;  ///< transmission probability
   bool m_txProbChanged; ///< indicates if the transmission probability has changed
+  uint8_t m_poolIdentity;
 
   //Fields for scheduled pools
   LteRrcSap::SlDiscResourcePool m_discTxConfig; ///< resource configuration

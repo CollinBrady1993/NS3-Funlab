@@ -3442,6 +3442,7 @@ LteUeRrc::DoActivateSidelinkRadioBearer (uint32_t group, bool tx, bool rx)
           NS_LOG_INFO ("Configuring Tx pool");
           Ptr<SidelinkTxCommResourcePool> txPool = CreateObject<SidelinkTxCommResourcePool>();
           txPool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigComm.pools[0]);
+          txPool->SetUeSelectedTxParameters (0);
           std::list <uint32_t>::iterator it;
           std::list <uint32_t> destinations = m_sidelinkConfiguration->GetTxDestinations ();
 
@@ -3648,6 +3649,7 @@ LteUeRrc::StartDiscoveryApps (std::list<uint64_t> appCodes, LteSlUeRrc::Discover
                 NS_LOG_INFO ("Configuring Tx preconfigured pool");
                 Ptr<SidelinkTxDiscResourcePool> txPool = CreateObject<SidelinkTxDiscResourcePool>();
                 txPool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
+                txPool->SetUeSelectedTxParameters (0);
                 m_sidelinkConfiguration->SetActiveTxDiscoveryPool (txPool);
                 //inform MAC and PHY about the pool
                 m_cmacSapProvider.at (0)->SetSlDiscTxPool (txPool);
@@ -3778,6 +3780,7 @@ LteUeRrc::StartRelayService (uint32_t serviceCode, LteSlUeRrc::DiscoveryModel mo
                 NS_LOG_INFO ("Configuring Tx preconfigured pool");
                 Ptr<SidelinkTxDiscResourcePool> txPool = CreateObject<SidelinkTxDiscResourcePool>();
                 txPool->SetPool (m_sidelinkConfiguration->GetSlPreconfiguration().preconfigDisc.pools[0]);
+                txPool->SetUeSelectedTxParameters (0);
                 m_sidelinkConfiguration->SetActiveTxDiscoveryPool (txPool);
                 //inform MAC and PHY about the pool
                 m_cmacSapProvider.at (0)->SetSlDiscTxPool (txPool);
@@ -3911,6 +3914,7 @@ LteUeRrc::ApplySidelinkDedicatedConfiguration (LteRrcSap::SlCommConfig config)
             NS_ASSERT (config.setup.ueSelected.havePoolToAdd);
             //configure lower layers to transmit the Sidelink control information and the corresponding data using the pool of resources indicated by the first entry in commTxPoolNormalDedicated;
             txPool->SetPool (config.setup.ueSelected.poolToAddModList.pools[0].pool);
+            txPool->SetUeSelectedTxParameters (config.setup.ueSelected.poolToAddModList.pools[0].poolIdentity);
           }
       if (!m_txPool)
         {
@@ -3996,6 +4000,7 @@ LteUeRrc::ApplySidelinkDedicatedConfiguration (LteRrcSap::SlDiscConfig config)
                           {
                             // any rsrp value would be ok : select first pool
                             txPool->SetPool (config.setup.ueSelected.poolToAddModList.pools[0].pool);
+                            txPool->SetUeSelectedTxParameters (config.setup.ueSelected.poolToAddModList.pools[0].poolIdentity);
                             poolFound = true;
                           }
                           //high could be : -110 dBm to -60 dBm
@@ -4005,6 +4010,7 @@ LteUeRrc::ApplySidelinkDedicatedConfiguration (LteRrcSap::SlDiscConfig config)
                               if (m_storedMeasValues[m_cellId].rsrp <= LteRrcSap::RsrpValueDbm (highRsrp))
                                 {
                                   txPool->SetPool (config.setup.ueSelected.poolToAddModList.pools[i].pool);
+                                  txPool->SetUeSelectedTxParameters (config.setup.ueSelected.poolToAddModList.pools[i].poolIdentity);
                                   poolFound = true;
                                 }
                             }
@@ -4042,6 +4048,7 @@ LteUeRrc::ApplySidelinkDedicatedConfiguration (LteRrcSap::SlDiscConfig config)
               {
                 // ue selected : randomly selected using a uniform distribution
                 txPool->SetPool (config.setup.ueSelected.poolToAddModList.pools[m_sidelinkConfiguration->m_rand->GetInteger (0, config.setup.ueSelected.poolToAddModList.nbPools - 1)].pool);
+                txPool->SetUeSelectedTxParameters (config.setup.ueSelected.poolToAddModList.pools[m_sidelinkConfiguration->m_rand->GetInteger (0, config.setup.ueSelected.poolToAddModList.nbPools - 1)].poolIdentity);
               }
           }//end else (UE Selected)
 

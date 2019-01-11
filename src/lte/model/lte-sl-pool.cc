@@ -1235,6 +1235,13 @@ SidelinkTxCommResourcePool::SetScheduledTxParameters (uint16_t slrnti, LteRrcSap
   m_mcs = mcs;
 }
 
+void 
+SidelinkTxCommResourcePool::SetUeSelectedTxParameters (uint8_t identity)
+{
+  NS_LOG_FUNCTION (this << identity);
+  m_poolIdentity = identity;
+}
+
 uint8_t
 SidelinkTxCommResourcePool::GetIndex ()
 {
@@ -1247,6 +1254,13 @@ SidelinkTxCommResourcePool::GetMcs ()
 {
   NS_LOG_FUNCTION (this);
   return m_mcs;
+}
+
+uint8_t
+SidelinkTxCommResourcePool::GetPoolIdentity ()
+{
+  NS_LOG_FUNCTION (this);
+  return m_poolIdentity;
 }
 
 ///// SidelinkDiscResourcePool //////
@@ -1672,6 +1686,13 @@ SidelinkTxDiscResourcePool::SetScheduledTxParameters (LteRrcSap::SlDiscResourceP
   m_discHoppingConfigDisc = discHopping;
 }
 
+void 
+SidelinkTxDiscResourcePool::SetUeSelectedTxParameters (uint8_t identity)
+{
+  NS_LOG_FUNCTION (this << identity);
+  m_poolIdentity = identity;
+}
+
 uint32_t
 SidelinkTxDiscResourcePool::GetTxProbability ()
 {
@@ -1702,5 +1723,13 @@ void SidelinkTxDiscResourcePool::SetTxProbability (uint32_t theta)
     }
   m_txProbability = txProb;
 }
+
+uint8_t
+SidelinkTxDiscResourcePool::GetPoolIdentity ()
+{
+  NS_LOG_FUNCTION (this);
+  return m_poolIdentity;
+}
+
 
 }
