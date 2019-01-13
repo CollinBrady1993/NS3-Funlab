@@ -122,6 +122,54 @@ private:
 
 };
 
+/**
+ * \ingroup lte
+ * \brief The packet header for the Sidelink Control Information packets
+ * Header size is 32 bits + ceil (log2(Nrb*(Nrb+1)/2))
+ */
+class LteSlSciHeader : public Header
+{
+public:
+
+  /**
+   * \brief Constructor
+   *
+   * Creates an SCI header
+   */
+  LteSlSciHeader ();
+  ~LteSlSciHeader ();
+
+  void SetSciFormat0Params (bool hopping, uint8_t rbStart, uint8_t rbLen, uint8_t hoppingInfo, uint8_t trp, uint8_t mcs, uint8_t groupId);
+
+  bool IsHopping () const;
+  uint8_t GetRbStart () const;
+  uint8_t GetRbLen () const;
+  uint8_t GetHoppingInfo () const;
+  uint8_t GetTrp () const;
+  uint8_t GetMcs () const;
+  //uint8_t GetTiming () const;
+  uint8_t GetGroupDstId () const;
+  
+  static TypeId GetTypeId (void);
+  virtual TypeId GetInstanceTypeId (void) const;
+  virtual void Print (std::ostream &os) const;
+  virtual uint32_t GetSerializedSize (void) const;
+  virtual void Serialize (Buffer::Iterator start) const;
+  virtual uint32_t Deserialize (Buffer::Iterator start);
+
+private:
+  //uint16_t  m_rnti; ///< RNTI
+  bool   m_hopping; ///< hopping flag
+  uint8_t   m_rbStart; ///< models rb assignment
+  uint8_t   m_rbLen;   ///< models rb assignment
+  uint8_t   m_hoppingInfo; ///< models rb assignment when hopping is enabled
+  uint8_t   m_trp; ///< Time resourse pattern (TRP)
+  uint8_t   m_mcs; ///< MCS
+  //uint16_t  m_timing; ///< Timing advance indication
+  uint8_t   m_groupDstId; ///< Group destination ID
+};
+
+
 } // namespace ns3
 
 #endif // LTE_SL_HEADER_H

@@ -38,7 +38,7 @@
 #include <ns3/packet-burst.h>
 #include "ns3/traced-value.h"
 #include "ns3/trace-source-accessor.h"
-
+#include "ns3/lte-sl-header.h"
 
 namespace ns3 {
 
@@ -491,13 +491,13 @@ private:
 
     std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx; ///< List of PSDCH transmissions within the pool
 
-    std::list<SlDiscMsg> m_discTxMsgs; ///< List of discovery messages to send within the period
+    std::list< Ptr<Packet> > m_discTxMsgs; ///< List of discovery messages to send within the period
   };
 
   DiscPoolInfo m_discTxPool; ///< Sidelink discovery transmission pool
   std::list <Ptr<SidelinkRxDiscResourcePool> > m_discRxPools; ///< Sidelink discovery reception pool
 
-  std::list<SlDiscMsg> m_discPendingTxMsgs; ///< List of discovery messages to send
+  std::list< Ptr<Packet> > m_discPendingTxMsgs; ///< List of discovery messages to send
 
   Ptr<UniformRandomVariable> m_p1UniformVariable; ///< A uniform random variable to compare with the Tx probability of UE selected pool
   Ptr<UniformRandomVariable> m_resUniformVariable;///< A uniform random variable to randomly choose the resource index from the PSDCH resource pool
@@ -518,7 +518,7 @@ private:
    * Trace information regarding Sidelink PSDCH UE scheduling
    * SlUeMacStatParameters (see lte-common.h)
    */
-  TracedCallback<SlUeMacStatParameters, SlDiscMsg> m_slPsdchScheduling; //m_slPsdchScheduling
+  TracedCallback<SlUeMacStatParameters, LteSlDiscHeader> m_slPsdchScheduling; //m_slPsdchScheduling
 
   bool m_slHasDataToTx; ///< True if there is data to transmit in the PSSCH
 

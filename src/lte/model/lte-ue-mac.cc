@@ -458,24 +458,7 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
   if (params.discMsg)
     {
       //queue message until next discovery period
-      LteSlDiscHeader discHeader;
-      params.pdu->RemoveHeader (discHeader);
-      NS_ASSERT ( m_discPendingTxMsgs.size() == 0); //currently at most one discovery message per period
-      SlDiscMsg msg;
-      msg.m_rnti = params.rnti;
-      msg.m_resPsdch = 0;//updated later
-      msg.m_msgType = discHeader.GetMessageType ();
-      Buffer buf;
-      buf.AddAtStart (discHeader.GetSerializedSize ());
-      discHeader.Serialize (buf.Begin ());
-      buf.RemoveAtStart (1);
-      buf.RemoveAtEnd (5);
-      buf.CopyData (msg.m_pc5_disc_payload, discHeader.GetSerializedSize ());
-      //std::memcpy (msg.m_pc5_disc_payload, discHeader.GetPayload().data(), 23);
-      //discHeader.GetPayload(msg.m_pc5_disc_payload);
-      msg.m_mic = discHeader.GetMic ();
-      msg.m_utcBasedCounter = discHeader.GetUtcBaseCounter();
-      m_discPendingTxMsgs.push_back (msg);
+      m_discPendingTxMsgs.push_back (params.pdu);
     }
   else
     {
@@ -494,12 +477,40 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
           //find transmitting pool
           std::map <uint32_t, PoolInfo>::iterator poolIt = m_sidelinkTxPoolsMap.find (params.dstL2Id);
           NS_ASSERT (poolIt!= m_sidelinkTxPoolsMap.end());
-
+          std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo>::iterator allocIt = poolIt->second.m_psschTx.begin ();
+          
+          //For sanity check, but to be removed once the code is checked
+          uint32_t frameNo = m_frameNo;
+          uint32_t subframeNo = m_subframeNo;
+          if (subframeNo + UL_PUSCH_TTIS_DELAY > 10)
+          {
+            frameNo++;
+            if (frameNo > 1024)
+              {
+                frameNo = 1;
+              }
+            subframeNo = (subframeNo + UL_PUSCH_TTIS_DELAY) % 10;
+          }
+        else
+          {
+            subframeNo = subframeNo + UL_PUSCH_TTIS_DELAY;
+          }
+          NS_ASSERT ((*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo);
+          
           LteRadioBearerTag tag (params.rnti, params.lcid, params.srcL2Id, params.dstL2Id);
           params.pdu->AddPacketTag (tag);
           // store pdu in HARQ buffer
           poolIt->second.m_miSlHarqProcessPacket->AddPacket (params.pdu);
-          m_uePhySapProvider->SendMacPdu (params.pdu);
+          
+          LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+          phyParams.m_rbStart = (*allocIt).rbStart;
+          phyParams.m_rbLen = (*allocIt).nbRb;
+          uint8_t rv = poolIt->second.m_psschTx.size () % 4;
+          NS_ASSERT (rv == 0); //to be removed once confirmed
+          phyParams.m_rv = rv == 0 ? rv : 4 - rv;
+                  
+          m_uePhySapProvider->SendSlMacPdu (params.pdu, phyParams);
+          //m_uePhySapProvider->SendMacPdu (params.pdu);
         }
     }
 }
@@ -1448,12 +1459,9 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           if (allocIt != m_discTxPool.m_psdchTx.end() && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
             {
               NS_LOG_INFO (this << "PSDCH transmission");
-              for (std::list<SlDiscMsg>::iterator discMsg =  m_discTxPool.m_discTxMsgs.begin (); discMsg !=  m_discTxPool.m_discTxMsgs.end (); ++discMsg)
+              for (std::list< Ptr<Packet> >::iterator discMsg =  m_discTxPool.m_discTxMsgs.begin (); discMsg !=  m_discTxPool.m_discTxMsgs.end (); ++discMsg)
                 {
                   //Create Discovery message for each discovery payload announcing
-                  Ptr<SlDiscMessage> msg = Create<SlDiscMessage> ();
-                  discMsg->m_resPsdch = m_discTxPool.m_currentGrant.m_resPsdch;
-                  msg->SetSlDiscMessage (*discMsg);
                   NS_LOG_INFO ("discovery message sent by " << m_rnti);
                   
                   // Collect statistics for SL share channel UE MAC scheduling trace
@@ -1479,8 +1487,20 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   stats_dch_params.m_rnti = m_rnti;
                   stats_dch_params.m_timestamp = Simulator::Now ().GetMilliSeconds ();
 
-                  m_slPsdchScheduling (stats_dch_params, *discMsg);
-                  m_uePhySapProvider->SendLteControlMessage (msg);
+                  LteSlDiscHeader discHeader;
+                  (*discMsg)->PeekHeader (discHeader);
+                  m_slPsdchScheduling (stats_dch_params, discHeader);
+                  
+                  
+                  LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+                  phyParams.m_rbStart = (*allocIt).rbStart;
+                  phyParams.m_rbLen = (*allocIt).nbRb;
+                  phyParams.m_resNo = m_discTxPool.m_currentGrant.m_resPsdch;
+                  uint8_t rv = m_discTxPool.m_psdchTx.size () % (m_discTxPool.m_pool->GetNumRetx()+1);
+                    NS_ASSERT (rv == 0); //to be removed once confirmed
+                    phyParams.m_rv = rv == 0 ? rv : m_discTxPool.m_pool->GetNumRetx()+1 - rv;
+
+                  m_uePhySapProvider->SendSlMacPdu (*discMsg, phyParams);
                 }
               m_discTxPool.m_psdchTx.erase (allocIt);
               if (m_discTxPool.m_psdchTx.empty())
@@ -1742,6 +1762,7 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   NS_LOG_INFO ("Second PSCCH transmission");
                 }
               //create SCI message
+              /*
               SciListElement_s sci;
               sci.m_rnti = m_rnti;
               sci.m_mcs = poolIt->second.m_currentGrant.m_mcs;
@@ -1757,7 +1778,24 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               Ptr<SciLteControlMessage> msg = Create<SciLteControlMessage> ();
               msg->SetSci (sci);
               m_uePhySapProvider->SendLteControlMessage (msg);
-
+              */
+              LteSlSciHeader sciHeader;
+              sciHeader.SetSciFormat0Params (poolIt->second.m_currentGrant.m_hopping, 
+                                             poolIt->second.m_currentGrant.m_rbStart, 
+                                             poolIt->second.m_currentGrant.m_rbLen,
+                                             poolIt->second.m_currentGrant.m_hoppingInfo,
+                                             poolIt->second.m_currentGrant.m_iTrp,
+                                             poolIt->second.m_currentGrant.m_mcs,
+                                             poolIt->first & 0xFF);
+              Ptr<Packet> p = Create<Packet>();
+              p->AddHeader (sciHeader);
+              LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+              phyParams.m_rbStart = (*allocIt).rbStart;
+              phyParams.m_rbLen = (*allocIt).nbRb;
+              phyParams.m_resNo = poolIt->second.m_currentGrant.m_resPscch;
+              
+              m_uePhySapProvider->SendSlMacPdu (p, phyParams);
+              
               poolIt->second.m_pscchTx.erase (allocIt);
             }
 
@@ -1936,7 +1974,11 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   for (std::list<Ptr<Packet> >::const_iterator j = pb->Begin (); j != pb->End (); ++j)
                     {
                       Ptr<Packet> pkt = (*j)->Copy ();
-                      m_uePhySapProvider->SendMacPdu (pkt);
+                      LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+                        phyParams.m_rbStart = (*allocIt).rbStart;
+                        phyParams.m_rbLen = (*allocIt).nbRb;
+                        phyParams.m_rv = (4 - poolIt->second.m_psschTx.size () % 4);
+                      m_uePhySapProvider->SendSlMacPdu (pkt, phyParams);
                     }
                 }
 

@@ -220,7 +220,7 @@ void
 LteUePhy::DoDispose ()
 {
   NS_LOG_FUNCTION (this);
-  m_packetParamsQueue.clear ();
+  m_packetParamsMap.clear ();
   delete m_uePhySapProvider;
   delete m_ueCphySapProvider;
   if (m_sidelinkSpectrumPhy)
@@ -576,29 +576,31 @@ LteUePhy::DoSendSlMacPdu (Ptr<Packet> p, LteUePhySapProvider::TransmitSlPhySduPa
   NS_LOG_FUNCTION (this);
 
   SetMacPdu (p);
-  m_packetParamsQueue.at (m_packetParamsQueue.size () - 1).push_back (params);
+  
+  NS_ASSERT_MSG (m_packetParamsMap.size () == 0, "Error: Can only send one sidelink message per TTI");
+  m_packetParamsMap[p] = params;
 }
 
-std::list<LteUePhySapProvider::TransmitSlPhySduParameters> 
-LteUePhy::GetSlPhyParameters (void)
+std::list <LteUePhySapProvider::TransmitSlPhySduParameters>
+LteUePhy::GetSlPhyParameters (Ptr<PacketBurst> pb)
 {
-  NS_LOG_FUNCTION (this);
-  if (m_packetParamsQueue.at (0).size () > 0)
-    {
-      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > ret = m_packetParamsQueue.at (0);
-      m_packetParamsQueue.erase (m_packetParamsQueue.begin ());
-      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > newlist;
-      m_packetParamsQueue.push_back (newlist);
-      return (ret);
-    }
-  else
-    {
-      m_packetParamsQueue.erase (m_packetParamsQueue.begin ());
-      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > newlist;
-      m_packetParamsQueue.push_back (newlist);
-      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > emptylist;
-      return (emptylist);
-    }
+  NS_LOG_FUNCTION (this << pb);
+  std::list<LteUePhySapProvider::TransmitSlPhySduParameters> ret;
+  std::list<  Ptr<Packet> >::iterator itPkt;  
+  std::map < Ptr<Packet> , LteUePhySapProvider::TransmitSlPhySduParameters >::iterator itParam;
+
+  for (itPkt = pb->GetPackets ().begin () ; itPkt != pb->GetPackets ().end (); itPkt++)
+   {
+    itParam = m_packetParamsMap.find (*itPkt);
+    if (itParam != m_packetParamsMap.end())
+     {
+      ret.push_back (itParam->second);
+     }
+   }
+  //Like GetPacketBurst, this function should only be called once per subframe since it clears
+  //the information after being called
+  m_packetParamsMap.clear ();
+  return ret;
 }
 
 void
@@ -1573,9 +1575,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
       std::list<Ptr<LteControlMessage> > ctrlMsg = GetControlMessages ();
       // retrieve the current burst of packets from UL data queue at LtePhy
       Ptr<PacketBurst> pb = GetPacketBurst ();
-      // retrieve meta data associated with packet burst for sidelink
-      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > slParam = GetSlPhyParameters ();
-
+      
       bool sciDiscFound = false;
       bool mibSlFound = false;
 
@@ -2040,12 +2040,10 @@ LteUePhy::DoReset ()
       m_packetBurstQueue.push_back (pb);
       std::list<Ptr<LteControlMessage> > l;
       m_controlMessagesQueue.push_back (l);
-      std::list<LteUePhySapProvider::TransmitSlPhySduParameters > l2;
-      m_packetParamsQueue.push_back (l2);
     }
   std::vector <int> ulRb;
   m_subChannelsForTransmissionQueue.resize (m_macChTtiDelay, ulRb);
-
+  m_packetParamsMap.clear ();
   m_sendSrsEvent.Cancel ();
   m_downlinkSpectrumPhy->Reset ();
   m_uplinkSpectrumPhy->Reset ();

@@ -304,7 +304,7 @@ LteSlDiscHeader::Deserialize (Buffer::Iterator start)
       m_info = i.ReadU32 ();
       tmp = i.ReadU16 ();
       m_info += tmp << 32;
-      
+
       if (i.ReadU8 () == 0)
         {
           i.Read (padding, 13);
@@ -319,11 +319,133 @@ LteSlDiscHeader::Deserialize (Buffer::Iterator start)
     default:
       break;
     }
-  
-  
+
+
   m_mic = i.ReadU32 ();
   m_utcBasedCounter = i.ReadU8 ();
 
+  return GetSerializedSize ();
+}
+
+NS_OBJECT_ENSURE_REGISTERED (LteSlSciHeader);
+
+LteSlSciHeader::LteSlSciHeader ()
+  : m_hopping (false),
+  m_rbStart (0),
+  m_rbLen (0),
+  m_hoppingInfo (0),
+  m_trp (0),
+  m_mcs (0),
+  //m_timing (0),
+  m_groupDstId (0)
+{
+
+}
+
+LteSlSciHeader::~LteSlSciHeader ()
+{
+
+}
+
+void LteSlSciHeader::SetSciFormat0Params (bool hopping, uint8_t rbStart, uint8_t rbLen, uint8_t hoppingInfo, uint8_t trp, uint8_t mcs, uint8_t groupId)
+{
+  m_hopping = hopping;
+  m_rbStart = rbStart;
+  m_rbLen = rbLen;
+  m_hoppingInfo = hoppingInfo;
+  m_trp = trp;
+  m_mcs = mcs;
+  m_groupDstId = groupId;
+}
+
+bool LteSlSciHeader::IsHopping () const
+{
+  return m_hopping;
+}
+uint8_t LteSlSciHeader::GetRbStart () const
+{
+  return m_rbStart;
+}
+uint8_t LteSlSciHeader::GetRbLen () const
+{
+  return m_rbLen;
+}
+uint8_t LteSlSciHeader::GetHoppingInfo () const
+{
+  return m_hoppingInfo;
+}
+uint8_t LteSlSciHeader::GetTrp () const
+{
+  return m_trp;
+}
+uint8_t LteSlSciHeader::GetMcs () const
+{
+  return m_mcs;
+}
+uint8_t LteSlSciHeader::GetGroupDstId () const
+{
+  return m_groupDstId;
+}
+
+TypeId
+LteSlSciHeader::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::LteSlSciHeader")
+    .SetParent<Header> ()
+    .AddConstructor<LteSlSciHeader> ()
+  ;
+  return tid;
+}
+
+TypeId
+LteSlSciHeader::GetInstanceTypeId (void) const
+{
+  return GetTypeId ();
+}
+
+void
+LteSlSciHeader::Print (std::ostream &os)  const
+{
+  //todo
+}
+
+uint32_t
+LteSlSciHeader::GetSerializedSize (void) const
+{
+  return 6;
+}
+
+void
+LteSlSciHeader::Serialize (Buffer::Iterator start) const
+{
+  Buffer::Iterator i = start;
+
+  //we change the order so the serialize/deserialize is easier
+  //write flag and TRP
+  uint8_t hopFlagAndTrp = m_hopping ? 1 << 7:0;
+  hopFlagAndTrp = hopFlagAndTrp & m_trp & 0x7F;
+  i.WriteU8 (hopFlagAndTrp);  
+  i.WriteU8 (m_mcs);
+  i.WriteU8 (m_groupDstId);
+  i.WriteU8 (m_rbStart);
+  i.WriteU8 (m_rbLen);
+  i.WriteU8 (m_hoppingInfo);
+}
+
+uint32_t
+LteSlSciHeader::Deserialize (Buffer::Iterator start)
+{
+  Buffer::Iterator i = start;
+
+  uint8_t tmp = i.ReadU8 ();
+  m_hopping = (tmp & 0x8) != 0;
+  m_trp = tmp & 0x7F;
+  m_mcs = i.ReadU8 ();
+  m_groupDstId = i.ReadU8 ();
+  m_rbStart = i.ReadU8 ();
+  m_rbLen = i.ReadU8 ();
+  m_hoppingInfo = i.ReadU8 ();
+  
   return GetSerializedSize ();
 }
 

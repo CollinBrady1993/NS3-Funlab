@@ -46,12 +46,20 @@ public:
    */
   struct TransmitSlPhySduParameters
   {
-    uint32_t resourceNo; ///< the resource index from the communication/discovery pool 
-    
-    uint8_t   m_hopping; ///< hopping flag
+    //Common information
     uint8_t   m_rbStart; ///< models rb assignment
     uint8_t   m_rbLen;   ///< models rb assignment
+
+    //PSCCH, PSDCH
+    uint32_t m_resNo; ///< the resource index from the communication/discovery pool 
+
+    //PSDH and PSSCH information
+    uint8_t   m_rv;       ///< indicates HARQ revision number
+    
+    //PSSCH information
+    uint8_t   m_hopping; ///< hopping flag
     uint8_t   m_hoppingInfo; ///< models rb assignment when hopping is enabled
+    uint8_t   m_dstId;   ///< layer 1 destination
   };
 
   /**

@@ -595,9 +595,11 @@ private:
   virtual void DoSendRachPreamble (uint32_t prachId, uint32_t raRnti);
 
   /**
-  * \returns the list of sidelink messages information to be sent
+  * Gets the transmission parameters for the given packet burst
+  * \param pkt The sidelink packet
+   * \returns the transmission parameters for the given packet burst
   */
-  std::list<LteUePhySapProvider::TransmitSlPhySduParameters> GetSlPhyParameters (void);
+  std::list <LteUePhySapProvider::TransmitSlPhySduParameters> GetSlPhyParameters (Ptr<PacketBurst> pb);
 
   
   /// A list of sub channels to use in TX.
@@ -774,7 +776,7 @@ private:
   bool m_chooseFrameAndSubframeRandomly;
 
   /// A queue of packet parameters to be sent.
-  std::vector< std::list<LteUePhySapProvider::TransmitSlPhySduParameters> > m_packetParamsQueue;
+  std::map < Ptr<Packet> , LteUePhySapProvider::TransmitSlPhySduParameters > m_packetParamsMap;
   
   
   /// Sidelink communication grant related  parameters

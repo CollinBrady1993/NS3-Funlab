@@ -35,6 +35,7 @@
 #include <ns3/ff-mac-common.h>
 #include <ns3/config.h>
 #include <ns3/lte-ue-net-device.h>
+#include <ns3/lte-sl-header.h>
 
 namespace ns3 {
 
@@ -216,7 +217,7 @@ public:
   /** 
    * Notifies the stats calculator that a Sidelink PSDCH UE MAC transmission has occurred.
    */
-  static void SlUeDchSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, SlUeMacStatParameters params, SlDiscMsg discMsg);
+  static void SlUeDchSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, SlUeMacStatParameters params, LteSlDiscHeader discMsg);
 
   /**
    * Notifies the stats calculator that a Sidelink PSCCH UE MAC scheduling has occurred.
@@ -233,7 +234,7 @@ public:
   /**
    * Notifies the stats calculator that a Sidelink PSDCH UE MAC scheduling has occurred.
    */
-  void SlUeDchScheduling (SlUeMacStatParameters params, SlDiscMsg discMsg);
+  void SlUeDchScheduling (SlUeMacStatParameters params, LteSlDiscHeader discMsg);
 
 private:
   /**
