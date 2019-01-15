@@ -158,7 +158,6 @@ LteSpectrumSignalParametersSlFrame::LteSpectrumSignalParametersSlFrame (const Lt
 {
   NS_LOG_FUNCTION (this << &p);
   nodeId = p.nodeId;
-  groupId = p.groupId;
   slssId = p.slssId;
   ctrlMsgList = p.ctrlMsgList;
   if (p.packetBurst)
@@ -178,6 +177,105 @@ LteSpectrumSignalParametersSlFrame::Copy ()
   // but it causes a double creation of the object, hence it is less efficient.
   // The solution below is copied from the implementation of Copy<> (Ptr<>) in ptr.h
   Ptr<LteSpectrumSignalParametersSlFrame> lssp (new LteSpectrumSignalParametersSlFrame (*this), false);  
+  return lssp;
+}
+
+LteSpectrumSignalParametersSlCtrlFrame::LteSpectrumSignalParametersSlCtrlFrame ()
+{
+  NS_LOG_FUNCTION (this);
+}
+
+LteSpectrumSignalParametersSlCtrlFrame::LteSpectrumSignalParametersSlCtrlFrame (const LteSpectrumSignalParametersSlCtrlFrame& p)
+: LteSpectrumSignalParametersSlFrame (p)
+{
+  NS_LOG_FUNCTION (this << &p);
+  nodeId = p.nodeId;
+  groupId = p.groupId;
+  slssId = p.slssId;
+  ctrlMsgList = p.ctrlMsgList;
+  if (p.packetBurst)
+    {
+      packetBurst = p.packetBurst->Copy ();
+    }
+}
+
+Ptr<SpectrumSignalParameters>
+LteSpectrumSignalParametersSlCtrlFrame::Copy ()
+{
+    NS_LOG_FUNCTION (this);
+  // Ideally we would use:
+  // return Copy<LteSpectrumSignalParametersSlCtrlFrame> (*this);
+  // but for some reason it doesn't work. Another alternative is 
+  // return Copy<LteSpectrumSignalParametersSlCtrlFrame> (this);
+  // but it causes a double creation of the object, hence it is less efficient.
+  // The solution below is copied from the implementation of Copy<> (Ptr<>) in ptr.h
+  Ptr<LteSpectrumSignalParametersSlCtrlFrame> lssp (new LteSpectrumSignalParametersSlCtrlFrame (*this), false);  
+  return lssp;
+}
+
+LteSpectrumSignalParametersSlDataFrame::LteSpectrumSignalParametersSlDataFrame ()
+{
+  NS_LOG_FUNCTION (this);
+}
+
+LteSpectrumSignalParametersSlDataFrame::LteSpectrumSignalParametersSlDataFrame (const LteSpectrumSignalParametersSlDataFrame& p)
+: LteSpectrumSignalParametersSlFrame (p)
+{
+  NS_LOG_FUNCTION (this << &p);
+  nodeId = p.nodeId;
+  groupId = p.groupId;
+  slssId = p.slssId;
+  ctrlMsgList = p.ctrlMsgList;
+  if (p.packetBurst)
+    {
+      packetBurst = p.packetBurst->Copy ();
+    }
+}
+
+Ptr<SpectrumSignalParameters>
+LteSpectrumSignalParametersSlDataFrame::Copy ()
+{
+    NS_LOG_FUNCTION (this);
+  // Ideally we would use:
+  // return Copy<LteSpectrumSignalParametersSlCtrlFrame> (*this);
+  // but for some reason it doesn't work. Another alternative is 
+  // return Copy<LteSpectrumSignalParametersSlCtrlFrame> (this);
+  // but it causes a double creation of the object, hence it is less efficient.
+  // The solution below is copied from the implementation of Copy<> (Ptr<>) in ptr.h
+  Ptr<LteSpectrumSignalParametersSlDataFrame> lssp (new LteSpectrumSignalParametersSlDataFrame (*this), false);  
+  return lssp;
+}
+
+LteSpectrumSignalParametersSlDiscFrame::LteSpectrumSignalParametersSlDiscFrame ()
+{
+  NS_LOG_FUNCTION (this);
+}
+
+LteSpectrumSignalParametersSlDiscFrame::LteSpectrumSignalParametersSlDiscFrame (const LteSpectrumSignalParametersSlDiscFrame& p)
+: LteSpectrumSignalParametersSlFrame (p)
+{
+  NS_LOG_FUNCTION (this << &p);
+  nodeId = p.nodeId;
+  resNo = p.resNo;
+  slssId = p.slssId;
+  ctrlMsgList = p.ctrlMsgList;
+  if (p.packetBurst)
+    {
+      packetBurst = p.packetBurst->Copy ();
+    }
+}
+
+Ptr<SpectrumSignalParameters>
+LteSpectrumSignalParametersSlDiscFrame::Copy ()
+{
+    NS_LOG_FUNCTION (this);
+  // Ideally we would use:
+  // return Copy<LteSpectrumSignalParametersSlDiscFrame> (*this);
+  // but for some reason it doesn't work. Another alternative is 
+  // return Copy<LteSpectrumSignalParametersSlDiscFrame> (this);
+  // but it causes a double creation of the object, hence it is less efficient.
+  // The solution below is copied from the implementation of Copy<> (Ptr<>) in ptr.h
+  Ptr<LteSpectrumSignalParametersSlDiscFrame> lssp (new LteSpectrumSignalParametersSlDiscFrame (*this), false);  
   return lssp;
 }
 

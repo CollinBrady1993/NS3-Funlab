@@ -170,15 +170,17 @@ struct LteSpectrumSignalParametersDataFrame;
 struct LteSpectrumSignalParametersDlCtrlFrame;
 struct LteSpectrumSignalParametersUlSrsFrame;
 struct LteSpectrumSignalParametersSlFrame;
+struct LteSpectrumSignalParametersSlDataFrame;
+struct LteSpectrumSignalParametersSlCtrlFrame;
+struct LteSpectrumSignalParametersSlDiscFrame;
 
 /**
  * Structure for Sidelink packets being received
  */
 struct SlRxPacketInfo_t
 {
-  std::vector<int> rbBitmap;  ///< RB bitmap
-  Ptr<PacketBurst> m_rxPacketBurst;  ///< Rx packet burst
-  Ptr<LteControlMessage> m_rxControlMessage; ///< Rx control message
+  Ptr<LteSpectrumSignalParametersSlFrame> params;
+  std::vector<int> rbBitmap;  ///< RB bitmap 
 };
 
 /// SlCtrlPacketInfo_t structure
@@ -304,7 +306,7 @@ public:
    * \brief Start receive Sidelink data function
    * \param lteSlRxParams Ptr<LteSpectrumSignalParametersUlSrsFrame>
    */
-  void StartRxSlData (Ptr<LteSpectrumSignalParametersSlFrame> lteSlRxParams);
+  void StartRxSlFrame (Ptr<LteSpectrumSignalParametersSlFrame> lteSlRxParams);
   /**
    * \brief Set HARQ phy function
    * \param harq The HARQ phy module
@@ -380,8 +382,36 @@ public:
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.
    */
+   bool StartTxSlCtrlFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
+
+  /**
+   * Start a transmission of Sidelink data frame in DL and UL
+   *
+   *
+   * \param pb The burst of packets to be transmitted in PSSCH/PSCCH
+   * \param ctrlMsgList The list of LteControlMessage to send
+   * \param duration The duration of the data frame
+   * \param groupId The group id
+   *
+   * \return true if an error occurred and the transmission was not
+   * started, false otherwise.
+   */
    bool StartTxSlDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration, uint8_t groupId);
 
+  /**
+   * Start a transmission of Sidelink data frame in DL and UL
+   *
+   *
+   * \param pb The burst of packets to be transmitted in PSDCH
+   * \param ctrlMsgList The list of LteControlMessage to send
+   * \param resNo The resource number in the PSDCH pool
+   * \param duration The duration of the data frame
+   *
+   * \return true if an error occurred and the transmission was not
+   * started, false otherwise.
+   */
+   bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, uint32_t resNo, Time duration);
+   
   /**
   * Start a transmission of control frame in DL
   *
@@ -726,8 +756,8 @@ private:
   /// End receive UL SRS function
   void EndRxUlSrs ();
   /// End receive Sidelink Data function
-  void EndRxSlData ();
-  
+  void EndRxSlFrame ();
+ 
   /** 
    * \brief Set transmit mode gain function
    *
@@ -754,9 +784,23 @@ private:
   double GetMeanSinr (const SpectrumValue& sinr, const std::vector<int>& rbBitMap);
 
   /**
-   * \brief Receive discovery message function
+   * \brief Process received PSCCH messages function
+   * \param pktIndexes Indexes of PSCCH messages received
    */
-  void RxDiscovery ();
+  void RxSlPscch (std::vector<uint32_t> pktIndexes);
+  
+  /**
+   * \brief Process received PSSCH messages function
+   * \param pktIndexes Indexes of PSSCH messages received
+   */
+  void RxSlPssch (std::vector<uint32_t> pktIndexes);
+  
+  /**
+   * \brief Process received PSDCH messages function
+   * \param pktIndexes Indexes of PSDCH messages received
+   */
+  void RxSlPsdch (std::vector<uint32_t> pktIndexes);
+  
 
   Ptr<MobilityModel> m_mobility; ///< the mobility model
   Ptr<AntennaModel> m_antenna; ///< the antenna model
@@ -807,7 +851,7 @@ private:
   std::vector<SpectrumValue> m_slSinrPerceived; ///< SINR for each D2D packet received
   std::vector<SpectrumValue> m_slSignalPerceived; ///< Signal for each D2D packet received
   std::vector<SpectrumValue> m_slInterferencePerceived; ///< interference for each D2D packet received
-  std::vector<SlRxPacketInfo_t> m_rxPacketInfo; ///< Sidelink received packet information
+  std::vector< SlRxPacketInfo_t > m_rxPacketInfo; ///< Sidelink received packet information
 
   /// Provides uniform random variables.
   Ptr<UniformRandomVariable> m_random; ///< Uniform random variable used to toss for the reception of the TB

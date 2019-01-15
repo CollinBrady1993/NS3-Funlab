@@ -186,8 +186,136 @@ struct LteSpectrumSignalParametersSlFrame : public SpectrumSignalParameters
   std::list<Ptr<LteControlMessage> > ctrlMsgList;
   
   uint32_t nodeId; ///< Node id
+
+  /**
+   * The Sidelink synchronization signal identifier of the transmitting UE
+   */
+  uint64_t slssId;
+  
+};
+
+/**
+* \ingroup lte
+*
+* Signal parameters for Lte SL Frame (PSCCH and PSSCH)
+*/
+struct LteSpectrumSignalParametersSlCtrlFrame : public LteSpectrumSignalParametersSlFrame
+{
+  
+  // inherited from SpectrumSignalParameters
+  virtual Ptr<SpectrumSignalParameters> Copy ();
+  
+  /**
+  * default constructor
+  */
+  LteSpectrumSignalParametersSlCtrlFrame ();
+
+  /**
+  * copy constructor
+  * \param p The LteSpectrumSignalParametersSlFrame
+  */
+  LteSpectrumSignalParametersSlCtrlFrame (const LteSpectrumSignalParametersSlCtrlFrame& p);
+
+
+  /**
+  * The packet burst being transmitted with this signal
+  */
+  Ptr<PacketBurst> packetBurst;
+
+  /**
+   * The control messages being sent (for sidelink, there should only be 1)
+   */
+  std::list<Ptr<LteControlMessage> > ctrlMsgList;
+  
+  uint32_t nodeId; ///< Node id
   uint8_t groupId; ///< Sidelink group id
 
+  /**
+   * The Sidelink synchronization signal identifier of the transmitting UE
+   */
+  uint64_t slssId;
+  
+};
+
+/**
+* \ingroup lte
+*
+* Signal parameters for Lte SL Frame (PSCCH and PSSCH)
+*/
+struct LteSpectrumSignalParametersSlDataFrame : public LteSpectrumSignalParametersSlFrame
+{
+  
+  // inherited from SpectrumSignalParameters
+  virtual Ptr<SpectrumSignalParameters> Copy ();
+  
+  /**
+  * default constructor
+  */
+  LteSpectrumSignalParametersSlDataFrame ();
+
+  /**
+  * copy constructor
+  * \param p The LteSpectrumSignalParametersSlFrame
+  */
+  LteSpectrumSignalParametersSlDataFrame (const LteSpectrumSignalParametersSlDataFrame& p);
+
+
+  /**
+  * The packet burst being transmitted with this signal
+  */
+  Ptr<PacketBurst> packetBurst;
+
+  /**
+   * The control messages being sent (for sidelink, there should only be 1)
+   */
+  std::list<Ptr<LteControlMessage> > ctrlMsgList;
+  
+  uint32_t nodeId; ///< Node id
+  uint8_t groupId; ///< Sidelink group id
+
+  /**
+   * The Sidelink synchronization signal identifier of the transmitting UE
+   */
+  uint64_t slssId;
+  
+};
+
+/**
+* \ingroup lte
+*
+* Signal parameters for Lte SL Frame (PSCCH and PSSCH)
+*/
+struct LteSpectrumSignalParametersSlDiscFrame : public LteSpectrumSignalParametersSlFrame
+{
+  
+  // inherited from SpectrumSignalParameters
+  virtual Ptr<SpectrumSignalParameters> Copy ();
+  
+  /**
+  * default constructor
+  */
+  LteSpectrumSignalParametersSlDiscFrame ();
+
+  /**
+  * copy constructor
+  * \param p The LteSpectrumSignalParametersSlFrame
+  */
+  LteSpectrumSignalParametersSlDiscFrame (const LteSpectrumSignalParametersSlDiscFrame& p);
+
+
+  /**
+  * The packet burst being transmitted with this signal
+  */
+  Ptr<PacketBurst> packetBurst;
+
+  /**
+   * The control messages being sent (for sidelink, there should only be 1)
+   */
+  std::list<Ptr<LteControlMessage> > ctrlMsgList;
+  
+  uint32_t nodeId; ///< Node id
+
+  uint32_t resNo; ///< Resource number
   /**
    * The Sidelink synchronization signal identifier of the transmitting UE
    */

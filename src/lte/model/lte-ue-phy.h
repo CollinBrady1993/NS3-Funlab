@@ -776,7 +776,7 @@ private:
   bool m_chooseFrameAndSubframeRandomly;
 
   /// A queue of packet parameters to be sent.
-  std::map < Ptr<Packet> , LteUePhySapProvider::TransmitSlPhySduParameters > m_packetParamsMap;
+  std::vector< std::list < LteUePhySapProvider::TransmitSlPhySduParameters > > m_packetParamsQueue;
   
   
   /// Sidelink communication grant related  parameters

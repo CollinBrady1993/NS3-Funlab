@@ -40,7 +40,7 @@
 #include <ns3/simulator.h>
 #include <ns3/lte-common.h>
 
-#include<bitset>
+#include <bitset>
 
 
 namespace ns3 {
@@ -102,23 +102,23 @@ UeMemberLteUeCmacSapProvider::ConfigureRach (RachConfig rc)
   m_mac->DoConfigureRach (rc);
 }
 
-  void 
+void
 UeMemberLteUeCmacSapProvider::StartContentionBasedRandomAccessProcedure ()
 {
   m_mac->DoStartContentionBasedRandomAccessProcedure ();
 }
 
- void 
+void
 UeMemberLteUeCmacSapProvider::StartNonContentionBasedRandomAccessProcedure (uint16_t rnti, uint8_t preambleId, uint8_t prachMask)
 {
   m_mac->DoStartNonContentionBasedRandomAccessProcedure (rnti, preambleId, prachMask);
 }
 
- void
- UeMemberLteUeCmacSapProvider::SetRnti (uint16_t rnti)
- {
-   m_mac->DoSetRnti (rnti);
- }
+void
+UeMemberLteUeCmacSapProvider::SetRnti (uint16_t rnti)
+{
+  m_mac->DoSetRnti (rnti);
+}
 
 void
 UeMemberLteUeCmacSapProvider::AddLc (uint8_t lcId, LogicalChannelConfig lcConfig, LteMacSapUser* msu)
@@ -311,7 +311,7 @@ LteUeMac::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::LteUeMac")
     .SetParent<Object> ()
-    .SetGroupName("Lte")
+    .SetGroupName ("Lte")
     .AddConstructor<LteUeMac> ()
     .AddAttribute ("Ktrp",
                    "Number of active subframes used for PSSCH in the TRP",
@@ -350,26 +350,27 @@ LteUeMac::GetTypeId (void)
                      "Information regarding SL discovery message transmisssions",
                      MakeTraceSourceAccessor (&LteUeMac::m_slPsdchScheduling),
                      "ns3::SlUeMacStatParameters::TracedCallback")
-    ;
+  ;
   return tid;
 }
 
 
 LteUeMac::LteUeMac ()
-  :  m_bsrPeriodicity (MilliSeconds (1)), // ideal behavior
-     m_bsrLast (MilliSeconds (0)),
-     m_freshUlBsr (false),
-     m_harqProcessId (0),
-     m_rnti (0),
-     m_rachConfigured (false),
-     m_waitingForRaResponse (false),
-     m_slBsrPeriodicity (MilliSeconds (1)),
-     m_slBsrLast (MilliSeconds (0)),
-     m_freshSlBsr (false),
-     m_setTrpIndex (0),
-     m_useSetTrpIndex (false),
-     m_sidelinkEnabled (false)
-  
+  :  m_bsrPeriodicity (MilliSeconds (1)),
+    // ideal behavior
+    m_bsrLast (MilliSeconds (0)),
+    m_freshUlBsr (false),
+    m_harqProcessId (0),
+    m_rnti (0),
+    m_rachConfigured (false),
+    m_waitingForRaResponse (false),
+    m_slBsrPeriodicity (MilliSeconds (1)),
+    m_slBsrLast (MilliSeconds (0)),
+    m_freshSlBsr (false),
+    m_setTrpIndex (0),
+    m_useSetTrpIndex (false),
+    m_sidelinkEnabled (false)
+
 {
   NS_LOG_FUNCTION (this);
   m_miUlHarqProcessesPacket.resize (HARQ_PERIOD);
@@ -379,7 +380,7 @@ LteUeMac::LteUeMac ()
       m_miUlHarqProcessesPacket.at (i) = pb;
     }
   m_miUlHarqProcessesPacketTimer.resize (HARQ_PERIOD, 0);
-   
+
   m_macSapProvider = new UeMemberLteMacSapProvider (this);
   m_cmacSapProvider = new UeMemberLteUeCmacSapProvider (this);
   m_uePhySapUser = new UeMemberLteUePhySapUser (this);
@@ -457,6 +458,9 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
 
   if (params.discMsg)
     {
+      LteRadioBearerTag tag;
+      tag.SetRnti (params.rnti);
+      params.pdu->AddPacketTag (tag);
       //queue message until next discovery period
       m_discPendingTxMsgs.push_back (params.pdu);
     }
@@ -476,39 +480,40 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
           NS_LOG_INFO ("Transmitting Sidelink PDU");
           //find transmitting pool
           std::map <uint32_t, PoolInfo>::iterator poolIt = m_sidelinkTxPoolsMap.find (params.dstL2Id);
-          NS_ASSERT (poolIt!= m_sidelinkTxPoolsMap.end());
+          NS_ASSERT (poolIt != m_sidelinkTxPoolsMap.end ());
           std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo>::iterator allocIt = poolIt->second.m_psschTx.begin ();
-          
+
           //For sanity check, but to be removed once the code is checked
           uint32_t frameNo = m_frameNo;
           uint32_t subframeNo = m_subframeNo;
           if (subframeNo + UL_PUSCH_TTIS_DELAY > 10)
-          {
-            frameNo++;
-            if (frameNo > 1024)
-              {
-                frameNo = 1;
-              }
-            subframeNo = (subframeNo + UL_PUSCH_TTIS_DELAY) % 10;
-          }
-        else
-          {
-            subframeNo = subframeNo + UL_PUSCH_TTIS_DELAY;
-          }
+            {
+              frameNo++;
+              if (frameNo > 1024)
+                {
+                  frameNo = 1;
+                }
+              subframeNo = (subframeNo + UL_PUSCH_TTIS_DELAY) % 10;
+            }
+          else
+            {
+              subframeNo = subframeNo + UL_PUSCH_TTIS_DELAY;
+            }
           NS_ASSERT ((*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo);
-          
+
           LteRadioBearerTag tag (params.rnti, params.lcid, params.srcL2Id, params.dstL2Id);
           params.pdu->AddPacketTag (tag);
           // store pdu in HARQ buffer
           poolIt->second.m_miSlHarqProcessPacket->AddPacket (params.pdu);
-          
+
           LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+          phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSSCH;
           phyParams.m_rbStart = (*allocIt).rbStart;
           phyParams.m_rbLen = (*allocIt).nbRb;
           uint8_t rv = poolIt->second.m_psschTx.size () % 4;
           NS_ASSERT (rv == 0); //to be removed once confirmed
           phyParams.m_rv = rv == 0 ? rv : 4 - rv;
-                  
+
           m_uePhySapProvider->SendSlMacPdu (params.pdu, phyParams);
           //m_uePhySapProvider->SendMacPdu (params.pdu);
         }
@@ -519,7 +524,7 @@ void
 LteUeMac::DoReportBufferStatus (LteMacSapProvider::ReportBufferStatusParameters params)
 {
   NS_LOG_FUNCTION (this << (uint32_t) params.lcid);
-  
+
   if (params.srcL2Id == 0)
     {
       NS_ASSERT (params.dstL2Id == 0);
@@ -542,7 +547,7 @@ LteUeMac::DoReportBufferStatus (LteMacSapProvider::ReportBufferStatusParameters 
     }
   else
     {
-      NS_LOG_INFO ("Reporting for Sidelink. Tx Queue size = "<<params.txQueueSize);
+      NS_LOG_INFO ("Reporting for Sidelink. Tx Queue size = " << params.txQueueSize);
       //Sidelink BSR
       std::map <SidelinkLcIdentifier, LteMacSapProvider::ReportBufferStatusParameters>::iterator it;
 
@@ -587,7 +592,7 @@ LteUeMac::SendReportBufferStatus (void)
   bsr.m_macCeType = MacCeListElement_s::BSR;
 
   // BSR is reported for each LCG
-  std::map <uint8_t, LteMacSapProvider::ReportBufferStatusParameters>::iterator it;  
+  std::map <uint8_t, LteMacSapProvider::ReportBufferStatusParameters>::iterator it;
   std::vector<uint32_t> queue (4, 0); // one value per each of the 4 LCGs, initialized to 0
   for (it = m_ulBsrReceived.begin (); it != m_ulBsrReceived.end (); it++)
     {
@@ -627,7 +632,7 @@ LteUeMac::SendSidelinkReportBufferStatus (void)
   //check if we have at scheduled pools
   bool scheduled = false;
   for (std::map <uint32_t, PoolInfo >::iterator slTxPoolIt = m_sidelinkTxPoolsMap.begin ();
-                                                slTxPoolIt != m_sidelinkTxPoolsMap.end () && !scheduled; slTxPoolIt++)
+       slTxPoolIt != m_sidelinkTxPoolsMap.end () && !scheduled; slTxPoolIt++)
     {
       if (slTxPoolIt->second.m_pool->GetSchedulingType () == SidelinkCommResourcePool::SCHEDULED)
         {
@@ -661,13 +666,13 @@ LteUeMac::SendSidelinkReportBufferStatus (void)
       slTxPoolIt = m_sidelinkTxPoolsMap.find (dstL2Id);
       Ptr<SidelinkTxCommResourcePool> pool = DynamicCast<SidelinkTxCommResourcePool> (slTxPoolIt->second.m_pool);
       NS_ASSERT (slTxPoolIt != m_sidelinkTxPoolsMap.end ());
-      if (pool->GetSchedulingType() == SidelinkCommResourcePool::SCHEDULED)
+      if (pool->GetSchedulingType () == SidelinkCommResourcePool::SCHEDULED)
         {
           NS_LOG_DEBUG ("Tx queue size = " << (*it).second.txQueueSize <<
                         " ReTx queue size = " << (*it).second.retxQueueSize <<
-                        " Status PDU size = "<< (*it).second.statusPduSize);
+                        " Status PDU size = " << (*it).second.statusPduSize);
 
-          queue.at (pool->GetIndex()) += ((*it).second.txQueueSize + (*it).second.retxQueueSize + (*it).second.statusPduSize);
+          queue.at (pool->GetIndex ()) += ((*it).second.txQueueSize + (*it).second.retxQueueSize + (*it).second.statusPduSize);
         }
     }
 
@@ -687,14 +692,14 @@ void
 LteUeMac::RandomlySelectAndSendRaPreamble ()
 {
   NS_LOG_FUNCTION (this);
-  // 3GPP 36.321 5.1.1  
+  // 3GPP 36.321 5.1.1
   NS_ASSERT_MSG (m_rachConfigured, "RACH not configured");
   // assume that there is no Random Access Preambles group B
   m_raPreambleId = m_raPreambleUniformVariable->GetInteger (0, m_rachConfig.numberOfRaPreambles - 1);
   bool contention = true;
   SendRaPreamble (contention);
 }
-   
+
 void
 LteUeMac::SendRaPreamble (bool contention)
 {
@@ -720,8 +725,8 @@ LteUeMac::SendRaPreamble (bool contention)
 void 
 LteUeMac::StartWaitingForRaResponse ()
 {
-   NS_LOG_FUNCTION (this);
-   m_waitingForRaResponse = true;
+  NS_LOG_FUNCTION (this);
+  m_waitingForRaResponse = true;
 }
 
 void 
@@ -839,7 +844,7 @@ LteUeMac::DoAddLc (uint8_t lcId,  LteUeCmacSapProvider::LogicalChannelConfig lcC
 {
   NS_LOG_FUNCTION (this << " lcId" << (uint32_t) lcId);
   NS_ASSERT_MSG (m_lcInfoMap.find (lcId) == m_lcInfoMap.end (), "cannot add channel because LCID " << (uint16_t)lcId << " is already present");
-  
+
   LcInfo lcInfo;
   lcInfo.lcConfig = lcConfig;
   lcInfo.macSapUser = msu;
@@ -864,7 +869,7 @@ LteUeMac::DoAddSlLc (uint8_t lcId, uint32_t srcL2Id, uint32_t dstL2Id, LteUeCmac
   slLcId.dstL2Id = dstL2Id;
 
   NS_ASSERT_MSG (m_slLcInfoMap.find (slLcId) == m_slLcInfoMap.end (), "cannot add channel because LCID " << lcId
-                                    << ", srcL2Id " << srcL2Id << ", dstL2Id " << dstL2Id << " is already present");
+                                                                                                         << ", srcL2Id " << srcL2Id << ", dstL2Id " << dstL2Id << " is already present");
 
   LcInfo lcInfo;
   lcInfo.lcConfig = lcConfig;
@@ -893,7 +898,7 @@ LteUeMac::DoReset ()
     {
       // don't delete CCCH)
       if (it->first == 0)
-        {          
+        {
           ++it;
         }
       else
@@ -916,7 +921,7 @@ LteUeMac::DoSetSlDiscTxPool (Ptr<SidelinkTxDiscResourcePool> pool)
   //NS_ASSERT_MSG (m_discTxPool.m_pool != NULL, "Cannot add discovery transmission pool for " << m_rnti << ". Pool already exist for destination");
   DiscPoolInfo info;
   info.m_pool = pool;
-  info.m_npsdch = info.m_pool->GetNPsdch();
+  info.m_npsdch = info.m_pool->GetNPsdch ();
   info.m_currentDiscPeriod.frameNo = 0; //init to 0 to make it invalid
   info.m_currentDiscPeriod.subframeNo = 0; //init to 0 to make it invalid
   info.m_nextDiscPeriod = info.m_pool->GetNextDiscPeriod (m_frameNo, m_subframeNo);
@@ -953,10 +958,10 @@ LteUeMac::DoAddSlCommTxPool (uint32_t dstL2Id, Ptr<SidelinkTxCommResourcePool> p
   NS_ASSERT_MSG (it == m_sidelinkTxPoolsMap.end (), "Cannot add Sidelink transmission pool for " << dstL2Id << ". Pool already exist for destination");
   PoolInfo info;
   info.m_pool = pool;
-  info.m_npscch = info.m_pool->GetNPscch();
+  info.m_npscch = info.m_pool->GetNPscch ();
   info.m_currentScPeriod.frameNo = 0; //init to 0 to make it invalid
   info.m_currentScPeriod.subframeNo = 0; //init to 0 to make it invalid
-  NS_LOG_DEBUG("frame no : "<< info.m_nextScPeriod.frameNo<<" Subframe no : "<<info.m_nextScPeriod.subframeNo);
+  NS_LOG_DEBUG ("frame no : " << info.m_nextScPeriod.frameNo << " Subframe no : " << info.m_nextScPeriod.subframeNo);
   info.m_nextScPeriod = info.m_pool->GetNextScPeriod (m_frameNo, m_subframeNo);
   //adjust because scheduler starts with frame/subframe = 1
   info.m_nextScPeriod.frameNo++;
@@ -1020,39 +1025,39 @@ LteUeMac::DoReceivePhyPdu (Ptr<Packet> p)
       NS_LOG_INFO ("Received Sidelink packet");
       std::list <uint32_t>::iterator dstIt;
       bool found = false;
-      for (dstIt = m_sidelinkDestinations.begin (); dstIt != m_sidelinkDestinations.end () ; dstIt++)
+      for (dstIt = m_sidelinkDestinations.begin (); dstIt != m_sidelinkDestinations.end (); dstIt++)
         {
           if ((*dstIt) == tag.GetDestinationL2Id ())
-          {
-            //the destination is a group we want to listen to
-            SidelinkLcIdentifier identifier;
-            identifier.lcId = tag.GetLcid ();
-            identifier.srcL2Id = tag.GetSourceL2Id ();
-            identifier.dstL2Id = tag.GetDestinationL2Id ();
+            {
+              //the destination is a group we want to listen to
+              SidelinkLcIdentifier identifier;
+              identifier.lcId = tag.GetLcid ();
+              identifier.srcL2Id = tag.GetSourceL2Id ();
+              identifier.dstL2Id = tag.GetDestinationL2Id ();
 
-            std::map <SidelinkLcIdentifier, LcInfo>::iterator it = m_slLcInfoMap.find (identifier);
-            if (it == m_slLcInfoMap.end ())
-              {
-                //notify RRC to setup bearer
-                m_cmacSapUser->NotifySidelinkReception (tag.GetLcid(), tag.GetSourceL2Id (), tag.GetDestinationL2Id ());
+              std::map <SidelinkLcIdentifier, LcInfo>::iterator it = m_slLcInfoMap.find (identifier);
+              if (it == m_slLcInfoMap.end ())
+                {
+                  //notify RRC to setup bearer
+                  m_cmacSapUser->NotifySidelinkReception (tag.GetLcid (), tag.GetSourceL2Id (), tag.GetDestinationL2Id ());
 
-                //should be setup now
-                it = m_slLcInfoMap.find (identifier);
-                if (it == m_slLcInfoMap.end ())
-                  {
-                    NS_LOG_WARN ("Failure to setup Sidelink radio bearer");
-                  }
-              }
-            LteMacSapUser::ReceivePduParameters rxPduParams;
-            rxPduParams.p = p;
-            rxPduParams.rnti = m_rnti;
-            rxPduParams.lcid = tag.GetLcid ();
-            rxPduParams.srcL2Id = tag.GetSourceL2Id ();
-            rxPduParams.dstL2Id = tag.GetDestinationL2Id ();
-            it->second.macSapUser->ReceivePdu (rxPduParams);
-            found = true;
-            break;
-          }
+                  //should be setup now
+                  it = m_slLcInfoMap.find (identifier);
+                  if (it == m_slLcInfoMap.end ())
+                    {
+                      NS_LOG_WARN ("Failure to setup Sidelink radio bearer");
+                    }
+                }
+              LteMacSapUser::ReceivePduParameters rxPduParams;
+              rxPduParams.p = p;
+              rxPduParams.rnti = m_rnti;
+              rxPduParams.lcid = tag.GetLcid ();
+              rxPduParams.srcL2Id = tag.GetSourceL2Id ();
+              rxPduParams.dstL2Id = tag.GetDestinationL2Id ();
+              it->second.macSapUser->ReceivePdu (rxPduParams);
+              found = true;
+              break;
+            }
         }
       if (!found)
         {
@@ -1166,7 +1171,7 @@ LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
                               NS_FATAL_ERROR ("Insufficient Tx Opportunity for sending a status message");
                             }
                         }
-                        
+
                       if ((bytesForThisLc > 7)    // 7 is the min TxOpportunity useful for Rlc
                           && (((*itBsr).second.retxQueueSize > 0)
                               || ((*itBsr).second.txQueueSize > 0)))
@@ -1253,7 +1258,7 @@ LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
               Ptr<Packet> pkt = (*j)->Copy ();
               m_uePhySapProvider->SendMacPdu (pkt);
             }
-          m_miUlHarqProcessesPacketTimer.at (m_harqProcessId) = HARQ_PERIOD;          
+          m_miUlHarqProcessesPacketTimer.at (m_harqProcessId) = HARQ_PERIOD;
         }
 
     }
@@ -1288,8 +1293,8 @@ LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
 
       //store the grant for the next SC period
       //TODO: distinguish SL grants for different pools. Right now just assume there is only one pool
-      Ptr<SidelinkTxCommResourcePool> pool = DynamicCast<SidelinkTxCommResourcePool> (m_sidelinkTxPoolsMap.begin()->second.m_pool);
-      NS_ASSERT (pool->GetSchedulingType() == SidelinkCommResourcePool::SCHEDULED);
+      Ptr<SidelinkTxCommResourcePool> pool = DynamicCast<SidelinkTxCommResourcePool> (m_sidelinkTxPoolsMap.begin ()->second.m_pool);
+      NS_ASSERT (pool->GetSchedulingType () == SidelinkCommResourcePool::SCHEDULED);
 
       SidelinkGrant grant;
       grant.m_resPscch = dci.m_resPscch;
@@ -1299,10 +1304,10 @@ LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
       grant.m_rbLen = dci.m_rbLen;
       grant.m_hoppingInfo = dci.m_hoppingInfo;
       grant.m_iTrp = dci.m_trp;
-      grant.m_mcs = pool->GetMcs();
+      grant.m_mcs = pool->GetMcs ();
       grant.m_tbSize = 0; //computed later
-      m_sidelinkTxPoolsMap.begin()->second.m_nextGrant = grant;
-      m_sidelinkTxPoolsMap.begin()->second.m_grantReceived = true;
+      m_sidelinkTxPoolsMap.begin ()->second.m_nextGrant = grant;
+      m_sidelinkTxPoolsMap.begin ()->second.m_grantReceived = true;
 
       NS_LOG_INFO (this << "Received SL_DCI message rnti=" << m_rnti << " res=" << (uint16_t) dci.m_resPscch);
     }
@@ -1392,7 +1397,7 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               m_discTxPool.m_nextDiscPeriod.frameNo++;
               m_discTxPool.m_nextDiscPeriod.subframeNo++;
               NS_LOG_INFO ("Starting new discovery period " << ". Next period at " << m_discTxPool.m_nextDiscPeriod.frameNo << "/"
-                                                                          << m_discTxPool.m_nextDiscPeriod.subframeNo);
+                                                            << m_discTxPool.m_nextDiscPeriod.subframeNo);
               NS_ABORT_MSG_IF (m_discTxPool.m_nextDiscPeriod.frameNo > 1024 || m_discTxPool.m_nextDiscPeriod.subframeNo > 10,
                                "Invalid frame or subframe number");
 
@@ -1455,15 +1460,15 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
           std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator allocIt;
           //check if we need to transmit PSDCH
-          allocIt = m_discTxPool.m_psdchTx.begin();
-          if (allocIt != m_discTxPool.m_psdchTx.end() && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
+          allocIt = m_discTxPool.m_psdchTx.begin ();
+          if (allocIt != m_discTxPool.m_psdchTx.end () && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
             {
               NS_LOG_INFO (this << "PSDCH transmission");
               for (std::list< Ptr<Packet> >::iterator discMsg =  m_discTxPool.m_discTxMsgs.begin (); discMsg !=  m_discTxPool.m_discTxMsgs.end (); ++discMsg)
                 {
                   //Create Discovery message for each discovery payload announcing
                   NS_LOG_INFO ("discovery message sent by " << m_rnti);
-                  
+
                   // Collect statistics for SL share channel UE MAC scheduling trace
                   SlUeMacStatParameters stats_dch_params;
                   stats_dch_params.m_frameNo = frameNo;
@@ -1490,20 +1495,21 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   LteSlDiscHeader discHeader;
                   (*discMsg)->PeekHeader (discHeader);
                   m_slPsdchScheduling (stats_dch_params, discHeader);
-                  
-                  
+
+
                   LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+                  phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSDCH;
                   phyParams.m_rbStart = (*allocIt).rbStart;
                   phyParams.m_rbLen = (*allocIt).nbRb;
                   phyParams.m_resNo = m_discTxPool.m_currentGrant.m_resPsdch;
-                  uint8_t rv = m_discTxPool.m_psdchTx.size () % (m_discTxPool.m_pool->GetNumRetx()+1);
-                    NS_ASSERT (rv == 0); //to be removed once confirmed
-                    phyParams.m_rv = rv == 0 ? rv : m_discTxPool.m_pool->GetNumRetx()+1 - rv;
+                  uint8_t rv = m_discTxPool.m_psdchTx.size () % (m_discTxPool.m_pool->GetNumRetx () + 1);
+                  NS_ASSERT (rv == 0);   //to be removed once confirmed
+                  phyParams.m_rv = rv == 0 ? rv : m_discTxPool.m_pool->GetNumRetx () + 1 - rv;
 
                   m_uePhySapProvider->SendSlMacPdu (*discMsg, phyParams);
                 }
               m_discTxPool.m_psdchTx.erase (allocIt);
-              if (m_discTxPool.m_psdchTx.empty())
+              if (m_discTxPool.m_psdchTx.empty ())
                 {
                   NS_LOG_INFO ("was last transmission, clear messages");
                   m_discTxPool.m_discTxMsgs.clear ();
@@ -1559,14 +1565,14 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                       if (itBsr->first.dstL2Id == poolIt->first)
                         {
                           //this is the BSR for the pool
-                          NS_LOG_DEBUG ("Found the BSR. Tx Queue size = "<<(*itBsr).second.txQueueSize);
+                          NS_LOG_DEBUG ("Found the BSR. Tx Queue size = " << (*itBsr).second.txQueueSize);
                           break;
                         }
                     }
                   if (itBsr == m_slBsrReceived.end ()
                       || ( (*itBsr).second.txQueueSize == 0
-                      && (*itBsr).second.retxQueueSize == 0
-                      && (*itBsr).second.statusPduSize == 0 ))
+                           && (*itBsr).second.retxQueueSize == 0
+                           && (*itBsr).second.statusPduSize == 0 ))
                     {
                       NS_LOG_INFO ("No BSR received. Assume no data to transfer");
                     }
@@ -1587,12 +1593,12 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                       grant.m_hoppingInfo = poolIt->second.m_pool->GetDataHoppingConfig ().hoppingInfo;
                       if (grant.m_hoppingInfo < 4)
                         {
-                          NS_LOG_DEBUG("Hopping enabled");
+                          NS_LOG_DEBUG ("Hopping enabled");
                           grant.m_hopping = 1; //Hopping is enabled
                         }
                       else
                         {
-                          NS_LOG_DEBUG("Hopping disabled");
+                          NS_LOG_DEBUG ("Hopping disabled");
                           grant.m_hopping = 0; //Hopping is disabled
                         }
 
@@ -1641,18 +1647,18 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                           if (itBsr->first.dstL2Id == poolIt->first)
                             {
                               //this is the BSR for the pool
-                              NS_LOG_DEBUG ("Found the BSR. Tx Queue size = "<<(*itBsr).second.txQueueSize);
+                              NS_LOG_DEBUG ("Found the BSR. Tx Queue size = " << (*itBsr).second.txQueueSize);
                               break;
                             }
                         }
 
                       if (itBsr == m_slBsrReceived.end ()
                           || ( (*itBsr).second.txQueueSize == 0
-                          && (*itBsr).second.retxQueueSize == 0
-                          && (*itBsr).second.statusPduSize == 0))
+                               && (*itBsr).second.retxQueueSize == 0
+                               && (*itBsr).second.statusPduSize == 0))
                         {
                           NS_LOG_INFO ("We receive the grant from the eNB but the transmission queue size is zero."
-                                                                              " Assume no data to transfer for now");
+                                       " Assume no data to transfer for now");
                           continue;
                         }
                     }
@@ -1719,7 +1725,7 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                                                       << txIt->subframe.subframeNo << ": rbStart=" << (uint32_t) txIt->rbStart
                                                       << ", rbLen=" << (uint32_t) txIt->nbRb);
                       NS_ABORT_MSG_IF (txIt->subframe.frameNo > 1024 || txIt->subframe.subframeNo > 10,
-                                                             "Invalid frame or subframe number");
+                                       "Invalid frame or subframe number");
                     }
 
                   //compute the TB size
@@ -1743,8 +1749,8 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           else
             {
               NS_LOG_DEBUG ("Sidelink Control period not started yet");
-              NS_LOG_DEBUG("current frame number = " << frameNo <<" Next SC period frame number = "<<poolIt->second.m_nextScPeriod.frameNo);
-              NS_LOG_DEBUG("current subframe number = " << subframeNo <<" Next SC period subframe number = "<<poolIt->second.m_nextScPeriod.subframeNo);
+              NS_LOG_DEBUG ("current frame number = " << frameNo << " Next SC period frame number = " << poolIt->second.m_nextScPeriod.frameNo);
+              NS_LOG_DEBUG ("current subframe number = " << subframeNo << " Next SC period subframe number = " << poolIt->second.m_nextScPeriod.subframeNo);
             }
 
           std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo>::iterator allocIt;
@@ -1787,15 +1793,16 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                                              poolIt->second.m_currentGrant.m_iTrp,
                                              poolIt->second.m_currentGrant.m_mcs,
                                              poolIt->first & 0xFF);
-              Ptr<Packet> p = Create<Packet>();
+              Ptr<Packet> p = Create<Packet> ();
               p->AddHeader (sciHeader);
               LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+              phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSCCH;
               phyParams.m_rbStart = (*allocIt).rbStart;
               phyParams.m_rbLen = (*allocIt).nbRb;
               phyParams.m_resNo = poolIt->second.m_currentGrant.m_resPscch;
-              
+
               m_uePhySapProvider->SendSlMacPdu (p, phyParams);
-              
+
               poolIt->second.m_pscchTx.erase (allocIt);
             }
 
@@ -1975,9 +1982,10 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                     {
                       Ptr<Packet> pkt = (*j)->Copy ();
                       LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
-                        phyParams.m_rbStart = (*allocIt).rbStart;
-                        phyParams.m_rbLen = (*allocIt).nbRb;
-                        phyParams.m_rv = (4 - poolIt->second.m_psschTx.size () % 4);
+                      phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSSCH;
+                      phyParams.m_rbStart = (*allocIt).rbStart;
+                      phyParams.m_rbLen = (*allocIt).nbRb;
+                      phyParams.m_rv = (4 - poolIt->second.m_psschTx.size () % 4);
                       m_uePhySapProvider->SendSlMacPdu (pkt, phyParams);
                     }
                 }
@@ -2024,7 +2032,7 @@ LteUeMac::DoRemoveSlDestination (uint32_t destination)
 }
 
 void
-LteUeMac::DoNotifyChangeOfTiming(uint32_t frameNo, uint32_t subframeNo)
+LteUeMac::DoNotifyChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
 {
   NS_LOG_FUNCTION (this);
   //There is a delay between the MAC scheduling and the transmission so we assume that we are ahead.
@@ -2043,7 +2051,7 @@ LteUeMac::DoNotifyChangeOfTiming(uint32_t frameNo, uint32_t subframeNo)
     }
 
   std::map <uint32_t, PoolInfo>::iterator poolIt;
-  for (poolIt = m_sidelinkTxPoolsMap.begin() ; poolIt != m_sidelinkTxPoolsMap.end() ; poolIt++)
+  for (poolIt = m_sidelinkTxPoolsMap.begin (); poolIt != m_sidelinkTxPoolsMap.end (); poolIt++)
     {
       poolIt->second.m_currentScPeriod = poolIt->second.m_pool->GetCurrentScPeriod (frameNo, subframeNo);
       poolIt->second.m_nextScPeriod = poolIt->second.m_pool->GetNextScPeriod (poolIt->second.m_currentScPeriod.frameNo, poolIt->second.m_currentScPeriod.subframeNo);
@@ -2051,14 +2059,14 @@ LteUeMac::DoNotifyChangeOfTiming(uint32_t frameNo, uint32_t subframeNo)
       poolIt->second.m_nextScPeriod.frameNo++;
       poolIt->second.m_nextScPeriod.subframeNo++;
       NS_LOG_INFO ("Adapting the period for pool of group " << poolIt->first << ". Next period at "
-                   << poolIt->second.m_nextScPeriod.frameNo << "/" << poolIt->second.m_nextScPeriod.subframeNo);
+                                                            << poolIt->second.m_nextScPeriod.frameNo << "/" << poolIt->second.m_nextScPeriod.subframeNo);
       NS_ABORT_MSG_IF (poolIt->second.m_nextScPeriod.frameNo > 1024 || poolIt->second.m_nextScPeriod.subframeNo > 10,
-                                             "Invalid frame or subframe number");
+                       "Invalid frame or subframe number");
     }
 }
 
 void
-LteUeMac::DoNotifySidelinkEnabled()
+LteUeMac::DoNotifySidelinkEnabled ()
 {
   NS_LOG_FUNCTION (this);
   m_sidelinkEnabled = true;

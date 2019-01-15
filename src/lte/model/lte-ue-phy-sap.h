@@ -40,12 +40,18 @@ class LteUePhySapProvider
 {
 public:
   virtual ~LteUePhySapProvider ();
-
+  
   /**
    * Parameters for LteUePhySapProvider::TransmitPhySdu
    */
   struct TransmitSlPhySduParameters
   {
+    enum SidelinkChannel
+      {
+          PSCCH,
+          PSSCH,
+          PSDCH
+      } m_channel;      
     //Common information
     uint8_t   m_rbStart; ///< models rb assignment
     uint8_t   m_rbLen;   ///< models rb assignment
