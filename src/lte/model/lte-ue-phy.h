@@ -245,6 +245,18 @@ public:
    */
   void PhyPduReceived (Ptr<Packet> p);
 
+  /**
+   * \brief PhySpectrum received a new PHY-PDU
+   * \param p The packet received
+   */
+  void PhyPscchPduReceived (Ptr<Packet> p);
+
+  /**
+   * \brief PhySpectrum received a new PHY-PDU
+   * \param p The packet received
+   */
+  void PhyPsdchPduReceived (Ptr<Packet> p);
+
 
   /**
    * \brief trigger from eNB the start from a new frame

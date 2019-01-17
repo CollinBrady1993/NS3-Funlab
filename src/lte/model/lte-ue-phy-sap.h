@@ -126,6 +126,20 @@ public:
   virtual void ReceivePhyPdu (Ptr<Packet> p) = 0;
 
   /**
+   * Called by the Phy to notify the MAC of the reception of a new PHY-PDU
+   *
+   * \param p The packet
+   */
+  virtual void ReceiveSlDiscPhyPdu (Ptr<Packet> p) = 0;
+
+  /**
+   * Called by the Phy to notify the MAC of the reception of a new PHY-PDU
+   *
+   * \param p The packet
+   */
+  virtual void ReceiveSlSciPhyPdu (Ptr<Packet> p) = 0;
+
+  /**
    * \brief Trigger the start from a new frame (input from Phy layer)
    * \param frameNo The frame number
    * \param subframeNo The subframe number

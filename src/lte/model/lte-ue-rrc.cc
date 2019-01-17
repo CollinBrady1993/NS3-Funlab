@@ -68,7 +68,7 @@ public:
   virtual void NotifyMacHasSlDataToSend ();
   virtual void NotifyMacHasNoSlDataToSend ();
   //Sidelink discovery
-  virtual void NotifyDiscoveryReception (Ptr<LteControlMessage> msg);
+  virtual void NotifyDiscoveryReception (Ptr<Packet> p);
 
 private:
   LteUeRrc* m_rrc; ///< the RRC class
@@ -116,9 +116,9 @@ UeMemberLteUeCmacSapUser::NotifyMacHasNoSlDataToSend ()
 }
 
 void
-UeMemberLteUeCmacSapUser::NotifyDiscoveryReception (Ptr<LteControlMessage> msg)
+UeMemberLteUeCmacSapUser::NotifyDiscoveryReception (Ptr<Packet> p)
 {
-  m_rrc->DoNotifyDiscoveryReception (msg);
+  m_rrc->DoNotifyDiscoveryReception (p);
 }
 
 
@@ -4147,38 +4147,29 @@ void LteUeRrc::DoNotifySidelinkReception (uint8_t lcId, uint32_t srcL2Id, uint32
   NS_LOG_INFO ("Created new RX SLRB for group " << dstL2Id << " LCID=" << (slbInfo->m_logicalChannelIdentity & 0xF));
 }
 
-void LteUeRrc::DoNotifyDiscoveryReception (Ptr<LteControlMessage> msg)
+void LteUeRrc::DoNotifyDiscoveryReception (Ptr<Packet> p)
 {
-  NS_LOG_FUNCTION (this << msg);
-  Ptr<SlDiscMessage> msg2 = DynamicCast<SlDiscMessage> (msg);
-  SlDiscMsg discMsg = msg2->GetSlDiscMessage ();
+  NS_LOG_FUNCTION (this << p);
 
-  if (discMsg.m_msgType == 0x41 || discMsg.m_msgType == 0x81)
+  LteSlDiscHeader discHeader;
+  p->RemoveHeader (discHeader);
+
+  uint8_t msgType = discHeader.GetMessageType ();
+  if (msgType == LteSlDiscHeader::DISC_OPEN_ANNOUNCEMENT || msgType == LteSlDiscHeader::DISC_RESTRICTED_ANNOUNCEMENT)
     { //open or restricted announcement
-      uint64_t appCode;
-      std::memcpy (&appCode, &discMsg.m_pc5_disc_payload,8);
-      if (m_sidelinkConfiguration->IsMonitoringApp (appCode))
+      if (m_sidelinkConfiguration->IsMonitoringApp (discHeader.GetApplicationCode()))
         {
           NS_LOG_INFO ("discovery message received by " << m_rnti);
-          m_discoveryMonitoringTrace (m_imsi, m_cellId, m_rnti, discMsg);
+          m_discoveryMonitoringTrace (m_imsi, m_cellId, m_rnti, discHeader);
         }
     }
-  else if (discMsg.m_msgType == 0x91)
+  else if (msgType == LteSlDiscHeader::DISC_RELAY_ANNOUNCEMENT)
     {
-      uint32_t serviceCode = 0;
-      std::memcpy (&serviceCode,  &discMsg.m_pc5_disc_payload, 3);
-      if (m_sidelinkConfiguration->IsMonitoringRelayServiceCode (serviceCode))
+      if (m_sidelinkConfiguration->IsMonitoringRelayServiceCode (discHeader.GetRelayServiceCode()))
         {
           NS_LOG_INFO ("Relay announcement message received by " << m_rnti);
-          m_discoveryMonitoringTrace (m_imsi, m_cellId, m_rnti, discMsg);
-          //extract remaining fields
-          uint64_t announcerInfo = 0;
-          uint32_t proseRelayUeId = 0;
-          uint8_t statusIndicator = 0;
-          std::memcpy(&announcerInfo,&discMsg.m_pc5_disc_payload[3],6); 			//Announcer Info = User Info = [3],[4],[5],[6],[7],[8]
-          std::memcpy(&proseRelayUeId,&discMsg.m_pc5_disc_payload[9],3); 			//ProSe Relay UE ID = [9],[10],[11]
-          std::memcpy(&statusIndicator,&discMsg.m_pc5_disc_payload[12],1);
-          m_sidelinkConfiguration->RecvRelayServiceDiscovery (serviceCode, announcerInfo, proseRelayUeId, statusIndicator);
+          m_discoveryMonitoringTrace (m_imsi, m_cellId, m_rnti, discHeader);
+          m_sidelinkConfiguration->RecvRelayServiceDiscovery (discHeader.GetRelayServiceCode(), discHeader.GetInfo(), discHeader.GetRelayUeId(), discHeader.GetStatusIndicator());
         }
     }
   //todo: expand to cover all cases

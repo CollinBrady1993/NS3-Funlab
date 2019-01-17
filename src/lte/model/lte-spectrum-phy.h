@@ -450,6 +450,22 @@ public:
   void SetLtePhyRxDataEndOkCallback (LtePhyRxDataEndOkCallback c);
   
   /**
+   * set the callback for the successful end of a PSCCH RX, as part of the
+   * interconnections between the PHY and the MAC
+   *
+   * \param c The callback
+   */
+  void SetLtePhyRxPscchEndOkCallback (LtePhyRxDataEndOkCallback c);
+
+  /**
+   * set the callback for the successful end of a PSDCH RX, as part of the
+   * interconnections between the PHY and the MAC
+   *
+   * \param c The callback
+   */
+  void SetLtePhyRxPsdchEndOkCallback (LtePhyRxDataEndOkCallback c);
+
+  /**
   * set the callback for the successful end of a RX ctrl frame, as part 
   * of the interconnections between the LteSpectrumPhy and the PHY
   *
@@ -829,6 +845,8 @@ private:
 
   LtePhyRxDataEndErrorCallback   m_ltePhyRxDataEndErrorCallback; ///< the LTE phy receive data end error callback 
   LtePhyRxDataEndOkCallback      m_ltePhyRxDataEndOkCallback; ///< the LTE phy receive data end ok callback
+  LtePhyRxDataEndOkCallback      m_ltePhyRxPscchEndOkCallback; ///< the LTE phy receive PSCCH end ok callback
+  LtePhyRxDataEndOkCallback      m_ltePhyRxPsdchEndOkCallback; ///< the LTE phy receive PSDCH end ok callback
   
   LtePhyRxCtrlEndOkCallback     m_ltePhyRxCtrlEndOkCallback; ///< the LTE phy receive control end ok callback
   LtePhyRxCtrlEndErrorCallback  m_ltePhyRxCtrlEndErrorCallback; ///< the LTE phy receive control end error callback

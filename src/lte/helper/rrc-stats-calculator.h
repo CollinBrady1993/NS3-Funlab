@@ -38,6 +38,7 @@
 
 #include "ns3/lte-common.h"
 #include "ns3/lte-stats-calculator.h"
+#include "ns3/lte-sl-header.h"
 #include "ns3/nstime.h"
 #include "ns3/uinteger.h"
 #include <string>
@@ -72,7 +73,7 @@ public:
   /** 
    * Trace sink for the ns3::LteUeRrc::DiscoveryMonitoring trace source
    */
-  static void DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, SlDiscMsg discMsg);
+  static void DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, LteSlDiscHeader discMsg);
 
 private:
   /**

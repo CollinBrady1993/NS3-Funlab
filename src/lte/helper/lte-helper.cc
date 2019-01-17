@@ -1032,6 +1032,8 @@ LteHelper::InstallSingleUeDevice (Ptr<Node> n)
         {
           ccPhy->GetSlSpectrumPhy ()->SetDevice (dev);
           ccPhy->GetSlSpectrumPhy ()->SetLtePhyRxDataEndOkCallback (MakeCallback (&LteUePhy::PhyPduReceived, ccPhy));
+          ccPhy->GetSlSpectrumPhy ()->SetLtePhyRxPscchEndOkCallback (MakeCallback (&LteUePhy::PhyPscchPduReceived, ccPhy));
+          ccPhy->GetSlSpectrumPhy ()->SetLtePhyRxPsdchEndOkCallback (MakeCallback (&LteUePhy::PhyPsdchPduReceived, ccPhy));
           ccPhy->GetSlSpectrumPhy ()->SetLtePhyRxCtrlEndOkCallback (MakeCallback (&LteUePhy::ReceiveLteControlMessageList, ccPhy));
           ccPhy->GetSlSpectrumPhy ()->SetLtePhyRxSlssCallback (MakeCallback (&LteUePhy::ReceiveSlss,ccPhy));
         }

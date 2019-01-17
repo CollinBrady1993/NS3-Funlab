@@ -254,6 +254,8 @@ public:
 
   // inherited from LtePhySapUser
   virtual void ReceivePhyPdu (Ptr<Packet> p);
+  virtual void ReceiveSlDiscPhyPdu (Ptr<Packet> p);
+  virtual void ReceiveSlSciPhyPdu (Ptr<Packet> p);
   virtual void SubframeIndication (uint32_t frameNo, uint32_t subframeNo);
   virtual void ReceiveLteControlMessage (Ptr<LteControlMessage> msg);
   virtual void NotifyChangeOfTiming (uint32_t frameNo, uint32_t subframeNo);
@@ -274,6 +276,17 @@ UeMemberLteUePhySapUser::ReceivePhyPdu (Ptr<Packet> p)
   m_mac->DoReceivePhyPdu (p);
 }
 
+void
+UeMemberLteUePhySapUser::ReceiveSlDiscPhyPdu (Ptr<Packet> p)
+{
+  m_mac->DoReceiveSlDiscPhyPdu (p);
+}
+
+void
+UeMemberLteUePhySapUser::ReceiveSlSciPhyPdu (Ptr<Packet> p)
+{
+  m_mac->DoReceiveSlSciPhyPdu (p);
+}
 
 void
 UeMemberLteUePhySapUser::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
@@ -1066,6 +1079,21 @@ LteUeMac::DoReceivePhyPdu (Ptr<Packet> p)
     }
 }
 
+void
+LteUeMac::DoReceiveSlDiscPhyPdu (Ptr<Packet> p)
+{
+  NS_LOG_FUNCTION (this);
+  NS_LOG_INFO (this << " Received discovery message");
+  //notify RRC (pass msg to RRC where we can filter)
+  m_cmacSapUser->NotifyDiscoveryReception (p);
+}
+
+void
+LteUeMac::DoReceiveSlSciPhyPdu (Ptr<Packet> p)
+{
+  NS_LOG_FUNCTION (this);
+
+}
 
 void
 LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
@@ -1310,12 +1338,6 @@ LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
       m_sidelinkTxPoolsMap.begin ()->second.m_grantReceived = true;
 
       NS_LOG_INFO (this << "Received SL_DCI message rnti=" << m_rnti << " res=" << (uint16_t) dci.m_resPscch);
-    }
-  else if (msg->GetMessageType () == LteControlMessage::SL_DISC_MSG)
-    {
-      NS_LOG_INFO (this << " Received discovery message");
-      //notify RRC (pass msg to RRC where we can filter)
-      m_cmacSapUser->NotifyDiscoveryReception (msg);
     }
   else
     {

@@ -559,6 +559,20 @@ LteSpectrumPhy::SetLtePhyRxDataEndOkCallback (LtePhyRxDataEndOkCallback c)
 }
 
 void
+LteSpectrumPhy::SetLtePhyRxPscchEndOkCallback (LtePhyRxDataEndOkCallback c)
+{
+  NS_LOG_FUNCTION (this);
+  m_ltePhyRxPscchEndOkCallback = c;
+}
+
+void
+LteSpectrumPhy::SetLtePhyRxPsdchEndOkCallback (LtePhyRxDataEndOkCallback c)
+{
+  NS_LOG_FUNCTION (this);
+  m_ltePhyRxPsdchEndOkCallback = c;
+}
+
+void
 LteSpectrumPhy::SetLtePhyRxCtrlEndOkCallback (LtePhyRxCtrlEndOkCallback c)
 {
   NS_LOG_FUNCTION (this);
@@ -1900,7 +1914,7 @@ LteSpectrumPhy::RxSlPscch (std::vector<uint32_t> pktIndexes)
       Ptr<LteSpectrumSignalParametersSlCtrlFrame> params = DynamicCast<LteSpectrumSignalParametersSlCtrlFrame> (m_rxPacketInfo.at (pktIndex).params);
       NS_ASSERT (params);
       Ptr<PacketBurst> pb = params->packetBurst;
-      NS_ASSERT_MSG (pb->GetSize () == 1, "Received PSCCH burst with more than one packet");
+      NS_ASSERT_MSG (pb->GetNPackets () == 1, "Received PSCCH burst with more than one packet");
             
         double meanSinr = GetMeanSinr (m_slSinrPerceived[pktIndexes[i]], m_rxPacketInfo.at (pktIndex).rbBitmap);
         SlCtrlPacketInfo_t pInfo;
@@ -2047,7 +2061,7 @@ LteSpectrumPhy::RxSlPscch (std::vector<uint32_t> pktIndexes)
               std::list< Ptr<Packet> >::iterator it; 
               for (it = rxControlMessageOkList.begin () ; it != rxControlMessageOkList.end (); it++)
                {
-                  m_ltePhyRxDataEndOkCallback (*it);
+                  m_ltePhyRxPscchEndOkCallback (*it);
                }
             }
         }
@@ -2285,7 +2299,7 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
       Ptr<LteSpectrumSignalParametersSlDiscFrame> params = DynamicCast<LteSpectrumSignalParametersSlDiscFrame> (m_rxPacketInfo.at (pktIndex).params);
       NS_ASSERT (params);
       Ptr<PacketBurst> pb = params->packetBurst;
-      NS_ASSERT_MSG (pb->GetSize () == 1, "Received PSDCH burst with more than one packet");
+      NS_ASSERT_MSG (pb->GetNPackets () == 1, "Received PSDCH burst with more than one packet");
       Ptr<Packet> pkt = pb->GetPackets ().front ();
 
       // retrieve TB info of this packet
@@ -2420,9 +2434,9 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
 
   for (std::set<SlCtrlPacketInfo_t>::iterator it = sortedDiscMessages.begin (); it != sortedDiscMessages.end (); it++)
     {
-      int i = (*it).index;
-      NS_LOG_DEBUG ("Decoding.." << " starting from index = " << i);
-      Ptr<LteSpectrumSignalParametersSlDiscFrame> params = DynamicCast<LteSpectrumSignalParametersSlDiscFrame> (m_rxPacketInfo.at (i).params);      
+      int pktIndex = (*it).index;
+      NS_LOG_DEBUG ("Decoding.." << " starting from index = " << pktIndex);
+      Ptr<LteSpectrumSignalParametersSlDiscFrame> params = DynamicCast<LteSpectrumSignalParametersSlDiscFrame> (m_rxPacketInfo.at (pktIndex).params);      
       Ptr<Packet> rxCtrlMsg = params->packetBurst->GetPackets ().front ();
       SlDiscTbId_t tbId;
       LteRadioBearerTag tag;
@@ -2505,7 +2519,6 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
               NS_LOG_DEBUG (this << " from RNTI " << (*itTbDisc).first.m_rnti << " corrupted " << (*itTbDisc).second.corrupt << " Previously decoded " <<
                             m_slHarqPhyModule->IsDiscTbPrevDecoded ((*itTbDisc).first.m_rnti, (*itTbDisc).first.m_resPsdch));
               m_slHarqPhyModule->IndicateDiscTbPrevDecoded ((*itTbDisc).first.m_rnti, (*itTbDisc).first.m_resPsdch);
-              Ptr<Packet> rxCtrlMsg = m_rxPacketInfo[(*itSinrDisc).second].params->packetBurst->GetPackets ().front ();
               rxDiscMessageOkList.push_back (rxCtrlMsg);
               //Store the indices of the decoded RBs
               rbDecodedBitmap.insert ((*itTbDisc).second.rbBitmap.begin (), (*itTbDisc).second.rbBitmap.end ());
@@ -2550,7 +2563,6 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
               NS_LOG_DEBUG (this << " from RNTI " << (*itTbDisc).first.m_rnti << " corrupted " << (*itTbDisc).second.corrupt << " Previously decoded " <<
                             m_slHarqPhyModule->IsDiscTbPrevDecoded ((*itTbDisc).first.m_rnti, (*itTbDisc).first.m_resPsdch));
               m_slHarqPhyModule->IndicateDiscTbPrevDecoded ((*itTbDisc).first.m_rnti, (*itTbDisc).first.m_resPsdch);
-              Ptr<Packet> rxCtrlMsg = m_rxPacketInfo[(*itSinrDisc).second].params->packetBurst->GetPackets ().front ();
               rxDiscMessageOkList.push_back (rxCtrlMsg);
             }
         }
@@ -2580,9 +2592,9 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
             {
               NS_LOG_DEBUG (this << " Discovery OK");
               std::list< Ptr<Packet> >::iterator it;
-              for (rxDiscMessageOkList.begin (); it != rxDiscMessageOkList.end (); it++)
+              for (it = rxDiscMessageOkList.begin (); it != rxDiscMessageOkList.end (); it++)
                {
-                m_ltePhyRxDataEndOkCallback (*it);
+                m_ltePhyRxPsdchEndOkCallback (*it);
                }
             }
           else

@@ -519,7 +519,7 @@ private:
    *
    * \param msg sidelink discovery message
    */
-  void DoNotifyDiscoveryReception (Ptr<LteControlMessage> msg);
+  void DoNotifyDiscoveryReception (Ptr<Packet> p);
   // CMAC SAP methods related to Sidelink synchronization
   /**
    * Notify MAC has sidelink data to send function
@@ -1030,7 +1030,7 @@ private:
    * The `m_discoveryMsgReceived` trace source. Track the reception of discovery message (monitor)
    * Exporting IMSI, cell ID, RNTI and SlDiscMsg.
    */
-  TracedCallback<uint64_t, uint16_t, uint16_t, SlDiscMsg> m_discoveryMonitoringTrace;
+  TracedCallback<uint64_t, uint16_t, uint16_t, LteSlDiscHeader> m_discoveryMonitoringTrace;
   /**
    * The `Sib1Received` trace source. Fired upon reception of System
    * Information Block Type 1. Exporting IMSI, the serving cell ID, RNTI, and

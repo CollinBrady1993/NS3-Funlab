@@ -629,6 +629,20 @@ LteUePhy::PhyPduReceived (Ptr<Packet> p)
 }
 
 void
+LteUePhy::PhyPscchPduReceived (Ptr<Packet> p)
+{
+  NS_LOG_FUNCTION (this);
+  m_uePhySapUser->ReceiveSlSciPhyPdu (p);
+}
+
+void
+LteUePhy::PhyPsdchPduReceived (Ptr<Packet> p)
+{
+  NS_LOG_FUNCTION (this);
+  m_uePhySapUser->ReceiveSlDiscPhyPdu (p);
+}
+
+void
 LteUePhy::SetSubChannelsForTransmission (std::vector <int> mask)
 {
   NS_LOG_FUNCTION (this);

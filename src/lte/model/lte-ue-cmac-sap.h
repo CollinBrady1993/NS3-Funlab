@@ -255,7 +255,7 @@ public:
    *
    * \param msg LTE control message
    */
-  virtual void NotifyDiscoveryReception (Ptr<LteControlMessage> msg) = 0;
+  virtual void NotifyDiscoveryReception (Ptr<Packet> p) = 0;
 };
 
 

@@ -285,6 +285,18 @@ private:
    */
   void DoReceivePhyPdu (Ptr<Packet> p);
   /**
+   * Receive Phy PDU function
+   *
+   * \param p The packet
+   */
+  void DoReceiveSlDiscPhyPdu (Ptr<Packet> p);
+  /**
+   * Receive Phy PDU function
+   *
+   * \param p The packet
+   */
+  void DoReceiveSlSciPhyPdu (Ptr<Packet> p);
+  /**
    * Receive LTE control message function
    *
    * \param msg The LTE control message

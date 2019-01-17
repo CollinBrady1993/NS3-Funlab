@@ -66,7 +66,7 @@ RrcStatsCalculator::GetTypeId (void)
 }
 
 void
-RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, SlDiscMsg discMsg)
+RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, LteSlDiscHeader discMsg)
 {
   NS_LOG_INFO ("Writing Discovery Monitoring Stats in SlDiscRxRrcStats.txt");
 
@@ -95,46 +95,26 @@ RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator>
 
   outFile << Simulator::Now ().GetSeconds () << "\t" << imsi << "\t" << cellId << "\t" << rnti << "\t";
 
-  outFile << (uint16_t) (discMsg.m_msgType >> 6) << "\t" << (uint16_t) ((discMsg.m_msgType >> 2) & 0xF) << "\t" << (uint16_t) (discMsg.m_msgType & 0x3) << "\t";
+  uint8_t msgType = discMsg.GetMessageType();
+  outFile << (uint16_t) (msgType >> 6) << "\t" << (uint16_t) ((msgType >> 2) & 0xF) << "\t" << (uint16_t) (msgType & 0x3) << "\t";
 
-  switch (discMsg.m_msgType)
+  switch (msgType)
     {
-    case 0x91://UE-to-Network Relay Discovery Announcement in model A
-    case 0x92://UE-to-Network Relay Discovery Response in model B
+    case LteSlDiscHeader::DISC_RELAY_ANNOUNCEMENT://UE-to-Network Relay Discovery Announcement in model A
+    case LteSlDiscHeader::DISC_RELAY_RESPONSE://UE-to-Network Relay Discovery Response in model B
       {
-        std::bitset<24> relayServiceCode (0x0);
-        std::bitset<48> announcerInfo (0x0);
-        std::bitset<24> proseRelayUeId (0x0);
-        std::bitset<8> statusIndicator (0x0);
-        std::bitset<80> spare (0x0);
-
-        std::memcpy (&relayServiceCode,&discMsg.m_pc5_disc_payload[0],3);                //Relay Service Code = [0],[1],[2]
-        std::memcpy (&announcerInfo,&discMsg.m_pc5_disc_payload[3],6);                   //Announcer Info = User Info = [3],[4],[5],[6],[7],[8]
-        std::memcpy (&proseRelayUeId,&discMsg.m_pc5_disc_payload[9],3);                  //ProSe Relay UE ID = [9],[10],[11]
-        std::memcpy (&statusIndicator,&discMsg.m_pc5_disc_payload[12],1);                //Status Indicator = [12]
-        std::memcpy (&spare,&discMsg.m_pc5_disc_payload[13],10);                                 //Spare = [13]..[22]
-
-        outFile << std::hex << relayServiceCode.to_ulong () << ";" << std::hex << announcerInfo.to_ulong () << ";" << std::hex << proseRelayUeId.to_ulong () << ";" << std::hex << statusIndicator.to_ulong () << ";" << std::hex << spare.to_ulong () << std::endl;
+        //write fields, include spare (0) as the last field
+        outFile << discMsg.GetRelayServiceCode() << ";" << discMsg.GetInfo() << ";" << discMsg.GetRelayUeId() << ";" << discMsg.GetStatusIndicator() << ";0" << std::endl;
       }
       break;
-    case 0x41:
-    case 0x81:
+    case LteSlDiscHeader::DISC_OPEN_ANNOUNCEMENT:
+    case LteSlDiscHeader::DISC_RESTRICTED_ANNOUNCEMENT:
       { //open or restricted announcement
-        bool nonzero = false;
-        for (uint8_t i = 0; i < 23; i++)
-          {
-            uint16_t val = discMsg.m_pc5_disc_payload[22 - i];
-            nonzero = nonzero || (val != 0);
-            if (nonzero || i == 22)
-              {
-                outFile << std::hex << val;
-              }
-          }
-        outFile << std::endl;
+        outFile << discMsg.GetApplicationCode () << std::endl;
       }
       break;
     default:
-      NS_LOG_ERROR ("Invalid discovery message type " << discMsg.m_msgType);
+      NS_LOG_ERROR ("Invalid discovery message type " << msgType);
     }
 }
 
