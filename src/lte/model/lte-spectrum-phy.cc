@@ -2022,7 +2022,7 @@ LteSpectrumPhy::RxSlPscch (std::vector<uint32_t> pktIndexes)
       if (!corrupt)
         {
           error = false;       //at least one control packet is OK
-          rxControlMessageOkList.push_back (m_rxPacketInfo[pktIndex].params->packetBurst->GetPackets ().front ());
+          rxControlMessageOkList.push_back (m_rxPacketInfo.at(pktIndex).params->packetBurst->GetPackets ().front ());
           //Store the indices of the decoded RBs
           rbDecodedBitmap.insert ( m_rxPacketInfo.at (pktIndex).rbBitmap.begin (), m_rxPacketInfo.at (pktIndex).rbBitmap.end ());
         }

@@ -220,7 +220,7 @@ struct LteSpectrumSignalParametersSlCtrlFrame : public LteSpectrumSignalParamete
   /**
   * The packet burst being transmitted with this signal
   */
-  Ptr<PacketBurst> packetBurst;
+  //Ptr<PacketBurst> packetBurst;
 
   /**
    * The control messages being sent (for sidelink, there should only be 1)
@@ -263,7 +263,7 @@ struct LteSpectrumSignalParametersSlDataFrame : public LteSpectrumSignalParamete
   /**
   * The packet burst being transmitted with this signal
   */
-  Ptr<PacketBurst> packetBurst;
+  //Ptr<PacketBurst> packetBurst;
 
   /**
    * The control messages being sent (for sidelink, there should only be 1)
@@ -306,7 +306,7 @@ struct LteSpectrumSignalParametersSlDiscFrame : public LteSpectrumSignalParamete
   /**
   * The packet burst being transmitted with this signal
   */
-  Ptr<PacketBurst> packetBurst;
+  //Ptr<PacketBurst> packetBurst;
 
   /**
    * The control messages being sent (for sidelink, there should only be 1)
