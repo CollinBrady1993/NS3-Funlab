@@ -1354,7 +1354,7 @@ LteSpectrumPhy::StartRxSlFrame (Ptr<LteSpectrumSignalParametersSlFrame> params)
               }
             else
               {
-                NS_LOG_LOGIC ("Not in sync with this Sidelink signal... Ignoring ");
+                NS_LOG_LOGIC ("Not in sync with this Sidelink signal (Tx slssId=" << params->slssId << ", Rx slssId=" << m_slssId << ")...Ignoring");
               }
           }
         else
@@ -1842,6 +1842,7 @@ LteSpectrumPhy::EndRxData ()
 void
 LteSpectrumPhy::EndRxSlFrame ()
 {
+  NS_LOG_FUNCTION (this);
   // this will trigger CQI calculation and Error Model evaluation
   // as a side effect, the error model should update the error status of all TBs
   m_interferenceSl->EndRx ();
@@ -1876,9 +1877,18 @@ LteSpectrumPhy::EndRxSlFrame ()
         }
     }
 
-  RxSlPscch (pscchIndexes);
-  RxSlPssch (psschIndexes);
-  RxSlPsdch (psdchIndexes);
+  if (pscchIndexes.size () > 0)
+   {
+    RxSlPscch (pscchIndexes);
+   }
+  if (psschIndexes.size () > 0)
+   {
+    RxSlPssch (psschIndexes);
+   }
+  if (psdchIndexes.size () > 0)
+   {
+    RxSlPsdch (psdchIndexes);
+   }
 
   //clear received packets
   ChangeState (IDLE);

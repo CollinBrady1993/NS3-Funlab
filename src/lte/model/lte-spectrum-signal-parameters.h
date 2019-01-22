@@ -229,11 +229,6 @@ struct LteSpectrumSignalParametersSlCtrlFrame : public LteSpectrumSignalParamete
   
   uint32_t nodeId; ///< Node id
   uint8_t groupId; ///< Sidelink group id
-
-  /**
-   * The Sidelink synchronization signal identifier of the transmitting UE
-   */
-  uint64_t slssId;
   
 };
 
@@ -273,11 +268,6 @@ struct LteSpectrumSignalParametersSlDataFrame : public LteSpectrumSignalParamete
   uint32_t nodeId; ///< Node id
   uint8_t groupId; ///< Sidelink group id
 
-  /**
-   * The Sidelink synchronization signal identifier of the transmitting UE
-   */
-  uint64_t slssId;
-  
 };
 
 /**
@@ -316,10 +306,6 @@ struct LteSpectrumSignalParametersSlDiscFrame : public LteSpectrumSignalParamete
   uint32_t nodeId; ///< Node id
 
   uint32_t resNo; ///< Resource number
-  /**
-   * The Sidelink synchronization signal identifier of the transmitting UE
-   */
-  uint64_t slssId;
   
 };
   

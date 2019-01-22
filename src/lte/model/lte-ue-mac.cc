@@ -1817,6 +1817,10 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                                              poolIt->first & 0xFF);
               Ptr<Packet> p = Create<Packet> ();
               p->AddHeader (sciHeader);
+              LteRadioBearerTag tag;
+              tag.SetRnti (m_rnti);
+              p->AddPacketTag (tag);
+
               LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
               phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSCCH;
               phyParams.m_rbStart = (*allocIt).rbStart;
