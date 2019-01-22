@@ -1301,10 +1301,6 @@ LteUePhy::ReceiveLteControlMessageList (std::list<Ptr<LteControlMessage> > msgLi
           // pass the info to the MAC
           m_uePhySapUser->ReceiveLteControlMessage (msg);
         }
-      else if (msg->GetMessageType () == LteControlMessage::SCI)
-        {
-          //TODO: clear this portion now that reception of SCI has moved to PhyPscchPhyPduReceived
-        }
       else if (msg->GetMessageType () == LteControlMessage::MIB_SL)
         {
           Ptr<MibSlLteControlMessage> msgMibSL = DynamicCast<MibSlLteControlMessage> (msg);
@@ -1321,17 +1317,6 @@ LteUePhy::ReceiveLteControlMessageList (std::list<Ptr<LteControlMessage> > msgLi
                                         (std::pair<uint16_t, uint16_t> (mibSL.slssid, mibSL.rxOffset), mibSL));
             }
         }
-
-      //discovery
-      else if (msg->GetMessageType () == LteControlMessage::SL_DISC_MSG)
-        {
-          Ptr<SlDiscMessage> msg2 = DynamicCast<SlDiscMessage> (msg);
-          SlDiscMsg disc = msg2->GetSlDiscMessage ();
-
-          NS_LOG_INFO ("received discovery from rnti " << disc.m_rnti << " with resPsdch: " << disc.m_resPsdch);
-          m_uePhySapUser->ReceiveLteControlMessage (msg);
-        }
-
       else
         {
           // pass the message to UE-MAC
@@ -1555,7 +1540,6 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
       // retrieve burst information
       std::list<LteUePhySapProvider::TransmitSlPhySduParameters> params = GetSlPhyParameters (pb);
 
-      bool sciDiscFound = false;
       bool mibSlFound = false;
 
       if (rbMask.size () == 0)
@@ -1564,12 +1548,11 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           //since we send UL CQI messages all the time, we can remove them if we have a Sidelink
           //transmission
           std::list<Ptr<LteControlMessage> >::iterator ctrlIt;
-          for (ctrlIt = ctrlMsg.begin (); ctrlIt != ctrlMsg.end () && !sciDiscFound; ctrlIt++)
+          for (ctrlIt = ctrlMsg.begin (); ctrlIt != ctrlMsg.end () ; ctrlIt++)
             {
-              sciDiscFound = (*ctrlIt)->GetMessageType () == LteControlMessage::SCI || (*ctrlIt)->GetMessageType () == LteControlMessage::SL_DISC_MSG;
               mibSlFound = (*ctrlIt)->GetMessageType () == LteControlMessage::MIB_SL;
             }
-          if (pb || sciDiscFound || mibSlFound)
+          if (pb || mibSlFound)
             {
               //we have Sidelink to send, purge the control messages
               ctrlIt = ctrlMsg.begin ();
@@ -1583,10 +1566,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                     }
                   else
                     {
-                      NS_ASSERT ((*ctrlIt)->GetMessageType () == LteControlMessage::SCI
-                                 || (*ctrlIt)->GetMessageType () == LteControlMessage::MIB_SL
-                                 || (*ctrlIt)->GetMessageType () == LteControlMessage::SL_DISC_MSG
-                                 );
+                      NS_ASSERT ((*ctrlIt)->GetMessageType () == LteControlMessage::MIB_SL);
                       ctrlIt++;
                     }
 
@@ -1594,9 +1574,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
             }
         } // end of if (rbMask.size () == 0)
 
-      if (rbMask.size () != 0 || (ctrlMsg.size () > 0 && (*ctrlMsg.begin ())->GetMessageType () != LteControlMessage::SCI
-                                  && (*ctrlMsg.begin ())->GetMessageType () != LteControlMessage::MIB_SL
-                                  && (*ctrlMsg.begin ())->GetMessageType () != LteControlMessage::SL_DISC_MSG))
+      if (rbMask.size () != 0 || (ctrlMsg.size () > 0 && (*ctrlMsg.begin ())->GetMessageType () != LteControlMessage::MIB_SL))
         {
           // send packets in queue
           NS_LOG_LOGIC (this << " UE - start slot for PUSCH + PUCCH - RNTI " << m_rnti << " CELLID " << m_cellId);

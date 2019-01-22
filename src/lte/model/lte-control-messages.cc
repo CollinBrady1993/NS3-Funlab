@@ -309,29 +309,6 @@ Sib1LteControlMessage::GetSib1 () const
   return m_sib1;
 }
 
-
-// ---------------------------------------------------------------------------
-
-
-SciLteControlMessage::SciLteControlMessage (void)
-{
-  SetMessageType (LteControlMessage::SCI);
-}
-
-
-void
-SciLteControlMessage::SetSci (SciListElement_s sci)
-{
-  m_sci = sci;
-}
-
-SciListElement_s
-SciLteControlMessage::GetSci ()
-{
-  return m_sci;
-}
-
-
 // ---------------------------------------------------------------------------
 
 
@@ -378,28 +355,6 @@ LteRrcSap::MasterInformationBlockSL
 MibSlLteControlMessage::GetMibSL ()
 {
   return m_mibSL;
-}
-
-
-// ---------------------------------------------------------------------------
-
-
-SlDiscMessage::SlDiscMessage (void)
-{
-  SetMessageType (LteControlMessage::SL_DISC_MSG);
-}
-
-
-void
-SlDiscMessage::SetSlDiscMessage (SlDiscMsg discMsg)
-{
-  m_discMsg = discMsg;
-}
-
-SlDiscMsg
-SlDiscMessage::GetSlDiscMessage ()
-{
-  return m_discMsg;
 }
 
 

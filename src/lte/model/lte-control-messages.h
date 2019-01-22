@@ -63,9 +63,7 @@ public:
     MIB, // Master Information Block
     SIB1, // System Information Block Type 1
     SL_DCI, //Sidelink Data Control Indicator
-    SCI, //Sidelink Control Information
-    MIB_SL, // Master Information Block Sidelink
-    SL_DISC_MSG // Sidelink dicovery message
+    MIB_SL // Master Information Block Sidelink
   };
 
   LteControlMessage (void);
