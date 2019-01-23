@@ -155,6 +155,7 @@ def build(bld):
         'model/lte-sl-ue-rrc.cc',
         'model/lte-sl-tft.cc',
         'model/lte-sl-header.cc',
+        'model/lte-sl-tag.cc',
         ]
 
     module_test = bld.create_ns3_module_test_library('lte')
@@ -375,6 +376,7 @@ def build(bld):
         'model/lte-sl-ue-rrc.h',
         'model/lte-sl-tft.h',
         'model/lte-sl-header.h',
+        'model/lte-sl-tag.h',
         ]
 
     if (bld.env['ENABLE_EMU']):

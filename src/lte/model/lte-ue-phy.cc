@@ -39,6 +39,7 @@
 #include "ff-mac-common.h"
 #include "lte-chunk-processor.h"
 #include "lte-ue-phy-sap.h"
+#include "lte-sl-tag.h"
 #include <ns3/lte-common.h>
 #include <ns3/pointer.h>
 #include <ns3/boolean.h>
@@ -585,24 +586,8 @@ LteUePhy::DoSendSlMacPdu (Ptr<Packet> p, LteUePhySapProvider::TransmitSlPhySduPa
 std::list <LteUePhySapProvider::TransmitSlPhySduParameters>
 LteUePhy::GetSlPhyParameters (Ptr<PacketBurst> pb)
 {
-  /*
-  NS_LOG_FUNCTION (this << pb);
-  std::list<LteUePhySapProvider::TransmitSlPhySduParameters> ret;
-  std::list<  Ptr<Packet> >::iterator itPkt;
-  std::map < uint64_t, LteUePhySapProvider::TransmitSlPhySduParameters >::iterator itParam;
-
-  for (itPkt = pb->GetPackets ().begin (); itPkt != pb->GetPackets ().end (); itPkt++)
-    {
-      itParam = m_packetParamsMap.find ((*itPkt)->GetUid ());
-      if (itParam != m_packetParamsMap.end ())
-        {
-          ret.push_back (itParam->second);
-          //Like GetPacketBurst, this function should only be called once per subframe since it clears
-          //the information after being called
-          m_packetParamsMap.erase (itParam);
-        }
-    }
-  */
+  NS_LOG_FUNCTION (this);
+  
   if (m_packetParamsQueue.at (0).size () > 0)
     {
       std::list< LteUePhySapProvider::TransmitSlPhySduParameters > ret = m_packetParamsQueue.at (0);
@@ -635,7 +620,7 @@ LteUePhy::PhyPscchPduReceived (Ptr<Packet> p)
 
   LteSlSciHeader sciHeader;
   p->PeekHeader (sciHeader);
-  LteRadioBearerTag tag;
+  LteSlSciTag tag;
   p->PeekPacketTag (tag);
   //must check if the destination is one to monitor
   std::list <uint32_t>::iterator it;
@@ -663,7 +648,7 @@ LteUePhy::PhyPscchPduReceived (Ptr<Packet> p)
 
                   txInfo.m_grantReceived = true;
                   txInfo.m_grant.m_rnti = tag.GetRnti ();
-                  //txInfo.m_grant.m_resPscch = sciHeader.get; //Check if we need it
+                  txInfo.m_grant.m_resPscch = tag.GetResNo ();
                   txInfo.m_grant.m_rbStart = sciHeader.GetRbStart ();
                   txInfo.m_grant.m_rbLen = sciHeader.GetRbLen ();
                   txInfo.m_grant.m_hopping = sciHeader.IsHopping ();
@@ -671,7 +656,7 @@ LteUePhy::PhyPscchPduReceived (Ptr<Packet> p)
                   txInfo.m_grant.m_trp = sciHeader.GetTrp ();
                   txInfo.m_grant.m_groupDstId = sciHeader.GetGroupDstId ();
                   txInfo.m_grant.m_mcs = sciHeader.GetMcs ();
-                  txInfo.m_grant.m_tbSize = 0; //Check where we use it
+                  txInfo.m_grant.m_tbSize = tag.GetTbSize (); 
 
                   //insert grant
                   poolIt->m_currentGrants.insert (std::pair <uint16_t, SidelinkGrantInfo> (tag.GetRnti (), txInfo));
@@ -1705,7 +1690,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                           else
                             {
                               SetSubChannelsForTransmission (slRb);
-                              m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, ctrlMsg, UL_DATA_DURATION, m_slTxPoolInfo.m_currentGrants.begin ()->second.m_grant.m_groupDstId);
+                              m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, ctrlMsg, UL_DATA_DURATION, (*paramIt).m_dstId);
                             }
                         }
                       else

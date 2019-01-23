@@ -43,6 +43,7 @@
 #include <ns3/node.h>
 #include "ns3/enum.h"
 #include "lte-sl-header.h"
+#include "lte-sl-tag.h"
 #include <ns3/pointer.h>
 
 namespace ns3 {
@@ -2041,7 +2042,7 @@ LteSpectrumPhy::RxSlPscch (std::vector<uint32_t> pktIndexes)
         Ptr<Packet> pkt = m_rxPacketInfo[pktIndex].params->packetBurst->GetPackets ().front ();
         LteSlSciHeader sciHeader;
         pkt->PeekHeader (sciHeader);
-        LteRadioBearerTag tag;
+        LteSlSciTag tag;
         pkt->PeekPacketTag (tag);
         SlPhyReceptionStatParameters params;
         params.m_timestamp = Simulator::Now ().GetMilliSeconds ();
@@ -2052,7 +2053,7 @@ LteSpectrumPhy::RxSlPscch (std::vector<uint32_t> pktIndexes)
         params.m_size = pkt->GetSize ();
         params.m_rbStart = sciHeader.GetRbStart ();
         params.m_rbLen = sciHeader.GetRbLen ();
-        params.m_resPscch = 0; //no longer in header, see how to go around it
+        params.m_resPscch = tag.GetResNo (); 
         params.m_groupDstId = sciHeader.GetGroupDstId ();
         params.m_iTrp = sciHeader.GetTrp ();
         params.m_hopping = sciHeader.GetHoppingInfo ();

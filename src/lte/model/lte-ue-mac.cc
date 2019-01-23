@@ -35,6 +35,7 @@
 #include "lte-ue-net-device.h"
 #include "lte-radio-bearer-tag.h"
 #include "lte-sl-header.h"
+#include "lte-sl-tag.h"
 #include <ns3/ff-mac-common.h>
 #include <ns3/lte-control-messages.h>
 #include <ns3/simulator.h>
@@ -1790,23 +1791,6 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   NS_LOG_INFO ("Second PSCCH transmission");
                 }
               //create SCI message
-              /*
-              SciListElement_s sci;
-              sci.m_rnti = m_rnti;
-              sci.m_mcs = poolIt->second.m_currentGrant.m_mcs;
-              sci.m_tbSize = poolIt->second.m_currentGrant.m_tbSize;
-              sci.m_resPscch = poolIt->second.m_currentGrant.m_resPscch;
-              sci.m_rbLen = poolIt->second.m_currentGrant.m_rbLen;
-              sci.m_rbStart = poolIt->second.m_currentGrant.m_rbStart;
-              sci.m_trp = poolIt->second.m_currentGrant.m_iTrp;
-              sci.m_hopping = poolIt->second.m_currentGrant.m_hopping;
-              sci.m_hoppingInfo = poolIt->second.m_currentGrant.m_hoppingInfo;
-              sci.m_groupDstId = (poolIt->first & 0xFF);
-
-              Ptr<SciLteControlMessage> msg = Create<SciLteControlMessage> ();
-              msg->SetSci (sci);
-              m_uePhySapProvider->SendLteControlMessage (msg);
-              */
               LteSlSciHeader sciHeader;
               sciHeader.SetSciFormat0Params (poolIt->second.m_currentGrant.m_hopping, 
                                              poolIt->second.m_currentGrant.m_rbStart, 
@@ -1817,8 +1801,7 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                                              poolIt->first & 0xFF);
               Ptr<Packet> p = Create<Packet> ();
               p->AddHeader (sciHeader);
-              LteRadioBearerTag tag;
-              tag.SetRnti (m_rnti);
+              LteSlSciTag tag (m_rnti, poolIt->second.m_currentGrant.m_resPscch, poolIt->second.m_currentGrant.m_tbSize);
               p->AddPacketTag (tag);
 
               LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
