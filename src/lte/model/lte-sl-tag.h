@@ -22,6 +22,7 @@
 #define LTE_SL_TAG_H
 
 #include "ns3/tag.h"
+#include "ns3/nstime.h"
 
 namespace ns3 {
 
@@ -83,11 +84,86 @@ public:
 
 private:
   uint16_t m_rnti; ///< RNTI
-  uint16_t m_resNo; ///< Source L2 ID (24 bits)
-  uint32_t m_tbSize; ///< Destination L2 ID (24 bits)
+  uint16_t m_resNo; ///< Resource number
+  uint32_t m_tbSize; ///< Transport block size
 
 };
 
+
+/**
+ * Tag used to define the resource number in the control pool and the
+ * transport block of the shared channel
+ */
+
+class LteMibSlTag : public Tag
+{
+public:
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
+  static TypeId GetTypeId (void);
+  virtual TypeId GetInstanceTypeId (void) const;
+
+  /**
+   * Create an empty LteMibSlTag
+   */
+  LteMibSlTag ();
+
+  /**
+   * Create a LteMibSlTag with the given creation timestamp
+   * \param t The creation time of the tag
+   */
+  LteMibSlTag (Time t);
+  
+
+  virtual void Serialize (TagBuffer i) const;
+  virtual void Deserialize (TagBuffer i);
+  virtual uint32_t GetSerializedSize () const;
+  virtual void Print (std::ostream &os) const;
+
+  /**
+   * Sets the Rx offset
+   *
+   * \param offset The reception offset
+   */
+  void SetRxOffset (const uint16_t offset);
+  
+  /**
+   * Sets the slssid
+   * 
+   * \param slssid The SLSS ID
+   */
+  void SetSlssid (const uint64_t slssid);
+  
+  /**
+   * Get creation timestamp function
+   *
+   * \returns RNTI
+   */
+  Time GetCreationTimestamp (void) const;
+  
+  /**
+   * Get creation timestamp function
+   *
+   * \returns RNTI
+   */
+  Time GetRxTimestamp (void) const;
+  
+  /**
+   * Get layer function
+   *
+   * \returns layer
+   */
+  uint16_t GetRxOffset (void) const;
+
+private:
+    Time m_creationTimestamp;   ///< Creation timestamp filled when created
+    Time m_rxTimestamp;   ///< Reception timestamp filled upon reception
+    uint16_t m_rxOffset;   ///< Reception offset
+    uint64_t  m_slssid;   ///< SLSSID of the SyncRef sending the MIB-SL
+
+};
 
 
 } // namespace ns3

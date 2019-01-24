@@ -116,4 +116,102 @@ LteSlSciTag::Print (std::ostream &os) const
   os << "rnti=" << m_rnti << ", resNo=" << (uint16_t) m_resNo << ", tbSize=" << m_tbSize;
 }
 
+/////////////////// LteMibSlTag ////////////////
+
+TypeId
+LteMibSlTag::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::LteMibSlTag")
+    .SetParent<Tag> ()
+    .SetGroupName("Lte")
+    .AddConstructor<LteSlSciTag> ()
+  ;
+  return tid;
+}
+
+TypeId
+LteMibSlTag::GetInstanceTypeId (void) const
+{
+  return GetTypeId ();
+}
+
+LteMibSlTag::LteMibSlTag ()
+  : m_creationTimestamp (0),
+    m_rxTimestamp (0),
+    m_rxOffset (0),
+    m_slssid (0)
+{
+}
+ 
+LteMibSlTag::LteMibSlTag (Time t)
+{
+  m_creationTimestamp = t;
+}
+
+uint32_t
+LteMibSlTag::GetSerializedSize (void) const
+{
+ return 26;
+}
+
+void
+LteMibSlTag::Serialize (TagBuffer i) const
+{
+  int64_t t = m_creationTimestamp.GetNanoSeconds ();
+  i.Write ((const uint8_t *)&t, 8);
+  t = m_rxTimestamp.GetNanoSeconds ();
+  i.Write ((const uint8_t *)&t, 8);
+  i.WriteU16 (m_rxOffset);
+  i.WriteU64 (m_slssid);
+}
+
+void
+LteMibSlTag::Deserialize (TagBuffer i)
+{
+  int64_t t;
+  i.Read ((uint8_t *)&t, 8);
+  m_creationTimestamp = NanoSeconds (t);
+  i.Read ((uint8_t *)&t, 8);
+  m_rxTimestamp = NanoSeconds (t);
+  m_rxOffset = (uint16_t) i.ReadU16 ();
+  m_slssid = (uint64_t) i.ReadU64 ();
+}
+
+void
+LteMibSlTag::SetRxOffset (const uint16_t offset) 
+{
+  m_rxOffset = offset;
+}
+
+void 
+LteMibSlTag::SetSlssid (const uint64_t slssid)
+{
+  m_slssid = slssid;
+}
+uint16_t
+LteMibSlTag::GetRxOffset () const
+{
+  return m_rxOffset;
+}
+
+Time
+LteMibSlTag::GetCreationTimestamp () const
+{
+  return m_creationTimestamp;
+}
+
+Time
+LteMibSlTag::GetRxTimestamp () const
+{
+  return m_rxTimestamp;
+}
+
+void
+LteMibSlTag::Print (std::ostream &os) const
+{
+  os << "";
+}
+
+
+
 } // namespace ns3

@@ -279,4 +279,37 @@ LteSpectrumSignalParametersSlDiscFrame::Copy ()
   return lssp;
 }
 
+LteSpectrumSignalParametersSlMibFrame::LteSpectrumSignalParametersSlMibFrame ()
+{
+  NS_LOG_FUNCTION (this);
+}
+
+LteSpectrumSignalParametersSlMibFrame::LteSpectrumSignalParametersSlMibFrame (const LteSpectrumSignalParametersSlDiscFrame& p)
+: LteSpectrumSignalParametersSlFrame (p)
+{
+  NS_LOG_FUNCTION (this << &p);
+  nodeId = p.nodeId;
+  resNo = p.resNo;
+  slssId = p.slssId;
+  ctrlMsgList = p.ctrlMsgList;
+  if (p.packetBurst)
+    {
+      packetBurst = p.packetBurst->Copy ();
+    }
+}
+
+Ptr<SpectrumSignalParameters>
+LteSpectrumSignalParametersSlMibFrame::Copy ()
+{
+    NS_LOG_FUNCTION (this);
+  // Ideally we would use:
+  // return Copy<LteSpectrumSignalParametersSlMibFrame> (*this);
+  // but for some reason it doesn't work. Another alternative is 
+  // return Copy<LteSpectrumSignalParametersSlMibFrame> (this);
+  // but it causes a double creation of the object, hence it is less efficient.
+  // The solution below is copied from the implementation of Copy<> (Ptr<>) in ptr.h
+  Ptr<LteSpectrumSignalParametersSlMibFrame> lssp (new LteSpectrumSignalParametersSlMibFrame (*this), false);  
+  return lssp;
+}
+
 } // namespace ns3

@@ -227,7 +227,6 @@ struct LteSpectrumSignalParametersSlCtrlFrame : public LteSpectrumSignalParamete
    */
   std::list<Ptr<LteControlMessage> > ctrlMsgList;
   
-  uint32_t nodeId; ///< Node id
   uint8_t groupId; ///< Sidelink group id
   
 };
@@ -254,18 +253,11 @@ struct LteSpectrumSignalParametersSlDataFrame : public LteSpectrumSignalParamete
   */
   LteSpectrumSignalParametersSlDataFrame (const LteSpectrumSignalParametersSlDataFrame& p);
 
-
-  /**
-  * The packet burst being transmitted with this signal
-  */
-  //Ptr<PacketBurst> packetBurst;
-
   /**
    * The control messages being sent (for sidelink, there should only be 1)
    */
   std::list<Ptr<LteControlMessage> > ctrlMsgList;
   
-  uint32_t nodeId; ///< Node id
   uint8_t groupId; ///< Sidelink group id
 
 };
@@ -292,23 +284,46 @@ struct LteSpectrumSignalParametersSlDiscFrame : public LteSpectrumSignalParamete
   */
   LteSpectrumSignalParametersSlDiscFrame (const LteSpectrumSignalParametersSlDiscFrame& p);
 
+  /**
+   * The control messages being sent (for sidelink, there should only be 1)
+   */
+  std::list<Ptr<LteControlMessage> > ctrlMsgList;
+  
+  uint32_t resNo; ///< Resource number
+  
+};
+  
+/**
+* \ingroup lte
+*
+* Signal parameters for Lte SL Frame (PSCCH and PSSCH)
+*/
+struct LteSpectrumSignalParametersSlMibFrame : public LteSpectrumSignalParametersSlFrame
+{
+  
+  // inherited from SpectrumSignalParameters
+  virtual Ptr<SpectrumSignalParameters> Copy ();
+  
+  /**
+  * default constructor
+  */
+  LteSpectrumSignalParametersSlMibFrame ();
 
   /**
-  * The packet burst being transmitted with this signal
+  * copy constructor
+  * \param p The LteSpectrumSignalParametersSlFrame
   */
-  //Ptr<PacketBurst> packetBurst;
+  LteSpectrumSignalParametersSlMibFrame (const LteSpectrumSignalParametersSlMibFrame& p);
 
   /**
    * The control messages being sent (for sidelink, there should only be 1)
    */
   std::list<Ptr<LteControlMessage> > ctrlMsgList;
   
-  uint32_t nodeId; ///< Node id
-
   uint32_t resNo; ///< Resource number
   
 };
-  
+
 }  // namespace ns3
 
 

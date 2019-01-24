@@ -7120,5 +7120,124 @@ RrcDlCcchMessage::SerializeDlCcchMessage (int messageType) const
   SerializeChoice (4,messageType,false);
 }
 
+///////////////////  MasterInformationBlock-SL //////////////////////////////////
+MasterInformationBlockSlHeader::MasterInformationBlockSlHeader () : Asn1Header ()
+{
+}
+
+MasterInformationBlockSlHeader::~MasterInformationBlockSlHeader ()
+{
+}
+
+void
+MasterInformationBlockSlHeader::PreSerialize () const
+{
+  m_serializationResult = Buffer ();
+  
+  // Serialize bandwidth
+  int selectedElem = 0;
+  switch (m_mibSl.slBandwidth)
+   {
+   case 6:
+    selectedElem = 0;
+    break;
+   case 15:
+    selectedElem = 1;
+    break;
+   case 25:
+    selectedElem = 2;
+    break;
+   case 50:
+    selectedElem = 3;
+    break;
+   case 75:
+    selectedElem = 4;
+    break;
+   case 100:
+    selectedElem = 5;
+   }
+  SerializeEnum (6, selectedElem);
+  
+  // Serialize frame number
+  std::bitset<10> frameNo (m_mibSl.directFrameNo);
+  SerializeBitstring (frameNo); 
+  
+  // Serialize subframe number
+  SerializeInteger (m_mibSl.directSubframeNo, 0, 9);
+  
+  //Serialize in coverage
+  SerializeBoolean (m_mibSl.inCoverage);
+  
+  
+  // Finish serialization
+  FinalizeSerialization ();
+}
+
+uint32_t
+MasterInformationBlockSlHeader::Deserialize (Buffer::Iterator bIterator)
+{
+  int n;
+  bool b;
+  std::bitset <10> bs;
+  
+  bIterator = DeserializeEnum (6, &n, bIterator);
+  switch (n)
+   {
+   case 0:
+    m_mibSl.slBandwidth = 6;
+    break;
+   case 1:
+    m_mibSl.slBandwidth = 15;
+    break;
+   case 2:
+    m_mibSl.slBandwidth = 25;
+    break;
+   case 3:
+    m_mibSl.slBandwidth = 50;
+    break;
+   case 4:
+    m_mibSl.slBandwidth = 75;
+    break;
+   case 5:
+    m_mibSl.slBandwidth = 100;
+    break;
+   }
+  
+  // Deserialize frame number
+  bIterator = DeserializeBitstring (&bs, bIterator);
+  m_mibSl.directFrameNo = (uint16_t) bs.to_ulong ();
+  
+  // Deserialize subframe number
+  bIterator = DeserializeInteger (&n,0,9,bIterator);
+  m_mibSl.directSubframeNo = n;
+  
+  // Deserialize in coverage 
+  bIterator = DeserializeBoolean (&b,bIterator);
+  m_mibSl.inCoverage = b;
+  
+  return GetSerializedSize ();
+}
+
+void
+MasterInformationBlockSlHeader::Print (std::ostream &os) const
+{
+  std::cout << "MIB-SL: " << m_mibSl.slBandwidth << std::endl;
+}
+
+void
+MasterInformationBlockSlHeader::SetMessage (LteRrcSap::MasterInformationBlockSL msg)
+{
+  m_mibSl = msg;
+  m_isDataSerialized = false;
+}
+
+LteRrcSap::MasterInformationBlockSL
+MasterInformationBlockSlHeader::GetMessage () const
+{
+  return m_mibSl;
+}
+
+
+
 } // namespace ns3
 
