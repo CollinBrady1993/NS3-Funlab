@@ -284,7 +284,7 @@ LteSpectrumSignalParametersSlMibFrame::LteSpectrumSignalParametersSlMibFrame ()
   NS_LOG_FUNCTION (this);
 }
 
-LteSpectrumSignalParametersSlMibFrame::LteSpectrumSignalParametersSlMibFrame (const LteSpectrumSignalParametersSlDiscFrame& p)
+LteSpectrumSignalParametersSlMibFrame::LteSpectrumSignalParametersSlMibFrame (const LteSpectrumSignalParametersSlMibFrame& p)
 : LteSpectrumSignalParametersSlFrame (p)
 {
   NS_LOG_FUNCTION (this << &p);

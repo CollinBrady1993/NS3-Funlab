@@ -35,6 +35,19 @@ namespace ns3 {
 class LteEnbNetDevice;
 
 /**
+  * Configuration needed for the timely change of subframe indication upon synchronization to
+  * a different SyncRef
+  */
+  struct LteSlSyncParams
+  {
+   uint16_t newSubframeNo; ///< Subframe number
+   uint16_t newFrameNo; ///< frame number
+   uint16_t slssid; ///< SLSS ID
+   uint16_t offset; ///< synchronization offset
+   LteRrcSap::MasterInformationBlockSL syncRefMib; ///< MIB
+  };
+  
+/**
  * Service Access Point (SAP) offered by the UE PHY to the UE RRC for control purposes
  *
  * This is the PHY SAP Provider, i.e., the part of the SAP that contains
@@ -207,9 +220,9 @@ public:
    /**
     * Notify the PHY entity that a SyncRef has been selected and that it should apply
     * the corresponding change of timing when appropriate
-    * \param mibSl The MIB-SL containing the information of the selected SyncRef
+    * \param synchParams The parameters containing the information of the selected SyncRef
     */
-   virtual void SynchronizeToSyncRef (LteRrcSap::MasterInformationBlockSL mibSl) = 0;
+   virtual void SynchronizeToSyncRef (LteSlSyncParams synchParams) = 0;
 
   /**
    * \param rsrpFilterCoefficient value. Determines the strength of
@@ -273,7 +286,7 @@ public:
   {
     std::vector <struct UeSlssMeasurementsElement> m_ueSlssMeasurementsList; ///< List of SLSS measurements to be reported to the RRC by the PHY
   };
-
+ 
   /**
    * \brief Relay an MIB message from the PHY entity to the RRC layer.
    * \param cellId The ID of the eNodeB where the message originates from
@@ -320,17 +333,15 @@ public:
   virtual void ReportSubframeIndication (uint16_t frameNo, uint16_t subFrameNo) = 0;
   /**
    * The PHY pass a received MIB-SL to the RRC
-   * \param mibSl The received MIB-SL
+   * \param p The packet containing the MIB-SL
    */
-  virtual void ReceiveMibSL (LteRrcSap::MasterInformationBlockSL mibSl) = 0;
+  virtual void ReceiveMibSL (Ptr<Packet> p) = 0;
   /**
    * Notify the successful change of timing/SyncRef, and store the selected
    * (current) SyncRef information
-   * \param mibSl The SyncRef MIB-SL containing its information
-   * \param frameNo The current frameNo
-   * \param subFrameNo The current subframeNo
+   * \param params The resynchronization information
    */
-  virtual void ReportChangeOfSyncRef (LteRrcSap::MasterInformationBlockSL mibSl, uint16_t frameNo, uint16_t subFrameNo) = 0;
+  virtual void ReportChangeOfSyncRef (LteSlSyncParams params) = 0;
 };
 
 
@@ -376,7 +387,7 @@ public:
   virtual void RemoveSlDestination (uint32_t destination);
   virtual void SetSlssId (uint64_t slssid);
   virtual void SendSlss (LteRrcSap::MasterInformationBlockSL mibSl);
-  virtual void SynchronizeToSyncRef (LteRrcSap::MasterInformationBlockSL mibSl);
+  virtual void SynchronizeToSyncRef (LteSlSyncParams synchParams);
 
   virtual void SetRsrpFilterCoefficient (uint8_t rsrpFilterCoefficient);
 
@@ -543,14 +554,14 @@ template <class C>
 void
 MemberLteUeCphySapProvider<C>::SendSlss (LteRrcSap::MasterInformationBlockSL mibSl)
 {
-  m_owner->DoSendSlss (mibSl);
+  //m_owner->DoSendSlss (mibSl);
 }
 
 template <class C>
 void
-MemberLteUeCphySapProvider<C>::SynchronizeToSyncRef (LteRrcSap::MasterInformationBlockSL mibSl)
+MemberLteUeCphySapProvider<C>::SynchronizeToSyncRef (LteSlSyncParams synchParams)
 {
-  m_owner->DoSynchronizeToSyncRef (mibSl);
+  m_owner->DoSynchronizeToSyncRef (synchParams);
 }
 
 
@@ -580,8 +591,8 @@ public:
 
   virtual void ReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParameters params,  uint64_t slssid, uint16_t offset);
   virtual void ReportSubframeIndication (uint16_t frameNo, uint16_t subFrameNo);
-  virtual void ReceiveMibSL (LteRrcSap::MasterInformationBlockSL mibSL);
-  virtual void ReportChangeOfSyncRef (LteRrcSap::MasterInformationBlockSL mibSL, uint16_t frameNo, uint16_t subFrameNo);
+  virtual void ReceiveMibSL (Ptr<Packet> p);
+  virtual void ReportChangeOfSyncRef (LteSlSyncParams params);
 
 private:
   MemberLteUeCphySapUser ();
@@ -639,16 +650,16 @@ MemberLteUeCphySapUser<C>::ReportSubframeIndication (uint16_t frameNo, uint16_t 
 
 template <class C>
 void
-MemberLteUeCphySapUser<C>::ReceiveMibSL (LteRrcSap::MasterInformationBlockSL mibSL)
+MemberLteUeCphySapUser<C>::ReceiveMibSL (Ptr<Packet> p)
 {
-  m_owner->DoReceiveMibSL (mibSL);
+  m_owner->DoReceiveMibSL (p);
 }
 
 template <class C>
 void
-MemberLteUeCphySapUser<C>::ReportChangeOfSyncRef (LteRrcSap::MasterInformationBlockSL mibSL, uint16_t frameNo, uint16_t subFrameNo)
+MemberLteUeCphySapUser<C>::ReportChangeOfSyncRef (LteSlSyncParams params)
 {
-  m_owner->DoReportChangeOfSyncRef (mibSL, frameNo, subFrameNo );
+  m_owner->DoReportChangeOfSyncRef (params);
 }
 
 

@@ -173,6 +173,7 @@ struct LteSpectrumSignalParametersSlFrame;
 struct LteSpectrumSignalParametersSlDataFrame;
 struct LteSpectrumSignalParametersSlCtrlFrame;
 struct LteSpectrumSignalParametersSlDiscFrame;
+struct LteSpectrumSignalParametersSlMibFrame;
 
 /**
  * Structure for Sidelink packets being received
@@ -412,6 +413,20 @@ public:
    */
    bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, uint32_t resNo, Time duration);
    
+   /**
+   * Start a transmission of Sidelink data frame in DL and UL
+   *
+   *
+   * \param pb The burst of packets to be transmitted in PSDCH
+   * \param ctrlMsgList The list of LteControlMessage to send
+   * \param duration The duration of the data frame
+   *
+   * \return true if an error occurred and the transmission was not
+   * started, false otherwise.
+   */
+   bool StartTxSlMibFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
+   
+   
   /**
   * Start a transmission of control frame in DL
   *
@@ -464,6 +479,14 @@ public:
    * \param c The callback
    */
   void SetLtePhyRxPsdchEndOkCallback (LtePhyRxDataEndOkCallback c);
+
+  /**
+   * set the callback for the successful end of a PSBCH RX, as part of the
+   * interconnections between the PHY and the MAC
+   *
+   * \param c The callback
+   */
+  void SetLtePhyRxPsbchEndOkCallback (LtePhyRxDataEndOkCallback c);
 
   /**
   * set the callback for the successful end of a RX ctrl frame, as part 
@@ -817,6 +840,11 @@ private:
    */
   void RxSlPsdch (std::vector<uint32_t> pktIndexes);
   
+  /**
+   * \brief Process received PSBCH messages function
+   * \param pktIndexes Indexes of PSBCH messages received
+   */
+  void RxSlPsbch (std::vector<uint32_t> pktIndexes);
 
   Ptr<MobilityModel> m_mobility; ///< the mobility model
   Ptr<AntennaModel> m_antenna; ///< the antenna model
@@ -847,6 +875,7 @@ private:
   LtePhyRxDataEndOkCallback      m_ltePhyRxDataEndOkCallback; ///< the LTE phy receive data end ok callback
   LtePhyRxDataEndOkCallback      m_ltePhyRxPscchEndOkCallback; ///< the LTE phy receive PSCCH end ok callback
   LtePhyRxDataEndOkCallback      m_ltePhyRxPsdchEndOkCallback; ///< the LTE phy receive PSDCH end ok callback
+  LtePhyRxDataEndOkCallback      m_ltePhyRxPsbchEndOkCallback; ///< the LTE phy receive PSBCH end ok callback
   
   LtePhyRxCtrlEndOkCallback     m_ltePhyRxCtrlEndOkCallback; ///< the LTE phy receive control end ok callback
   LtePhyRxCtrlEndErrorCallback  m_ltePhyRxCtrlEndErrorCallback; ///< the LTE phy receive control end error callback

@@ -619,11 +619,11 @@ private:
   /**
    * Receive master information block sidelink function
    *
-   * \param mibSL LteRrcSap::MasterInformationBlockSL
+   * \param p Packet containing the LteRrcSap::MasterInformationBlockSL
    *
    * Store the latest MIB-SL for each SyncRef
    */
-  void DoReceiveMibSL (LteRrcSap::MasterInformationBlockSL mibSL);
+  void DoReceiveMibSL (Ptr<Packet> p);
   /**
    * Report sidelink synchronization signal measurements function
    *
@@ -633,17 +633,15 @@ private:
    *
    * Process the S-RSRP measurement reported by the PHY
    */
-  void DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParameters params,  uint64_t slssId, uint16_t offset);
+  void DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParameters params,  uint16_t slssId, uint16_t offset);
   /**
    * Report change of SyncRef function
    *
-   * \param mibSL LteRrcSap::MasterInformationBlockSL
-   * \param frameNo The frame number
-   * \param subFrameNo The subframe number
+   * \param param Synchronization information
    *
    * Notify the successful change of timing/SyncRef, and store the selected/current SyncRef information
    */
-  void DoReportChangeOfSyncRef(LteRrcSap::MasterInformationBlockSL mibSL, uint16_t frameNo, uint16_t subFrameNo);
+  void DoReportChangeOfSyncRef(LteSlSyncParams params);
   /**
    * Report subframe indication function
    *
@@ -1477,7 +1475,7 @@ private:
    * \brief Internal storage of the most recent MIB-SL for each SyncRef,
    * indexed by the SyncRef SLSSID and the time offset indicator in which it was received
    */
-    std::map <std::pair<uint16_t,uint16_t>, LteRrcSap::MasterInformationBlockSL> m_latestMibSlReceived;
+    std::map <std::pair<uint16_t,uint16_t>, LteSlSyncParams> m_latestMibSlReceived;
   /**
    * Represents the value of S-RSRP to be used in the RRC layer for SyncRef selection
    */
@@ -1490,7 +1488,7 @@ private:
    * The MIB-SL used by the UE to obtain the synchronization information once it
    * has selected the SyncRef and successfully synchronized to it
    */
-  LteRrcSap::MasterInformationBlockSL m_currSyncRef;
+  LteSlSyncParams m_currSyncRef;
   /**
    * \brief Internal storage of each SyncRef S-RSRP measurement to be used for SyncRef selection
    * and SyncRef inner cell criteria,

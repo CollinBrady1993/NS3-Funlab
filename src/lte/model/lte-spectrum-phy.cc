@@ -574,6 +574,13 @@ LteSpectrumPhy::SetLtePhyRxPsdchEndOkCallback (LtePhyRxDataEndOkCallback c)
 }
 
 void
+LteSpectrumPhy::SetLtePhyRxPsbchEndOkCallback (LtePhyRxDataEndOkCallback c)
+{
+  NS_LOG_FUNCTION (this);
+  m_ltePhyRxPsbchEndOkCallback = c;
+}
+
+void
 LteSpectrumPhy::SetLtePhyRxCtrlEndOkCallback (LtePhyRxCtrlEndOkCallback c)
 {
   NS_LOG_FUNCTION (this);
@@ -1243,70 +1250,12 @@ LteSpectrumPhy::StartRxSlFrame (Ptr<LteSpectrumSignalParametersSlFrame> params)
 
             //SLSSs (PSBCH) should be received by all UEs
             //Checking if it is a SLSS, and if it is: measure S-RSRP and receive MIB-SL
-            if (params->ctrlMsgList.size () > 0)
-              {
-                std::list<Ptr<LteControlMessage> >::iterator ctrlIt;
-                for (ctrlIt = params->ctrlMsgList.begin (); ctrlIt != params->ctrlMsgList.end (); ctrlIt++)
-                  {
-                    //Detection of a SLSS and callback for measurement of S-RSRP
-                    if ((*ctrlIt)->GetMessageType () == LteControlMessage::MIB_SL)
-                      {
-                        NS_LOG_LOGIC ("Receiving a SLSS");
-                        Ptr<MibSlLteControlMessage> msg = DynamicCast<MibSlLteControlMessage> (*ctrlIt);
-                        LteRrcSap::MasterInformationBlockSL mibSL = msg->GetMibSL ();
-                        //Measure S-RSRP
-                        if (!m_ltePhyRxSlssCallback.IsNull ())
-                          {
-                            m_ltePhyRxSlssCallback (mibSL.slssid, params->psd);
-                          }
-                        //Receive MIB-SL
-                        if (m_rxPacketInfo.empty ())
-                          {
-                            NS_ASSERT (m_state == IDLE);
-                            // first transmission, i.e., we're IDLE and we start RX
-                            m_firstRxStart = Simulator::Now ();
-                            m_firstRxDuration = params->duration;
-                            NS_LOG_LOGIC (this << " scheduling EndRxSl with delay " << params->duration.GetSeconds () << "s");
-
-                            m_endRxDataEvent = Simulator::Schedule (params->duration, &LteSpectrumPhy::EndRxSlFrame, this);
-                          }
-                        else
-                          {
-                            NS_ASSERT (m_state == RX_DATA);
-                            // sanity check: if there are multiple RX events, they
-                            // should occur at the same time and have the same
-                            // duration, otherwise the interference calculation
-                            // won't be correct
-                            NS_ASSERT ((m_firstRxStart == Simulator::Now ())
-                                       && (m_firstRxDuration == params->duration));
-                          }
-                        ChangeState (RX_DATA);
-                        m_interferenceSl->StartRx (params->psd);
-                        std::vector <int> rbMap;
-                        int rbI = 0;
-                        for (Values::const_iterator it = params->psd->ConstValuesBegin (); it != params->psd->ConstValuesEnd (); it++, rbI++)
-                          {
-                            if (*it != 0)
-                              {
-                                NS_LOG_INFO ("Ctrl Message arrived on RB " << rbI);
-                                rbMap.push_back (rbI);
-                              }
-                          }
-
-                        SlRxPacketInfo_t packetInfo;
-                        packetInfo.params = params;
-                        packetInfo.rbBitmap = rbMap;
-                        m_rxPacketInfo.push_back (packetInfo);
-                        params->ctrlMsgList.erase (ctrlIt);
-                        break;
-                      }
-                  }
-              }
-
+            
             //Receive PSCCH, PSSCH and PSDCH only if synchronized to the transmitter (having the same SLSSID)
             //and belonging to the destination group
+            Ptr<LteSpectrumSignalParametersSlMibFrame> lteSlMibRxParams = DynamicCast<LteSpectrumSignalParametersSlMibFrame> (params);
 
-            if (params->slssId == m_slssId /*&& (params->groupId == 0 || m_l1GroupIds.find (params->groupId) != m_l1GroupIds.end())*/)
+            if (lteSlMibRxParams!= 0 || params->slssId == m_slssId /*&& (params->groupId == 0 || m_l1GroupIds.find (params->groupId) != m_l1GroupIds.end())*/)
               {
                 if (m_rxPacketInfo.empty ())
                   {
@@ -1852,6 +1801,7 @@ LteSpectrumPhy::EndRxSlFrame ()
   std::vector <uint32_t> pscchIndexes;
   std::vector <uint32_t> psschIndexes;
   std::vector <uint32_t> psdchIndexes;
+  std::vector <uint32_t> psbchIndexes;
 
   for (uint16_t i = 0; i < m_rxPacketInfo.size (); i++)
     {
@@ -1859,6 +1809,7 @@ LteSpectrumPhy::EndRxSlFrame ()
       Ptr<LteSpectrumSignalParametersSlCtrlFrame> lteSlCtrlRxParams = DynamicCast<LteSpectrumSignalParametersSlCtrlFrame> (pktParams);
       Ptr<LteSpectrumSignalParametersSlDataFrame> lteSlDataRxParams = DynamicCast<LteSpectrumSignalParametersSlDataFrame> (pktParams);
       Ptr<LteSpectrumSignalParametersSlDiscFrame> lteSlDiscRxParams = DynamicCast<LteSpectrumSignalParametersSlDiscFrame> (pktParams);
+      Ptr<LteSpectrumSignalParametersSlMibFrame> lteSlMibRxParams = DynamicCast<LteSpectrumSignalParametersSlMibFrame> (pktParams);
 
       if (lteSlCtrlRxParams != 0)
         {
@@ -1871,6 +1822,10 @@ LteSpectrumPhy::EndRxSlFrame ()
       else if (lteSlDiscRxParams != 0)
         {
           psdchIndexes.push_back (i);
+        }
+      else if (lteSlMibRxParams != 0)
+        {
+          psbchIndexes.push_back (i);
         }
       else
         {
@@ -1889,6 +1844,10 @@ LteSpectrumPhy::EndRxSlFrame ()
   if (psdchIndexes.size () > 0)
    {
     RxSlPsdch (psdchIndexes);
+   }
+  if (psbchIndexes.size () > 0)
+   {
+    RxSlPsbch (psbchIndexes);
    }
 
   //clear received packets
@@ -2621,6 +2580,26 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
               m_ltePhyRxCtrlEndErrorCallback ();
             }
         }
+}
+
+void
+LteSpectrumPhy::RxSlPsbch (std::vector<uint32_t> pktIndexes)
+{
+  NS_LOG_FUNCTION (this << "Nb PSBCH messages:" << pktIndexes.size ());
+
+  for (uint32_t i = 0; i < pktIndexes.size (); i++)
+   {
+      uint32_t pktIndex = pktIndexes[i];
+      Ptr<LteSpectrumSignalParametersSlMibFrame> params = DynamicCast<LteSpectrumSignalParametersSlMibFrame> (m_rxPacketInfo.at (pktIndex).params);
+      NS_ASSERT (params);
+      
+      NS_LOG_LOGIC ("Receiving a SLSS");
+      //Measure S-RSRP
+      if (!m_ltePhyRxSlssCallback.IsNull ())
+        {
+          m_ltePhyRxSlssCallback (params->slssId, params->psd);
+        }
+   }
 }
 
 void

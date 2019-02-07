@@ -123,18 +123,11 @@ public:
   virtual void Print (std::ostream &os) const;
 
   /**
-   * Sets the Rx offset
-   *
-   * \param offset The reception offset
-   */
-  void SetRxOffset (const uint16_t offset);
-  
-  /**
    * Sets the slssid
    * 
    * \param slssid The SLSS ID
    */
-  void SetSlssid (const uint64_t slssid);
+  void SetSlssid (const uint16_t slssid);
   
   /**
    * Get creation timestamp function
@@ -144,24 +137,15 @@ public:
   Time GetCreationTimestamp (void) const;
   
   /**
-   * Get creation timestamp function
+   * Get the slssid
    *
-   * \returns RNTI
+   * \returns the SLSS ID
    */
-  Time GetRxTimestamp (void) const;
-  
-  /**
-   * Get layer function
-   *
-   * \returns layer
-   */
-  uint16_t GetRxOffset (void) const;
+  uint16_t GetSlssid (void) const;
 
 private:
     Time m_creationTimestamp;   ///< Creation timestamp filled when created
-    Time m_rxTimestamp;   ///< Reception timestamp filled upon reception
-    uint16_t m_rxOffset;   ///< Reception offset
-    uint64_t  m_slssid;   ///< SLSSID of the SyncRef sending the MIB-SL
+    uint16_t  m_slssid;   ///< SLSSID of the SyncRef sending the MIB-SL
 
 };
 

@@ -54,6 +54,7 @@ public:
     uint32_t srcL2Id;  /**< Source L2 ID (24 bits) */
     uint32_t dstL2Id;  /**< Destination L2 ID (24 bits) */
     bool        discMsg; /**< indicates if this a discovery message coming from RRC instead of RLC */
+    bool        sibslMsg; /**< indicates if this is a SIB-SL message coming from RRC instead of RLC */
   };
 
   /**

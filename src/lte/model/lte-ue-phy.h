@@ -257,6 +257,11 @@ public:
    */
   void PhyPsdchPduReceived (Ptr<Packet> p);
 
+  /**
+   * \brief PhySpectrum received a new PHY-PDU
+   * \param p The packet received
+   */
+  void PhyPsbchPduReceived (Ptr<Packet> p);
 
   /**
    * \brief trigger from eNB the start from a new frame
@@ -954,21 +959,12 @@ private:
   * Current subframe number
   */
  uint32_t m_currSubframeNo;
- /**
-  * Configuration needed for the timely change of subframe indication upon synchronization to
-  * a different SyncRef
-  */
- struct ResyncParams
- {
-   uint16_t newSubframeNo; ///< Subframe number
-   uint16_t newFrameNo; ///< frame number
-   LteRrcSap::MasterInformationBlockSL syncRefMib; ///< MIB
- };
+ 
  /**
   * Parameters to be used for the change of subframe indication upon synchronization to
   * a different SyncRef
   */
- ResyncParams m_resyncParams;
+ LteSlSyncParams m_resyncParams;
  /**
   * True if the RRC instructed to synchronize to a different SyncRef
   */
@@ -1067,14 +1063,14 @@ private:
   *
   * \param mibSl The Sidelink Master Information Block
   */
- void DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl);
+ //void DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl);
  /**
   * Do synchronize to the SyncRef function
   * The RRC instructs the PHY to synchronize to a given SyncRef and apply the corresponding change of timing
   *
-  * \param mibSl The Sidelink Master Information Block
+  * \param synchParama The synchronization parameters
   */
- void DoSynchronizeToSyncRef (LteRrcSap::MasterInformationBlockSL mibSl);
+ void DoSynchronizeToSyncRef (LteSlSyncParams synchParams);
 
 }; // end of `class LteUePhy`
 

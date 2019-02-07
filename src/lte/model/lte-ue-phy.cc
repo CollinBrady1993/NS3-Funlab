@@ -40,6 +40,7 @@
 #include "lte-chunk-processor.h"
 #include "lte-ue-phy-sap.h"
 #include "lte-sl-tag.h"
+#include "lte-rrc-header.h"
 #include <ns3/lte-common.h>
 #include <ns3/pointer.h>
 #include <ns3/boolean.h>
@@ -680,6 +681,31 @@ LteUePhy::PhyPsdchPduReceived (Ptr<Packet> p)
 }
 
 void
+LteUePhy::PhyPsbchPduReceived (Ptr<Packet> p)
+{
+  NS_LOG_FUNCTION (this);
+  
+  //Store the received MIB-SL during the SyncRef search
+  if (m_ueSlssScanningInProgress)
+    {
+      MasterInformationBlockSlHeader mibSlHeader;
+      p->PeekHeader (mibSlHeader);
+      LteRrcSap::MasterInformationBlockSL mibSl = mibSlHeader.GetMessage ();
+      LteMibSlTag tag;
+      p->PeekPacketTag (tag);
+  
+      uint16_t rxOffset = Simulator::Now ().GetMilliSeconds () % 40;
+      m_detectedMibSl.insert (std::pair <std::pair<uint16_t, uint16_t>, LteRrcSap::MasterInformationBlockSL>
+                                (std::pair<uint16_t, uint16_t> (tag.GetSlssid (), rxOffset), mibSl));
+    }
+
+  //Pass the message to the RRC
+  m_ueCphySapUser->ReceiveMibSL (p);
+  
+}
+
+
+void
 LteUePhy::SetSubChannelsForTransmission (std::vector <int> mask)
 {
   NS_LOG_FUNCTION (this);
@@ -1285,22 +1311,6 @@ LteUePhy::ReceiveLteControlMessageList (std::list<Ptr<LteControlMessage> > msgLi
           NS_LOG_INFO ("received SL_DCI");
           // pass the info to the MAC
           m_uePhySapUser->ReceiveLteControlMessage (msg);
-        }
-      else if (msg->GetMessageType () == LteControlMessage::MIB_SL)
-        {
-          Ptr<MibSlLteControlMessage> msgMibSL = DynamicCast<MibSlLteControlMessage> (msg);
-          LteRrcSap::MasterInformationBlockSL mibSL = msgMibSL->GetMibSL ();
-
-          //Pass the message to the RRC
-          m_ueCphySapUser->ReceiveMibSL (mibSL);
-
-          //Store the received MIB-SL during the SyncRef search
-          if (m_ueSlssScanningInProgress)
-            {
-              mibSL.rxOffset = Simulator::Now ().GetMilliSeconds () % 40;
-              m_detectedMibSl.insert (std::pair <std::pair<uint16_t, uint16_t>, LteRrcSap::MasterInformationBlockSL>
-                                        (std::pair<uint16_t, uint16_t> (mibSL.slssid, mibSL.rxOffset), mibSL));
-            }
         }
       else
         {
@@ -2619,25 +2629,25 @@ LteUePhy::ReportSlssMeasurements (uint64_t slssid, uint16_t offset)
       NS_LOG_LOGIC ("The measurement sub-process ended and RRC selected a SyncRef for (re)synchronization");
 
       //Schedule the measurement for evaluation of the selected SyncRef for initiation/cease of SlSS transmission
-      NS_LOG_INFO ("UE RNTI " << m_rnti << " will start evaluation of selected SyncRef with SLSSID " << m_resyncParams.syncRefMib.slssid << " offset" << m_resyncParams.syncRefMib.rxOffset );
-      Simulator::ScheduleNow (&LteUePhy::StartSlssMeasurements, this, m_resyncParams.syncRefMib.slssid, m_resyncParams.syncRefMib.rxOffset);
+      NS_LOG_INFO ("UE RNTI " << m_rnti << " will start evaluation of selected SyncRef with SLSSID " << m_resyncParams.slssid << " offset" << m_resyncParams.offset );
+      Simulator::ScheduleNow (&LteUePhy::StartSlssMeasurements, this, m_resyncParams.slssid, m_resyncParams.offset);
 
       //Create measurement schedule for the evaluation
       uint16_t currOffset = Simulator::Now ().GetMilliSeconds () % 40;
       int64_t t;
-      if ( currOffset < m_resyncParams.syncRefMib.rxOffset)
+      if ( currOffset < m_resyncParams.offset)
         {
-          t = Simulator::Now ().GetMilliSeconds () + (m_resyncParams.syncRefMib.rxOffset - currOffset);
+          t = Simulator::Now ().GetMilliSeconds () + (m_resyncParams.offset - currOffset);
         }
       else
         {
-          t = Simulator::Now ().GetMilliSeconds () + (40 - currOffset + m_resyncParams.syncRefMib.rxOffset);
+          t = Simulator::Now ().GetMilliSeconds () + (40 - currOffset + m_resyncParams.offset);
         }
       uint16_t count = 1;
       while (t < (Simulator::Now ().GetMilliSeconds () + m_ueSlssMeasurementPeriod.GetMilliSeconds () - 40))
         {
-          NS_LOG_INFO ("UE RNTI " << m_rnti << " will measure SyncRef with SLSSID" << m_resyncParams.syncRefMib.slssid << " offset " <<  m_resyncParams.syncRefMib.rxOffset << " at t:" << t << " ms");
-          m_ueSlssMeasurementsSched.insert (std::pair<int64_t, std::pair<uint16_t, uint16_t> > (t, std::pair<uint16_t, uint16_t> (m_resyncParams.syncRefMib.slssid, m_resyncParams.syncRefMib.rxOffset)));
+          NS_LOG_INFO ("UE RNTI " << m_rnti << " will measure SyncRef with SLSSID" << m_resyncParams.slssid << " offset " <<  m_resyncParams.offset << " at t:" << t << " ms");
+          m_ueSlssMeasurementsSched.insert (std::pair<int64_t, std::pair<uint16_t, uint16_t> > (t, std::pair<uint16_t, uint16_t> (m_resyncParams.slssid, m_resyncParams.offset)));
           count++;
           if (count > m_nSamplesSrsrpMeas)
             {
@@ -2732,7 +2742,7 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
                                   << " to: frame " << frameNo << " subframe " << subframeNo);
 
           //Notify RRC about the successful change of SyncRef and timing
-          m_ueCphySapUser->ReportChangeOfSyncRef (m_resyncParams.syncRefMib,frameNo, subframeNo);
+          m_ueCphySapUser->ReportChangeOfSyncRef (m_resyncParams);
 
           //Notify MAC about the successful change of SyncRef and timing. Some adjustments first
 
@@ -2782,8 +2792,8 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
           m_currSubframeNo = subframeNo;
 
           //Notify the SpectrumPhy about the change of SLSSID
-          m_uplinkSpectrumPhy->SetSlssid (m_resyncParams.syncRefMib.slssid);
-          m_sidelinkSpectrumPhy->SetSlssid (m_resyncParams.syncRefMib.slssid);
+          m_uplinkSpectrumPhy->SetSlssid (m_resyncParams.slssid);
+          m_sidelinkSpectrumPhy->SetSlssid (m_resyncParams.slssid);
 
           return true;
         }
@@ -2810,23 +2820,21 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
       //No pool, apply directly the change of Timing
       NS_LOG_LOGIC ("The UE is not currently transmitting Sidelink communication... Applying the change of timing");
 
-      frameNo = m_resyncParams.newFrameNo;
-      subframeNo = m_resyncParams.newSubframeNo;
       m_resyncRequested = false;
       NS_LOG_INFO ("UE RNTI " << m_rnti << "did not have a Tx pool and"
                               << " changed the Subframe Indication from: "
                               << " frame " << m_currFrameNo << "subframe " << m_currSubframeNo
-                              << " to: frame " << frameNo << " subframe " << subframeNo);
+                              << " to: frame " << m_resyncParams.newFrameNo << " subframe " << m_resyncParams.newSubframeNo);
 
       //Notify RRC about the successful change of SyncRef and timing
-      m_ueCphySapUser->ReportChangeOfSyncRef (m_resyncParams.syncRefMib, frameNo, subframeNo);
+      m_ueCphySapUser->ReportChangeOfSyncRef (m_resyncParams);
 
-      m_currFrameNo = frameNo;
-      m_currSubframeNo = subframeNo;
+      m_currFrameNo = m_resyncParams.newFrameNo;
+      m_currSubframeNo = m_resyncParams.newSubframeNo;
 
       //Notify the SpectrumPhy about the change of SLSSID
-      m_uplinkSpectrumPhy->SetSlssid (m_resyncParams.syncRefMib.slssid);
-      m_sidelinkSpectrumPhy->SetSlssid (m_resyncParams.syncRefMib.slssid);
+      m_uplinkSpectrumPhy->SetSlssid (m_resyncParams.slssid);
+      m_sidelinkSpectrumPhy->SetSlssid (m_resyncParams.slssid);
 
       return true;
     }
@@ -2840,6 +2848,7 @@ LteUePhy::DoSetSlssId (uint64_t slssid)
   m_sidelinkSpectrumPhy->SetSlssid (slssid);
 }
 
+/*
 void
 LteUePhy::DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl)
 {
@@ -2854,59 +2863,20 @@ LteUePhy::DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl)
   m_uplinkSpectrumPhy->SetSlssid (mibSl.slssid);
   m_sidelinkSpectrumPhy->SetSlssid ( mibSl.slssid);
 }
+*/
 
 void
-LteUePhy::DoSynchronizeToSyncRef (LteRrcSap::MasterInformationBlockSL mibSl)
+LteUePhy::DoSynchronizeToSyncRef (LteSlSyncParams synchParams)
 {
   NS_LOG_FUNCTION (this);
 
-  //Estimate the current timing (frame/subframe indication) of the SyncRef
-  //using the information in the MIB-SL and the creation and reception time stamps
-  uint32_t mibCreationAge = Simulator::Now ().GetMilliSeconds () - mibSl.creationTimestamp.GetMilliSeconds ();
-  uint32_t mibRxAge = Simulator::Now ().GetMilliSeconds () - mibSl.rxTimestamp.GetMilliSeconds ();
-
-  uint32_t frameOffsetSyncRef = 0;
-  if (mibCreationAge >= 10)
-    {
-      frameOffsetSyncRef = uint32_t (mibCreationAge / 10);
-    }
-  uint32_t frameSyncRef = mibSl.directFrameNo + frameOffsetSyncRef;
-  if (frameSyncRef > 1024)
-    {
-      frameSyncRef = frameSyncRef - 1024;
-    }
-  uint32_t subframeOffsetSyncRef = mibCreationAge % 10;
-  uint32_t subframeSyncRef = mibSl.directSubframeNo + subframeOffsetSyncRef;
-  if (subframeSyncRef > 10)
-    {
-      subframeSyncRef = subframeSyncRef % 10;
-      frameSyncRef++;
-      if (frameSyncRef > 1024)
-        {
-          frameSyncRef = 1;
-        }
-    }
-  NS_LOG_INFO ("Synchronizing to SyncRef SLSSSID " << mibSl.slssid << " offset " << mibSl.rxOffset);
-  NS_LOG_INFO ("Its last mib was received " << mibRxAge << " ms ago, and it was created by the SyncRef " << mibCreationAge << " ms ago");
-  NS_LOG_INFO ("The subframe indication in the MIB-SL, i.e., when created (frame/subframe):" << mibSl.directFrameNo << "/" << mibSl.directSubframeNo);
-  NS_LOG_INFO ("The estimated CURRENT subframe indication of the SyncRef (frame/subframe): " << frameSyncRef << "/" << subframeSyncRef);
+  NS_LOG_INFO ("Synchronizing to SyncRef SLSSSID " << synchParams.slssid << " offset " << synchParams.offset);
+  NS_LOG_INFO ("The estimated CURRENT subframe indication of the SyncRef (frame/subframe): " << synchParams.newFrameNo << "/" << synchParams.newSubframeNo);
   NS_LOG_INFO ("The CURRENT subframe indication of this UE (frame/subframe): " << m_currFrameNo << "/" << m_currSubframeNo);
 
   //Request the synchronization (change of timing) for the next subframe
   m_resyncRequested = true;
-  ++subframeSyncRef; //Update frame/subframe number to be used (in the next subframe)
-  if (subframeSyncRef > 10)
-    {
-      ++frameSyncRef;
-      if (frameSyncRef > 1024)
-        {
-          frameSyncRef = 1;
-        }
-      subframeSyncRef = 1;
-    }
-  m_resyncParams.newFrameNo = frameSyncRef;
-  m_resyncParams.newSubframeNo = subframeSyncRef;
-  m_resyncParams.syncRefMib = mibSl;
+  m_resyncParams = synchParams;
 }
 
 int64_t

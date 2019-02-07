@@ -23,6 +23,8 @@
  */
 
 #include "lte-ue-rrc.h"
+#include "lte-rrc-header.h"
+#include "lte-sl-tag.h"
 
 #include <ns3/fatal-error.h>
 #include <ns3/log.h>
@@ -4215,7 +4217,7 @@ LteUeRrc::InitiateSlssTransmission ()
     {
       NS_LOG_LOGIC (this << " the UE has data to transmit");
       m_hasDataToTransmit = true;
-      if (m_hasSyncRef && IsInTheInnerPartOfTheSyncRefCell(m_currSyncRef.slssid,m_currSyncRef.rxOffset))
+      if (m_hasSyncRef && IsInTheInnerPartOfTheSyncRefCell(m_currSyncRef.slssid,m_currSyncRef.offset))
         {
           m_inInnerCellOfSyncRef = true;
           NS_LOG_LOGIC (this << " the UE is in the inner cell of the selected SyncRef, no SLSS transmissions initiated");
@@ -4257,7 +4259,7 @@ void LteUeRrc::ActivateSlssTransmission ()
           NS_LOG_LOGIC (this << " the UE has a selected SyncRef, using its SLSSID and the other offset indicator");
           //Use the values from the SyncRef
           m_slssId = m_currSyncRef.slssid;
-          uint16_t currSyncRefSyncOffsetIndicator = (10*m_currSyncRef.directFrameNo + m_currSyncRef.directSubframeNo) % 40;
+          uint16_t currSyncRefSyncOffsetIndicator = (10*m_currSyncRef.syncRefMib.directFrameNo + m_currSyncRef.syncRefMib.directSubframeNo) % 40;
           if(currSyncRefSyncOffsetIndicator == preconf.preconfigSync.syncOffsetIndicator1 )
             {
               m_txSlSyncOffsetIndicator = preconf.preconfigSync.syncOffsetIndicator2;
@@ -4355,28 +4357,42 @@ LteUeRrc::SendSlss ()
           mibSl.inCoverage = m_inCoverage;
           mibSl.directFrameNo = m_currFrameNo;
           mibSl.directSubframeNo = m_currSubframeNo ;
-          mibSl.creationTimestamp = Simulator::Now ();
-
-          if (!m_hasSyncRef)
-            {
-              mibSl.slssid = m_slssId;
-            }
-          else
-            {
-              mibSl.slssid = m_currSyncRef.slssid;
-            }
-
+          
+          uint16_t slssid = (m_hasSyncRef ? m_currSyncRef.slssid : m_slssId );
+          
           //Send the SLSS
           NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" sending SLSS");
           NS_LOG_INFO (this << " mibSl.slBandwidth "<<mibSl.slBandwidth
                        <<" mibSl.inCoverage "<<mibSl.inCoverage
                        <<" mibSl.directFrameNo "<<mibSl.directFrameNo
                        <<" mibSl.directSubframeNo "<<mibSl.directSubframeNo
-                       <<" mibSl.slssid "<<mibSl.slssid);
+                       <<" mibSl.slssid "<< slssid);
 
-          m_SendSlssTrace(m_imsi,mibSl.slssid,m_txSlSyncOffsetIndicator,mibSl.inCoverage,mibSl.directFrameNo,mibSl.directSubframeNo);
-
-          m_cphySapProvider.at (0)->SendSlss (mibSl);
+          MasterInformationBlockSlHeader mibslHeader;
+          mibslHeader.SetMessage (mibSl);          
+          Ptr<Packet> p = Create<Packet>();          
+          p->AddHeader (mibslHeader);
+          LteMibSlTag tag (Simulator::Now ());
+          tag.SetSlssid (slssid);
+          p->AddPacketTag (tag);
+          
+          LteMacSapProvider::TransmitPduParameters params;
+          params.rnti = m_rnti;
+          params.srcL2Id = 0; //not used for discovery messages
+          params.dstL2Id = 0; //not used for discovery messages
+          params.lcid = 0; //not used  for discovery messages
+          params.harqProcessId = 0; //not used for discovery messages
+          params.discMsg = false;
+          params.sibslMsg = true;
+          params.componentCarrierId = 0;
+          params.pdu = p;
+          
+          m_SendSlssTrace(m_imsi,slssid,m_txSlSyncOffsetIndicator,mibSl.inCoverage,mibSl.directFrameNo,mibSl.directSubframeNo);
+         
+          m_macSapProvider->TransmitPdu (params);
+          
+          
+          
         }
 
       //Calculate when the next SLSS is supposed to be send
@@ -4546,7 +4562,7 @@ LteUeRrc::SynchronizeToStrongestSyncRef ()
       NS_LOG_LOGIC (this << " The strongest SyncRef is suitable");
 
       //Verify we have the mib for the strongest SyncRef
-      std::map <std::pair<uint16_t,uint16_t>, LteRrcSap::MasterInformationBlockSL>::iterator itMap
+      std::map <std::pair<uint16_t,uint16_t>, LteSlSyncParams>::iterator itMap
       = m_latestMibSlReceived.find (std::pair<uint16_t,uint16_t>(maxSrsrpSlssid,maxSrsrpOffset ));
       if (itMap == m_latestMibSlReceived.end ())
         {
@@ -4557,15 +4573,12 @@ LteUeRrc::SynchronizeToStrongestSyncRef ()
           NS_LOG_LOGIC (this << " The MIB-SL of the strongest SyncRef was found... Instructing synchronization");
 
           NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" selected SyncRef slssid "<<maxSrsrpSlssid << " offset " << maxSrsrpOffset);
-          NS_LOG_INFO (this <<" mibSl.slBandwidth "<<(*itMap).second.slBandwidth
-                       <<" mibSl.inCoverage "<<(*itMap).second.inCoverage
-                       <<" mibSl.directFrameNo "<<(*itMap).second.directFrameNo
-                       <<" mibSl.directSubframeNo "<<(*itMap).second.directSubframeNo
-                       <<" mibSl.slssid "<<(*itMap).second.slssid
-                       <<" mibSl.creationTimestamp "<<(*itMap).second.creationTimestamp.GetMilliSeconds()
-                       <<" mibSl.rxTimestamp "<<(*itMap).second.rxTimestamp.GetMilliSeconds());
+          NS_LOG_INFO (this <<" mibSl.slBandwidth "<<(*itMap).second.syncRefMib.slBandwidth
+                       <<" mibSl.inCoverage "<<(*itMap).second.syncRefMib.inCoverage
+                       <<" mibSl.directFrameNo "<<(*itMap).second.syncRefMib.directFrameNo
+                       <<" mibSl.directSubframeNo "<<(*itMap).second.syncRefMib.directSubframeNo);
 
-          //Instruct the phy to syncronize with maxSrsrpSlssid
+          //Instruct the phy to synchronize with maxSrsrpSlssid
           m_cphySapProvider.at (0)->SynchronizeToSyncRef ((*itMap).second);
         }
     }
@@ -4599,55 +4612,103 @@ LteUeRrc::IsInTheInnerPartOfTheSyncRefCell(uint16_t slssid, uint16_t offset)
     }
 }
 
-void LteUeRrc::DoReceiveMibSL (LteRrcSap::MasterInformationBlockSL mibSl)
+void LteUeRrc::DoReceiveMibSL (Ptr<Packet> p)
 {
-
   NS_LOG_FUNCTION (this);
 
-  mibSl.rxTimestamp = Simulator::Now ();
-  mibSl.rxOffset = Simulator::Now ().GetMilliSeconds () % 40;
+  MasterInformationBlockSlHeader mibSlHeader;
+  p->PeekHeader (mibSlHeader);
+  LteRrcSap::MasterInformationBlockSL mibSl = mibSlHeader.GetMessage ();
+  LteMibSlTag tag;
+  p->PeekPacketTag (tag);
+          
+  uint16_t rxOffset = Simulator::Now ().GetMilliSeconds () % 40;
 
   NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" received MIB-SL ");
   NS_LOG_INFO (this <<" mibSl.slBandwidth "<<mibSl.slBandwidth
                <<", mibSl.inCoverage "<<mibSl.inCoverage
                <<", mibSl.directFrameNo "<<mibSl.directFrameNo
                <<", mibSl.directSubframeNo "<<mibSl.directSubframeNo
-               <<", mibSl.creationTimestamp "<< mibSl.creationTimestamp.GetMilliSeconds()<<" (ms)"
-               <<", mibSl.rxTimestamp "<<mibSl.rxTimestamp.GetMilliSeconds()<<" (ms)"
-               <<", mibSl.slssid "<<mibSl.slssid
-               <<", mibSl.rxOffset "<<mibSl.rxOffset);
+               <<", mibSl.creationTimestamp "<< tag.GetCreationTimestamp ().GetMilliSeconds()<<" (ms)"
+               <<", slssid "<< tag.GetSlssid ()
+               <<", rxOffset "<< rxOffset);
 
+  //Estimate the current timing (frame/subframe indication) of the SyncRef
+  //using the information in the MIB-SL and the creation and reception time stamps
+  uint32_t mibCreationAge = Simulator::Now().GetMilliSeconds() - tag.GetCreationTimestamp ().GetMilliSeconds();
+  
+  uint32_t frameOffsetSyncRef = 0;
+  if (mibCreationAge >= 10)
+    {
+      frameOffsetSyncRef = uint32_t(mibCreationAge / 10);
+    }
+  uint32_t frameSyncRef = mibSl.directFrameNo + frameOffsetSyncRef;
+  if (frameSyncRef > 1024)
+    {
+      frameSyncRef = frameSyncRef - 1024;
+    }
+  uint32_t subframeOffsetSyncRef = mibCreationAge % 10;
+  uint32_t subframeSyncRef = mibSl.directSubframeNo + subframeOffsetSyncRef;
+  if (subframeSyncRef > 10)
+    {
+      subframeSyncRef = subframeSyncRef % 10;
+      frameSyncRef++;
+      if (frameSyncRef > 1024)
+        {
+          frameSyncRef = 1;
+        }
+    }
+  
+  ++subframeSyncRef; //Update frame/subframe number to be used (in the next subframe)
+  if (subframeSyncRef > 10)
+    {
+      ++frameSyncRef;
+      if (frameSyncRef > 1024)
+        {
+          frameSyncRef = 1;
+        }
+      subframeSyncRef = 1;
+    }
 
   //Store the mib
-  std::map <std::pair<uint16_t,uint16_t>, LteRrcSap::MasterInformationBlockSL>::iterator itMap
-  = m_latestMibSlReceived.find (std::pair<uint16_t,uint16_t>(mibSl.slssid, mibSl.rxOffset));
+  std::map <std::pair<uint16_t,uint16_t>, LteSlSyncParams>::iterator itMap
+  = m_latestMibSlReceived.find (std::pair<uint16_t,uint16_t>(tag.GetSlssid (), rxOffset));
 
   if (itMap == m_latestMibSlReceived.end ())
     {
       //Insert new entry
-      NS_LOG_LOGIC (this << " First received MIB-SL for SyncRef with SLSSID "<<mibSl.slssid << " offset " <<mibSl.rxOffset);
-      m_latestMibSlReceived.insert (std::pair <std::pair<uint16_t,uint16_t>, LteRrcSap::MasterInformationBlockSL> (std::pair<uint16_t,uint16_t>(mibSl.slssid, mibSl.rxOffset), mibSl));
+      NS_LOG_LOGIC (this << " First received MIB-SL for SyncRef with SLSSID " << tag.GetSlssid () << " offset " << rxOffset);
+      LteSlSyncParams synchParams;
+      synchParams.newFrameNo = frameSyncRef;
+      synchParams.newSubframeNo = subframeSyncRef;
+      synchParams.slssid = tag.GetSlssid ();
+      synchParams.offset = rxOffset;
+      synchParams.syncRefMib = mibSl;
+  
+      
+      m_latestMibSlReceived.insert (std::pair <std::pair<uint16_t,uint16_t>, LteSlSyncParams> (std::pair<uint16_t,uint16_t>(tag.GetSlssid (), rxOffset), synchParams));
     }
   else
     {
       //Replace the entry
-      NS_LOG_LOGIC (this << " Updating stored MIB-SL for SyncRef with SLSSID "<<mibSl.slssid << " offset " <<mibSl.rxOffset);
-      (*itMap).second.slBandwidth = mibSl.slBandwidth;
-      (*itMap).second.inCoverage = mibSl.inCoverage;
-      (*itMap).second.directFrameNo = mibSl.directFrameNo;
-      (*itMap).second.directSubframeNo = mibSl.directSubframeNo;
-      (*itMap).second.slssid = mibSl.slssid;
-      (*itMap).second.rxTimestamp= mibSl.rxTimestamp;
-      (*itMap).second.creationTimestamp= mibSl.creationTimestamp;
+      NS_LOG_LOGIC (this << " Updating stored MIB-SL for SyncRef with SLSSID " << tag.GetSlssid () << " offset " << rxOffset);
+      (*itMap).second.syncRefMib.slBandwidth = mibSl.slBandwidth;
+      (*itMap).second.syncRefMib.inCoverage = mibSl.inCoverage;
+      (*itMap).second.syncRefMib.directFrameNo = mibSl.directFrameNo;
+      (*itMap).second.syncRefMib.directSubframeNo = mibSl.directSubframeNo;
+      (*itMap).second.offset = rxOffset;
+      (*itMap).second.newFrameNo = frameSyncRef;
+      (*itMap).second.newSubframeNo = subframeSyncRef;
   }
   //Verify if it is a MIB-SL from the current SyncRef
-  if (m_hasSyncRef && mibSl.slssid == m_currSyncRef.slssid){
-      NS_LOG_LOGIC (this << " The received MIB-SL is from the selected SyncRef (SLSSID "<<mibSl.slssid << " offset " <<mibSl.rxOffset<<")");
+  if (m_hasSyncRef && tag.GetSlssid () == m_currSyncRef.slssid){
+      NS_LOG_LOGIC (this << " The received MIB-SL is from the selected SyncRef (SLSSID "<< tag.GetSlssid () << " offset " << rxOffset<<")");
   }
+  
 }
 
 void
-LteUeRrc::DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParameters params, uint64_t slssid, uint16_t offset)
+LteUeRrc::DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParameters params, uint16_t slssid, uint16_t offset)
 {
   NS_LOG_FUNCTION (this);
 
@@ -4770,7 +4831,7 @@ LteUeRrc::DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParamete
       std::vector <std::pair<uint16_t,uint16_t> >::iterator RepIt;
       for (RepIt = m_lastReportedSlssidList.begin (); RepIt != m_lastReportedSlssidList.end (); ++RepIt)
         {
-          if ( (*RepIt).first == m_currSyncRef.slssid && (*RepIt).second == m_currSyncRef.rxOffset){
+          if ( (*RepIt).first == m_currSyncRef.slssid && (*RepIt).second == m_currSyncRef.offset){
               syncRefDetected = true;
           }
           std::map <std::pair<uint16_t,uint16_t>, SlssMeasValues>::iterator it = m_storedSlssMeasValues.find(std::pair<uint16_t,uint16_t>(*RepIt));
@@ -4806,7 +4867,7 @@ LteUeRrc::DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParamete
           else
             {
               //Yes
-              std::map <std::pair<uint16_t,uint16_t>, SlssMeasValues>::iterator itMap = m_storedSlssMeasValues.find (std::pair<uint16_t,uint16_t>(m_currSyncRef.slssid,m_currSyncRef.rxOffset));
+              std::map <std::pair<uint16_t,uint16_t>, SlssMeasValues>::iterator itMap = m_storedSlssMeasValues.find (std::pair<uint16_t,uint16_t>(m_currSyncRef.slssid,m_currSyncRef.offset));
               if (itMap == m_storedSlssMeasValues.end ())
                 {
                   NS_LOG_LOGIC(this <<" The UE cannot find the S-RSRP measurements for the selected SyncRef... Considering it not valid"  );
@@ -4846,7 +4907,7 @@ LteUeRrc::DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParamete
     {
       NS_LOG_LOGIC(this <<" Evaluating S-RSRP measurements of the selected SyncRef" );
 
-      if (IsInTheInnerPartOfTheSyncRefCell(m_currSyncRef.slssid, m_currSyncRef.rxOffset))
+      if (IsInTheInnerPartOfTheSyncRefCell(m_currSyncRef.slssid, m_currSyncRef.offset))
         {
           NS_LOG_LOGIC (this << " the UE is in the inner cell of the selected SyncRef");
           if (m_slssTransmissionActive == true )
@@ -4875,7 +4936,7 @@ LteUeRrc::DoReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParamete
 }
 
 void
-LteUeRrc::DoReportChangeOfSyncRef (LteRrcSap::MasterInformationBlockSL mibSl, uint16_t frameNo, uint16_t subFrameNo)
+LteUeRrc::DoReportChangeOfSyncRef (LteSlSyncParams params)
 {
   NS_LOG_FUNCTION (this);
 
@@ -4885,35 +4946,28 @@ LteUeRrc::DoReportChangeOfSyncRef (LteRrcSap::MasterInformationBlockSL mibSl, ui
   uint16_t previousSubFrameNo = m_currSubframeNo;
 
   //Save the current subframe indication
-  SaveSubframeIndication(frameNo, subFrameNo);
+  SaveSubframeIndication(params.newFrameNo, params.newSubframeNo);
 
   SlChangeOfSyncRefStatParameters param;
   param.imsi=m_imsi;
   param.prevSlssid =m_slssId;
-  param.prevRxOffset=m_currSyncRef.rxOffset;
+  param.prevRxOffset=m_currSyncRef.offset;
   param.prevFrameNo=previousFrameNo;
   param.prevSubframeNo=previousSubFrameNo;
 
   //Storing the value of the MIB (Note this is not the current frameNo and subframeNo)
-  m_currSyncRef.directFrameNo = mibSl.directFrameNo;
-  m_currSyncRef.directSubframeNo = mibSl.directSubframeNo;
-  m_currSyncRef.inCoverage = mibSl.inCoverage;
-  m_currSyncRef.rxTimestamp = mibSl.rxTimestamp;
-  m_currSyncRef.creationTimestamp = mibSl.creationTimestamp;
-  m_currSyncRef.slBandwidth = mibSl.slBandwidth;
-  m_currSyncRef.slssid = mibSl.slssid;
-  m_currSyncRef.rxOffset = mibSl.rxOffset;
+  m_currSyncRef = params;
 
-  m_slssId = mibSl.slssid;
+  m_slssId = params.slssid;
 
   param.currSlssid=m_slssId;
-  param.currRxOffset=mibSl.rxOffset;
+  param.currRxOffset=params.offset;
   param.currFrameNo=m_currFrameNo;
   param.currSubframeNo=m_currSubframeNo;
 
   m_ChangeOfSyncRefTrace(param);
 
-  NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" reported successful change of SyncRef, selected SyncRef SLSSID "<< mibSl.slssid <<"offset "<< mibSl.rxOffset);
+  NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" reported successful change of SyncRef, selected SyncRef SLSSID "<< params.slssid <<"offset "<< params.offset);
 }
 
 void
@@ -4961,6 +5015,7 @@ LteUeRrc::TransmitDiscoveryMessage (LteSlDiscHeader discHeader)
   params.lcid = 0; //not used  for discovery messages
   params.harqProcessId = 0; //not used for discovery messages
   params.discMsg = true;
+  params.sibslMsg = false;
   params.componentCarrierId = 0;
   params.pdu = p;
   m_macSapProvider->TransmitPdu (params);
