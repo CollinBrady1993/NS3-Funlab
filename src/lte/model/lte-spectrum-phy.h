@@ -376,9 +376,20 @@ public:
    *
    *
    * \param pb The burst of packets to be transmitted in PSSCH/PSCCH
+   * \param duration The duration of the data frame
+   *
+   * \return true if an error occurred and the transmission was not
+   * started, false otherwise.
+   */
+   bool StartTxSlMibFrame (Ptr<PacketBurst> pb, Time duration);
+
+   /**
+   * Start a transmission of Sidelink data frame in DL and UL
+   *
+   *
+   * \param pb The burst of packets to be transmitted in PSSCH/PSCCH
    * \param ctrlMsgList The list of LteControlMessage to send
    * \param duration The duration of the data frame
-   * \param groupId The group id
    *
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.

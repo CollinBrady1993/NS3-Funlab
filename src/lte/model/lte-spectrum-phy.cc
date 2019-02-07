@@ -44,6 +44,7 @@
 #include "ns3/enum.h"
 #include "lte-sl-header.h"
 #include "lte-sl-tag.h"
+#include "ns3/lte-spectrum-signal-parameters.h"
 #include <ns3/pointer.h>
 
 namespace ns3 {
@@ -738,6 +739,66 @@ LteSpectrumPhy::StartTxDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlM
           {
             m_ulDataSlCheck = true;
           }
+        m_channel->StartTx (txParams);
+        m_endTxEvent = Simulator::Schedule (duration, &LteSpectrumPhy::EndTxData, this);
+      }
+      return false;
+      break;
+
+    default:
+      NS_FATAL_ERROR ("unknown state");
+      return true;
+      break;
+    }
+}
+
+bool
+LteSpectrumPhy::StartTxSlMibFrame (Ptr<PacketBurst> pb, Time duration)
+{
+  NS_LOG_FUNCTION (this << pb << " ID:" << GetDevice ()->GetNode ()->GetId () << " State: " << m_state);
+
+  m_phyTxStartTrace (pb);
+
+  switch (m_state)
+    {
+    case RX_DATA:
+    case RX_DL_CTRL:
+    case RX_UL_SRS:
+      NS_FATAL_ERROR ("cannot TX while RX: according to FDD channel access, the physical layer for transmission cannot be used for reception");
+      break;
+
+    case TX_DATA:
+    case TX_DL_CTRL:
+    case TX_UL_SRS:
+      NS_FATAL_ERROR ("cannot TX while already TX: the MAC should avoid this");
+      break;
+
+    case IDLE:
+      {
+        /*
+        m_txPsd must be set by the device, according to
+        (i) the available subchannel for transmission
+        (ii) the power transmission
+        */
+        NS_ASSERT (m_txPsd);
+        m_txPacketBurst = pb;
+
+        // we need to convey some PHY meta information to the receiver
+        // to be used for simulation purposes (e.g., the CellId). This
+        // is done by setting the ctrlMsgList parameter of
+        // LteSpectrumSignalParametersDataFrame
+        ChangeState (TX_DATA);
+        NS_ASSERT (m_channel);
+        Ptr<LteSpectrumSignalParametersSlMibFrame> txParams = Create<LteSpectrumSignalParametersSlMibFrame> ();
+        txParams->duration = duration;
+        txParams->txPhy = GetObject<SpectrumPhy> ();
+        txParams->txAntenna = m_antenna;
+        txParams->psd = m_txPsd;
+        txParams->nodeId = GetDevice ()->GetNode ()->GetId ();
+        txParams->slssId = m_slssId;
+        txParams->packetBurst = pb;
+        m_ulDataSlCheck = true;
+
         m_channel->StartTx (txParams);
         m_endTxEvent = Simulator::Schedule (duration, &LteSpectrumPhy::EndTxData, this);
       }

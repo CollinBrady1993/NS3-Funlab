@@ -383,6 +383,7 @@ LteUeMac::LteUeMac ()
     m_freshSlBsr (false),
     m_setTrpIndex (0),
     m_useSetTrpIndex (false),
+    m_slSynchPendingTxMsg (0),
     m_sidelinkEnabled (false)
 
 {
@@ -478,6 +479,11 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
       //queue message until next discovery period
       m_discPendingTxMsgs.push_back (params.pdu);
     }
+  else if (params.sibslMsg)
+   {
+    NS_ASSERT_MSG (m_slSynchPendingTxMsg == 0, "Trying to transmit multiple synchronization messages");
+       m_slSynchPendingTxMsg = params.pdu;    
+   }
   else
     {
       if (params.srcL2Id == 0)
@@ -1409,6 +1415,20 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
       NS_LOG_INFO ("Adjusted Frame no. " << frameNo << " Subframe no. " << subframeNo);
 
+      //Sidelink Synchronization
+      if (m_slSynchPendingTxMsg)
+       {
+          LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
+          phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH;
+          phyParams.m_rbStart = 22;
+          phyParams.m_rbLen = 6;
+          phyParams.m_rv = 0;
+          m_uePhySapProvider->SendSlMacPdu (m_slSynchPendingTxMsg, phyParams);
+          //clear pending message, but should probably be done after handling discovery/communication
+          //to avoid sending messages as well
+          m_slSynchPendingTxMsg = NULL;
+       }
+      
       //Sidelink Discovery
       if (m_discTxPool.m_pool != NULL)
         {

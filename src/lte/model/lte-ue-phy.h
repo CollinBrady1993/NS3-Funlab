@@ -284,6 +284,13 @@ public:
   void SendSrs ();
 
   /**
+   * Get random system frame and subframe number
+   * \param stream The first stream index to use
+   * \return The number of stream indices assigned
+   */
+  int64_t AssignStreams (int64_t stream);
+
+  /**
    * \brief PhySpectrum generated a new DL HARQ feedback
    * \param mes The DlInfoListElement_s
    */
@@ -299,16 +306,6 @@ public:
    * \return The current state
    */
   State GetState () const;
-
-  /**
-   * Assign a fixed random variable stream number to the random variables
-   * used by this model. Return the number of streams (possibly zero) that
-   * have been assigned.
-   *
-   * \param stream The first stream index to use
-   * \return The number of stream indices assigned
-   */
-  int64_t AssignStreams (int64_t stream);
 
   /**
    * Set the time in which the first SyncRef selection will be performed by the UE

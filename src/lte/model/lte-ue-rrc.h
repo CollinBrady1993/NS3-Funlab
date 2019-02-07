@@ -1472,6 +1472,10 @@ private:
    */
   Time m_slssTxTime;
   /**
+   * Event for sending SLSS.
+   */
+  EventId m_slssTxEvent;  
+  /**
    * \brief Internal storage of the most recent MIB-SL for each SyncRef,
    * indexed by the SyncRef SLSSID and the time offset indicator in which it was received
    */

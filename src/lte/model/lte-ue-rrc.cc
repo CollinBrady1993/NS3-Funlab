@@ -4315,8 +4315,8 @@ void LteUeRrc::ActivateSlssTransmission ()
       NS_LOG_INFO (this << " UE IMSI "<<m_imsi <<" activating SLSS transmission with SLSSID " << m_slssId <<", first SLSS in "<< nextSLSS<< "ms");
 
 
-      Simulator::Schedule (MilliSeconds (nextSLSS), &LteUeRrc::SendSlss, this);
-      m_slssTxTime = MilliSeconds (Simulator::Now ().GetMilliSeconds () + nextSLSS);
+      m_slssTxEvent = Simulator::Schedule (MilliSeconds (nextSLSS), &LteUeRrc::SendSlss, this);
+      //m_slssTxTime = MilliSeconds (Simulator::Now ().GetMilliSeconds () + nextSLSS);
     }
 }
 
@@ -4327,6 +4327,8 @@ void LteUeRrc::DeactivateSlssTransmission ()
   if (m_slssTransmissionActive)
     {
       m_slssTransmissionActive = false;
+      //cancel next transmission
+      m_slssTxEvent.Cancel ();
     }
 }
 
@@ -4408,6 +4410,9 @@ LteUeRrc::SendSlss ()
           nextSLSS = 40 - currOffset + m_txSlSyncOffsetIndicator;
         }
 
+      m_slssTxEvent = Simulator::Schedule (MilliSeconds(nextSLSS), &LteUeRrc::SendSlss, this);
+      NS_LOG_LOGIC (this << " UE IMSI "<<m_imsi <<" scheduled a SLSS to be sent in "<<nextSLSS<<" ms");
+      /*
       //Schedule the sent of the SLSS if it wasn't scheduled already
       if (m_slssTxTime.GetMilliSeconds() == Simulator::Now ().GetMilliSeconds ())
         {
@@ -4419,6 +4424,7 @@ LteUeRrc::SendSlss ()
         {
           NS_LOG_LOGIC (this << " UE IMSI "<<m_imsi <<" Duplicated SLSS scheduling, ignoring");
         }
+      */
     }
 }
 

@@ -514,6 +514,9 @@ private:
   Ptr<UniformRandomVariable> m_p1UniformVariable; ///< A uniform random variable to compare with the Tx probability of UE selected pool
   Ptr<UniformRandomVariable> m_resUniformVariable;///< A uniform random variable to randomly choose the resource index from the PSDCH resource pool
 
+  Ptr<Packet> m_slSynchPendingTxMsg; ///< MIB-SL message to send
+
+  
   /**
    * Trace information regarding Sidelink PSCCH UE scheduling.
    * SlUeMacStatParameters (see lte-common.h)

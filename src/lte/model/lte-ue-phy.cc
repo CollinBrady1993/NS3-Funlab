@@ -1632,6 +1632,8 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               if (pb)
                 {
                   std::list<LteUePhySapProvider::TransmitSlPhySduParameters>::iterator paramIt = params.begin ();
+                  NS_ASSERT_MSG (paramIt != params.end(), "Found packet burst without associated parameters");
+                  
                   std::vector <int> slRb;
                   for (int i = (*paramIt).m_rbStart; i < (*paramIt).m_rbStart + (*paramIt).m_rbLen; i++)
                     {
@@ -1641,6 +1643,17 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
                   switch ((*paramIt).m_channel)
                     {
+                    case LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH:
+                     NS_LOG_LOGIC (this << " UE - start TX PSBCH");
+                     
+                     if (m_enableUplinkPowerControl)
+                        {
+                          m_txPower = m_powerControl->GetPscchTxPower (slRb); //what's the power control for PSBCH?
+                        }
+                     
+                     SetSubChannelsForTransmission (slRb);
+                     m_uplinkSpectrumPhy->StartTxSlMibFrame (pb, UL_DATA_DURATION);
+                     break;
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSCCH:
                       NS_LOG_LOGIC (this << " UE - start TX PSCCH");
                       //access the control message to store the PSSCH grant and be able to

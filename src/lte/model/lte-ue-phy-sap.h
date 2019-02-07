@@ -48,6 +48,7 @@ public:
   {
     enum SidelinkChannel
       {
+        PSBCH,
           PSCCH,
           PSSCH,
           PSDCH
