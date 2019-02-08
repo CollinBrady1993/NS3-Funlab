@@ -537,6 +537,8 @@ LteUeRrc::DoInitialize (void)
 {
   NS_LOG_FUNCTION (this);
 
+  m_currSyncRef.slssid = 0;
+
   // setup the UE side of SRB0
   uint8_t lcid = 0;
 

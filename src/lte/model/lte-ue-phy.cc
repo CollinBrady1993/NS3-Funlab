@@ -1646,6 +1646,8 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH:
                      NS_LOG_LOGIC (this << " UE - start TX PSBCH");
                      
+                     NS_ASSERT_MSG (params.size () == 1, "Found more than one packet in PSBCH burst");
+                     
                      if (m_enableUplinkPowerControl)
                         {
                           m_txPower = m_powerControl->GetPscchTxPower (slRb); //what's the power control for PSBCH?
@@ -1852,6 +1854,8 @@ LteUePhy::DoReset ()
   m_srsConfigured = false;
   m_dlConfigured = false;
   m_ulConfigured = false;
+  m_ulEarfcn = 0;
+  m_ulBandwidth = 0;
   m_raPreambleId = 255; // value out of range
   m_raRnti = 11; // value out of range
   m_rsrpSinrSampleCounter = 0;

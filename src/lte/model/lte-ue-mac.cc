@@ -384,6 +384,7 @@ LteUeMac::LteUeMac ()
     m_setTrpIndex (0),
     m_useSetTrpIndex (false),
     m_slSynchPendingTxMsg (0),
+     m_slHasDataToTx (false),
     m_sidelinkEnabled (false)
 
 {

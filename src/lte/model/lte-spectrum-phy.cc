@@ -2661,6 +2661,175 @@ LteSpectrumPhy::RxSlPsbch (std::vector<uint32_t> pktIndexes)
           m_ltePhyRxSlssCallback (params->slssId, params->psd);
         }
    }
+  
+ 
+  // When control messages collide in the PSBCH, the receiver cannot know how many transmissions occurred
+  // we sort the messages by SINR and try to decode the ones with highest average SINR per RB first
+  // only one message per RB can be decoded
+
+  std::list<Ptr<Packet> > rxControlMessageOkList;
+  bool error = true;
+  std::multiset<SlCtrlPacketInfo_t> sortedControlMessages;
+  //container to store the RB indices of the collided TBs
+  std::set<int> collidedRbBitmap;
+  //container to store the RB indices of the decoded TBs
+  std::set<int> rbDecodedBitmap;
+
+  for (uint32_t i = 0; i < pktIndexes.size (); i++)
+    {
+      uint32_t pktIndex = pktIndexes[i];
+      Ptr<LteSpectrumSignalParametersSlMibFrame> params = DynamicCast<LteSpectrumSignalParametersSlMibFrame> (m_rxPacketInfo.at (pktIndex).params);
+      NS_ASSERT (params);
+      Ptr<PacketBurst> pb = params->packetBurst;
+      NS_ASSERT_MSG (pb->GetNPackets () == 1, "Received PSCCH burst with more than one packet");
+            
+        double meanSinr = GetMeanSinr (m_slSinrPerceived[pktIndexes[i]], m_rxPacketInfo.at (pktIndex).rbBitmap);
+        SlCtrlPacketInfo_t pInfo;
+        pInfo.sinr = meanSinr;
+        pInfo.index = pktIndex;
+        sortedControlMessages.insert (pInfo);
+    }
+
+  if (m_dropRbOnCollisionEnabled)
+    {
+      NS_LOG_DEBUG (this << "PSBCH DropOnCollisionEnabled");
+      //Add new loop to make one pass and identify which RB have collisions
+      std::set<int> collidedRbBitmapTemp;
+
+      for (std::multiset<SlCtrlPacketInfo_t>::iterator it = sortedControlMessages.begin (); it != sortedControlMessages.end (); it++ )
+        {
+          uint32_t pktIndex = (*it).index;
+          for (std::vector<int>::const_iterator rbIt =  m_rxPacketInfo.at (pktIndex).rbBitmap.begin (); rbIt != m_rxPacketInfo.at (pktIndex).rbBitmap.end (); rbIt++)
+            {
+              if (collidedRbBitmapTemp.find (*rbIt) != collidedRbBitmapTemp.end ())
+                {
+                  //collision, update the bitmap
+                  collidedRbBitmap.insert (*rbIt);
+                  break;
+                }
+              else
+                {
+                  //store resources used by the packet to detect collision
+                  collidedRbBitmapTemp.insert ((*rbIt));
+                }
+            }
+        }
+    }
+
+  for (std::multiset<SlCtrlPacketInfo_t>::iterator it = sortedControlMessages.begin (); it != sortedControlMessages.end (); it++ )
+    {
+      uint32_t pktIndex = (*it).index;
+
+      bool corrupt = false;
+
+      if (m_slCtrlErrorModelEnabled)
+        {
+          for (std::vector<int>::const_iterator rbIt =  m_rxPacketInfo.at (pktIndex).rbBitmap.begin ();  rbIt != m_rxPacketInfo.at (pktIndex).rbBitmap.end (); rbIt++)
+            {
+              //if m_dropRbOnCollisionEnabled == false, collidedRbBitmap will remain empty
+              //and we move to the second "if" to check if the TB with similar RBs has already
+              //been decoded. If m_dropRbOnCollisionEnabled == true, all the collided TBs
+              //are marked corrupt and this for loop will break in the first "if" condition
+              if (collidedRbBitmap.find (*rbIt) != collidedRbBitmap.end ())
+                {
+                  corrupt = true;
+                  NS_LOG_DEBUG (this << " RB " << *rbIt << " has collided");
+                  break;
+                }
+              if (rbDecodedBitmap.find (*rbIt) != rbDecodedBitmap.end ())
+                {
+                  NS_LOG_DEBUG (*rbIt << " TB with the similar RB has already been decoded. Avoid to decode it again!");
+                  corrupt = true;
+                  break;
+                }
+            }
+
+          if (!corrupt)
+            {
+              double  errorRate;
+              //Average gain for SIMO based on [CatreuxMIMO] --> m_slSinrPerceived[i] * 2.51189
+              errorRate = LteNistErrorModel::GetPsbchBler (m_fadingModel,LteNistErrorModel::SISO, GetMeanSinr (m_slSinrPerceived[pktIndex] * m_slRxGain, m_rxPacketInfo[pktIndex].rbBitmap)).tbler;
+              corrupt = m_random->GetValue () > errorRate ? false : true;
+              NS_LOG_DEBUG (this << " PSBCH Decoding, errorRate " << errorRate << " error " << corrupt);
+            }
+        }
+      else
+        {
+          //No error model enabled. If m_dropRbOnCollisionEnabled == true, it will just label the TB as
+          //corrupted if the two TBs received at the same time use same RB. Note: PSCCH occupies one RB.
+          //On the other hand, if m_dropRbOnCollisionEnabled == false, all the TBs are considered as not corrupted.
+          if (m_dropRbOnCollisionEnabled)
+            {
+              for (std::vector<int>::const_iterator rbIt =  m_rxPacketInfo.at (pktIndex).rbBitmap.begin ();  rbIt != m_rxPacketInfo.at (pktIndex).rbBitmap.end (); rbIt++)
+                {
+                  if (collidedRbBitmap.find (*rbIt) != collidedRbBitmap.end ())
+                    {
+                      corrupt = true;
+                      NS_LOG_DEBUG (this << " RB " << *rbIt << " has collided");
+                      break;
+                    }
+                }
+            }
+        }
+
+      if (!corrupt)
+        {
+          error = false;       //at least one control packet is OK
+          rxControlMessageOkList.push_back (m_rxPacketInfo.at(pktIndex).params->packetBurst->GetPackets ().front ());
+          //Store the indices of the decoded RBs
+          rbDecodedBitmap.insert ( m_rxPacketInfo.at (pktIndex).rbBitmap.begin (), m_rxPacketInfo.at (pktIndex).rbBitmap.end ());
+        }
+
+        // Add PSCCH trace.
+        /*
+        Ptr<Packet> pkt = m_rxPacketInfo[pktIndex].params->packetBurst->GetPackets ().front ();
+        LteSlSciHeader sciHeader;
+        pkt->PeekHeader (sciHeader);
+        LteSlSciTag tag;
+        pkt->PeekPacketTag (tag);
+        SlPhyReceptionStatParameters params;
+        params.m_timestamp = Simulator::Now ().GetMilliSeconds ();
+        params.m_cellId = m_cellId;
+        params.m_imsi = 0;       // it will be set by DlPhyTransmissionCallback in LteHelper
+        params.m_rnti = tag.GetRnti ();
+        params.m_mcs = sciHeader.GetMcs ();
+        params.m_size = pkt->GetSize ();
+        params.m_rbStart = sciHeader.GetRbStart ();
+        params.m_rbLen = sciHeader.GetRbLen ();
+        params.m_resPscch = tag.GetResNo (); 
+        params.m_groupDstId = sciHeader.GetGroupDstId ();
+        params.m_iTrp = sciHeader.GetTrp ();
+        params.m_hopping = sciHeader.GetHoppingInfo ();
+        params.m_correctness = (uint8_t) !corrupt;
+        // Call trace
+        m_slPscchReception (params);
+        */
+    }
+
+  if (pktIndexes.size () > 0)
+    {
+      if (!error)
+        {
+          if (!m_ltePhyRxCtrlEndOkCallback.IsNull ())
+            {
+              NS_LOG_DEBUG (this << " PSBCH OK");
+              std::list< Ptr<Packet> >::iterator it; 
+              for (it = rxControlMessageOkList.begin () ; it != rxControlMessageOkList.end (); it++)
+               {
+                  m_ltePhyRxPsbchEndOkCallback (*it);
+               }
+            }
+        }
+      else
+        {
+          if (!m_ltePhyRxCtrlEndErrorCallback.IsNull ())
+            {
+              NS_LOG_DEBUG (this << " PSBCH Error");
+              m_ltePhyRxDataEndErrorCallback ();
+            }
+        }
+    }
+  
 }
 
 void

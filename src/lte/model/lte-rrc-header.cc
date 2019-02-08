@@ -7162,8 +7162,8 @@ MasterInformationBlockSlHeader::PreSerialize () const
   std::bitset<10> frameNo (m_mibSl.directFrameNo);
   SerializeBitstring (frameNo); 
   
-  // Serialize subframe number
-  SerializeInteger (m_mibSl.directSubframeNo, 0, 9);
+  // Serialize subframe number (should be 0 to 9 but internally we are using 1 to 10)
+  SerializeInteger (m_mibSl.directSubframeNo, 1, 10);
   
   //Serialize in coverage
   SerializeBoolean (m_mibSl.inCoverage);
@@ -7207,8 +7207,8 @@ MasterInformationBlockSlHeader::Deserialize (Buffer::Iterator bIterator)
   bIterator = DeserializeBitstring (&bs, bIterator);
   m_mibSl.directFrameNo = (uint16_t) bs.to_ulong ();
   
-  // Deserialize subframe number
-  bIterator = DeserializeInteger (&n,0,9,bIterator);
+  // Deserialize subframe number (should be 0 to 9 but internally we are using 1 to 10)
+  bIterator = DeserializeInteger (&n,1,10,bIterator);
   m_mibSl.directSubframeNo = n;
   
   // Deserialize in coverage 
@@ -7221,7 +7221,10 @@ MasterInformationBlockSlHeader::Deserialize (Buffer::Iterator bIterator)
 void
 MasterInformationBlockSlHeader::Print (std::ostream &os) const
 {
-  std::cout << "MIB-SL: " << m_mibSl.slBandwidth << std::endl;
+  os << "MIB-SL: " << std::endl;
+  os << "   Bandwidth:" << m_mibSl.slBandwidth << std::endl;
+  os << "   FrameNo/Subframe:" << m_mibSl.directFrameNo << "/" << m_mibSl.directSubframeNo << std::endl;
+  os << "   In coverage:" << m_mibSl.inCoverage << std::endl;
 }
 
 void
