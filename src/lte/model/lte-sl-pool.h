@@ -74,11 +74,32 @@ public:
       SubframeInfo res;
       uint32_t tmp1 = 10 * (lhs.frameNo % 1024) + lhs.subframeNo % 10;
       tmp1 += 10 * (rhs.frameNo % 1024) + rhs.subframeNo % 10;
-      res.frameNo = tmp1 / 10;
+      res.frameNo = (tmp1 / 10) % 1024;
       res.subframeNo = tmp1 % 10;
       return res;
     }
 
+    /**
+     * Adds two subframe locations and return the new location
+     * This is used for computing the absolute subframe location from a starting point
+     * \param lhs One of the subframe location
+     * \param rhs The other subframe location
+     * \return The new subframe location
+     */
+    friend SubframeInfo operator- (const SubframeInfo& lhs, const SubframeInfo& rhs)
+    {
+      SubframeInfo res;
+      uint32_t tmp1 = 10 * (lhs.frameNo % 1024) + lhs.subframeNo % 10;
+      if (lhs < rhs)
+        {
+          tmp1 += 10240;
+        }
+      tmp1 -= 10 * (rhs.frameNo % 1024) + rhs.subframeNo % 10;
+      res.frameNo = (tmp1 / 10) % 1024;
+      res.subframeNo = tmp1 % 10;
+      return res;
+    }
+    
     /**
      * Checks if two subframe locations are identical
      * \param lhs One of the subframe location
