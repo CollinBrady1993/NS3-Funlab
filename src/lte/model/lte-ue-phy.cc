@@ -2735,7 +2735,7 @@ LteUePhy::ScheduleNextSyncRefReselection (uint16_t endOfPrevious)
 bool
 LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
 {
-  NS_LOG_FUNCTION (this);
+  NS_LOG_FUNCTION (this<<frameNo<<subframeNo);
 
   if (m_slTxPoolInfo.m_pool)
     {
@@ -2748,15 +2748,29 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
         {
           NS_LOG_LOGIC ("The current subframe corresponds to the start of a new Sidelink communication period... Applying the change of timing");
 
-          //Apply the change of Timing
-          frameNo = m_resyncParams.newFrameNo;
-          subframeNo = m_resyncParams.newSubframeNo;
+          //Calculate the new subframe indication
+          SidelinkCommResourcePool::SubframeInfo mibTime;
+          mibTime.frameNo = m_resyncParams.syncRefMib.directFrameNo;
+          mibTime.subframeNo = m_resyncParams.syncRefMib.directSubframeNo;
+          SidelinkCommResourcePool::SubframeInfo currentTime;
+          currentTime.frameNo = frameNo;
+          currentTime.subframeNo = subframeNo;
+          NS_LOG_INFO ("mibTime "<<mibTime.frameNo<<"/"<<mibTime.subframeNo);
+          NS_LOG_INFO ("currentTime "<<currentTime.frameNo<<"/"<<currentTime.subframeNo);
+          NS_LOG_INFO ("rxSubframe "<<m_resyncParams.rxSubframe.frameNo<<"/"<<m_resyncParams.rxSubframe.subframeNo);
+
+          m_resyncParams.newSubframe = mibTime + (currentTime - m_resyncParams.rxSubframe);
+
           m_resyncRequested = false;
           NS_LOG_INFO ("UE RNTI " << m_rnti
-                                  << " has a TxPool and changed the Subframe Indication from:"
-                                  << " frame " << m_slTxPoolInfo.m_nextScPeriod.frameNo
-                                  << " subframe " << m_slTxPoolInfo.m_nextScPeriod.subframeNo
-                                  << " to: frame " << frameNo << " subframe " << subframeNo);
+		       << " has a TxPool and changed the Subframe Indication"
+		       << " from "<< currentTime.frameNo <<"/"<<currentTime.subframeNo
+		       << " to "<< m_resyncParams.newSubframe.frameNo <<"/"<< m_resyncParams.newSubframe.subframeNo);
+
+          //Updating values used bellow
+          frameNo = m_resyncParams.newSubframe.frameNo;
+          subframeNo = m_resyncParams.newSubframe.subframeNo;
+
 
           //Notify RRC about the successful change of SyncRef and timing
           m_ueCphySapUser->ReportChangeOfSyncRef (m_resyncParams);
@@ -2817,18 +2831,6 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
       else
         { //Delay the change of Timing
           NS_LOG_LOGIC ("The current subframe does not correspond to the start of a new Sidelink communication period... Delaying the change of timing");
-
-          //Adjusting subframe indication to still match the SyncRef when the change of timing will be performed
-          ++m_resyncParams.newSubframeNo;
-          if (m_resyncParams.newSubframeNo > 10)
-            {
-              ++m_resyncParams.newFrameNo;
-              if (m_resyncParams.newFrameNo > 1024)
-                {
-                  m_resyncParams.newFrameNo = 1;
-                }
-              m_resyncParams.newSubframeNo = 1;
-            }
           return false;
         }
     }
@@ -2837,17 +2839,30 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
       //No pool, apply directly the change of Timing
       NS_LOG_LOGIC ("The UE is not currently transmitting Sidelink communication... Applying the change of timing");
 
+      //Calculate the new subframe indication
+      SidelinkCommResourcePool::SubframeInfo mibTime;
+      mibTime.frameNo = m_resyncParams.syncRefMib.directFrameNo;
+      mibTime.subframeNo = m_resyncParams.syncRefMib.directSubframeNo;
+      SidelinkCommResourcePool::SubframeInfo currentTime;
+      currentTime.frameNo = frameNo;
+      currentTime.subframeNo = subframeNo;
+
+      m_resyncParams.newSubframe = mibTime + (currentTime - m_resyncParams.rxSubframe);
+
       m_resyncRequested = false;
-      NS_LOG_INFO ("UE RNTI " << m_rnti << "did not have a Tx pool and"
-                              << " changed the Subframe Indication from: "
-                              << " frame " << m_currFrameNo << "subframe " << m_currSubframeNo
-                              << " to: frame " << m_resyncParams.newFrameNo << " subframe " << m_resyncParams.newSubframeNo);
+
+      frameNo = m_resyncParams.newSubframe.frameNo;
+      subframeNo = m_resyncParams.newSubframe.subframeNo;
+
+      NS_LOG_INFO ("UE RNTI " << m_rnti << "did not have a Tx pool and changed the Subframe Indication"
+		   <<" from "<< currentTime.frameNo << "/" << currentTime.subframeNo
+                   <<" to " << m_resyncParams.newSubframe.frameNo << "/" << m_resyncParams.newSubframe.subframeNo);
 
       //Notify RRC about the successful change of SyncRef and timing
       m_ueCphySapUser->ReportChangeOfSyncRef (m_resyncParams);
 
-      m_currFrameNo = m_resyncParams.newFrameNo;
-      m_currSubframeNo = m_resyncParams.newSubframeNo;
+      m_currFrameNo =m_resyncParams.newSubframe.frameNo;
+      m_currSubframeNo = m_resyncParams.newSubframe.subframeNo;
 
       //Notify the SpectrumPhy about the change of SLSSID
       m_uplinkSpectrumPhy->SetSlssid (m_resyncParams.slssid);
@@ -2888,7 +2903,7 @@ LteUePhy::DoSynchronizeToSyncRef (LteSlSyncParams synchParams)
   NS_LOG_FUNCTION (this);
 
   NS_LOG_INFO ("Synchronizing to SyncRef SLSSSID " << synchParams.slssid << " offset " << synchParams.offset);
-  NS_LOG_INFO ("The estimated CURRENT subframe indication of the SyncRef (frame/subframe): " << synchParams.newFrameNo << "/" << synchParams.newSubframeNo);
+ // NS_LOG_INFO ("The estimated CURRENT subframe indication of the SyncRef (frame/subframe): " << synchParams.newFrameNo << "/" << synchParams.newSubframeNo);
   NS_LOG_INFO ("The CURRENT subframe indication of this UE (frame/subframe): " << m_currFrameNo << "/" << m_currSubframeNo);
 
   //Request the synchronization (change of timing) for the next subframe

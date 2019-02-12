@@ -4359,14 +4359,25 @@ LteUeRrc::SendSlss ()
 
           mibSl.slBandwidth = preconf.preconfigGeneral.slBandwidth;
           mibSl.inCoverage = m_inCoverage;
-          mibSl.directFrameNo = m_currFrameNo;
-          mibSl.directSubframeNo = m_currSubframeNo ;
+
+          //Calculate the Subframe indication when the MIB-SL will be received
+          //There is a delay of 5 ms
+          SidelinkCommResourcePool::SubframeInfo currentTime;
+          currentTime.frameNo = m_currFrameNo;
+          currentTime.subframeNo = m_currSubframeNo;
+          SidelinkCommResourcePool::SubframeInfo delay;
+          delay.frameNo = 0;
+          delay.subframeNo = 5;
+          SidelinkCommResourcePool::SubframeInfo mibTime = currentTime + delay;
+
+          mibSl.directFrameNo = mibTime.frameNo;
+          mibSl.directSubframeNo = mibTime.subframeNo ;
           
           uint16_t slssid = (m_hasSyncRef ? m_currSyncRef.slssid : m_slssId );
           
           //Send the SLSS
-          NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" sending SLSS");
-          NS_LOG_INFO (this << " mibSl.slBandwidth "<<mibSl.slBandwidth
+          NS_LOG_INFO (" UE IMSI "<<m_imsi <<" sending SLSS at "<<m_currFrameNo<<"/"<<m_currSubframeNo);
+          NS_LOG_INFO (" mibSl.slBandwidth "<<mibSl.slBandwidth
                        <<" mibSl.inCoverage "<<mibSl.inCoverage
                        <<" mibSl.directFrameNo "<<mibSl.directFrameNo
                        <<" mibSl.directSubframeNo "<<mibSl.directSubframeNo
@@ -4632,51 +4643,14 @@ void LteUeRrc::DoReceiveMibSL (Ptr<Packet> p)
           
   uint16_t rxOffset = Simulator::Now ().GetMilliSeconds () % 40;
 
-  NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" received MIB-SL ");
-  NS_LOG_INFO (this <<" mibSl.slBandwidth "<<mibSl.slBandwidth
+  NS_LOG_INFO (" UE IMSI "<<m_imsi <<" received MIB-SL at "<<m_currFrameNo<<"/"<<m_currSubframeNo);
+  NS_LOG_INFO (" mibSl.slBandwidth "<<mibSl.slBandwidth
                <<", mibSl.inCoverage "<<mibSl.inCoverage
                <<", mibSl.directFrameNo "<<mibSl.directFrameNo
                <<", mibSl.directSubframeNo "<<mibSl.directSubframeNo
-               <<", mibSl.creationTimestamp "<< tag.GetCreationTimestamp ().GetMilliSeconds()<<" (ms)"
+               <<", creationTimestamp "<< tag.GetCreationTimestamp ().GetMilliSeconds()<<" (ms)"
                <<", slssid "<< tag.GetSlssid ()
                <<", rxOffset "<< rxOffset);
-
-  //Estimate the current timing (frame/subframe indication) of the SyncRef
-  //using the information in the MIB-SL and the creation and reception time stamps
-  uint32_t mibCreationAge = Simulator::Now().GetMilliSeconds() - tag.GetCreationTimestamp ().GetMilliSeconds();
-  
-  uint32_t frameOffsetSyncRef = 0;
-  if (mibCreationAge >= 10)
-    {
-      frameOffsetSyncRef = uint32_t(mibCreationAge / 10);
-    }
-  uint32_t frameSyncRef = mibSl.directFrameNo + frameOffsetSyncRef;
-  if (frameSyncRef > 1024)
-    {
-      frameSyncRef = frameSyncRef - 1024;
-    }
-  uint32_t subframeOffsetSyncRef = mibCreationAge % 10;
-  uint32_t subframeSyncRef = mibSl.directSubframeNo + subframeOffsetSyncRef;
-  if (subframeSyncRef > 10)
-    {
-      subframeSyncRef = subframeSyncRef % 10;
-      frameSyncRef++;
-      if (frameSyncRef > 1024)
-        {
-          frameSyncRef = 1;
-        }
-    }
-  
-  ++subframeSyncRef; //Update frame/subframe number to be used (in the next subframe)
-  if (subframeSyncRef > 10)
-    {
-      ++frameSyncRef;
-      if (frameSyncRef > 1024)
-        {
-          frameSyncRef = 1;
-        }
-      subframeSyncRef = 1;
-    }
 
   //Store the mib
   std::map <std::pair<uint16_t,uint16_t>, LteSlSyncParams>::iterator itMap
@@ -4687,8 +4661,8 @@ void LteUeRrc::DoReceiveMibSL (Ptr<Packet> p)
       //Insert new entry
       NS_LOG_LOGIC (this << " First received MIB-SL for SyncRef with SLSSID " << tag.GetSlssid () << " offset " << rxOffset);
       LteSlSyncParams synchParams;
-      synchParams.newFrameNo = frameSyncRef;
-      synchParams.newSubframeNo = subframeSyncRef;
+      synchParams.rxSubframe.frameNo=m_currFrameNo;
+      synchParams.rxSubframe.subframeNo=m_currSubframeNo;
       synchParams.slssid = tag.GetSlssid ();
       synchParams.offset = rxOffset;
       synchParams.syncRefMib = mibSl;
@@ -4705,13 +4679,14 @@ void LteUeRrc::DoReceiveMibSL (Ptr<Packet> p)
       (*itMap).second.syncRefMib.directFrameNo = mibSl.directFrameNo;
       (*itMap).second.syncRefMib.directSubframeNo = mibSl.directSubframeNo;
       (*itMap).second.offset = rxOffset;
-      (*itMap).second.newFrameNo = frameSyncRef;
-      (*itMap).second.newSubframeNo = subframeSyncRef;
-  }
+      (*itMap).second.rxSubframe.frameNo = m_currFrameNo;
+      (*itMap).second.rxSubframe.subframeNo = m_currSubframeNo;
+    }
   //Verify if it is a MIB-SL from the current SyncRef
-  if (m_hasSyncRef && tag.GetSlssid () == m_currSyncRef.slssid){
+  if (m_hasSyncRef && tag.GetSlssid () == m_currSyncRef.slssid)
+    {
       NS_LOG_LOGIC (this << " The received MIB-SL is from the selected SyncRef (SLSSID "<< tag.GetSlssid () << " offset " << rxOffset<<")");
-  }
+    }
   
 }
 
@@ -4950,30 +4925,29 @@ LteUeRrc::DoReportChangeOfSyncRef (LteSlSyncParams params)
 
   m_hasSyncRef = true;
 
-  uint16_t previousFrameNo = m_currFrameNo;
-  uint16_t previousSubFrameNo = m_currSubframeNo;
+  SlChangeOfSyncRefStatParameters traceParam;
+  traceParam.imsi=m_imsi;
 
-  //Save the current subframe indication
-  SaveSubframeIndication(params.newFrameNo, params.newSubframeNo);
+  //Old parameters
+  traceParam.prevSlssid =m_slssId;
+  traceParam.prevRxOffset=m_currSyncRef.offset;
+  traceParam.prevFrameNo=m_currFrameNo;
+  traceParam.prevSubframeNo=m_currSubframeNo;
 
-  SlChangeOfSyncRefStatParameters param;
-  param.imsi=m_imsi;
-  param.prevSlssid =m_slssId;
-  param.prevRxOffset=m_currSyncRef.offset;
-  param.prevFrameNo=previousFrameNo;
-  param.prevSubframeNo=previousSubFrameNo;
+  //Update the parameters
+  //Update the current subframe indication (it updates m_currFrameNo and m_currSubframeNo)
+  SaveSubframeIndication(params.newSubframe.frameNo,params.newSubframe.subframeNo);
 
-  //Storing the value of the MIB (Note this is not the current frameNo and subframeNo)
+  //Update current SyncRef info
   m_currSyncRef = params;
-
   m_slssId = params.slssid;
 
-  param.currSlssid=m_slssId;
-  param.currRxOffset=params.offset;
-  param.currFrameNo=m_currFrameNo;
-  param.currSubframeNo=m_currSubframeNo;
+  traceParam.currSlssid=m_slssId;
+  traceParam.currRxOffset=params.offset;
+  traceParam.currFrameNo=m_currFrameNo;
+  traceParam.currSubframeNo=m_currSubframeNo;
 
-  m_ChangeOfSyncRefTrace(param);
+  m_ChangeOfSyncRefTrace(traceParam);
 
   NS_LOG_INFO (this <<" UE IMSI "<<m_imsi <<" reported successful change of SyncRef, selected SyncRef SLSSID "<< params.slssid <<"offset "<< params.offset);
 }

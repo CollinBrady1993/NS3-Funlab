@@ -40,7 +40,8 @@ class LteEnbNetDevice;
   */
   struct LteSlSyncParams
   {
-    SidelinkCommResourcePool::SubframeInfo rxSubframe; ///< Subframe where MIB was received
+   SidelinkCommResourcePool::SubframeInfo rxSubframe; ///< Subframe where MIB was received
+   SidelinkCommResourcePool::SubframeInfo newSubframe; ///< Subframe upon synchronization
    uint16_t slssid; ///< SLSS ID
    uint16_t offset; ///< synchronization offset
    LteRrcSap::MasterInformationBlockSL syncRefMib; ///< MIB
