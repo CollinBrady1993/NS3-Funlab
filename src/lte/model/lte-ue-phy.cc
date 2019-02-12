@@ -1427,6 +1427,38 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
     InitializeDiscRxPool (frameNo, subframeNo);
 
+      if (m_slTxPoolInfo.m_pool)
+	{
+	  //Check if we need to initialize the Tx pool
+	  if (m_slTxPoolInfo.m_nextScPeriod.frameNo == 0)
+	    {
+	      //pool not initialized yet
+	      m_slTxPoolInfo.m_nextScPeriod = m_slTxPoolInfo.m_pool->GetNextScPeriod (frameNo, subframeNo);
+	      //adjust because scheduler starts with frame/subframe = 1
+	      m_slTxPoolInfo.m_nextScPeriod.frameNo++;
+	      m_slTxPoolInfo.m_nextScPeriod.subframeNo++;
+	      NS_LOG_INFO ("Tx Pool initialized");
+	    }
+	  //Check if this is a new SC period
+	  if (frameNo == m_slTxPoolInfo.m_nextScPeriod.frameNo && subframeNo == m_slTxPoolInfo.m_nextScPeriod.subframeNo)
+	    {
+	      m_slTxPoolInfo.m_currentScPeriod = m_slTxPoolInfo.m_nextScPeriod;
+	      m_slTxPoolInfo.m_nextScPeriod = m_slTxPoolInfo.m_pool->GetNextScPeriod (frameNo, subframeNo);
+	      //adjust because scheduler starts with frame/subframe = 1
+	      m_slTxPoolInfo.m_nextScPeriod.frameNo++;
+	      m_slTxPoolInfo.m_nextScPeriod.subframeNo++;
+	      NS_LOG_INFO ("Starting new SC period for TX pool " << ". Next period at " << m_slTxPoolInfo.m_nextScPeriod.frameNo << "/" << m_slTxPoolInfo.m_nextScPeriod.subframeNo);
+
+	      if (m_waitingNextScPeriod)
+		{
+		  NS_LOG_LOGIC ("The UE was waiting for next SC period and it just started");
+		  m_waitingNextScPeriod = false;
+		}
+	      //clear any previous grant
+	      m_slTxPoolInfo.m_currentGrants.clear ();
+	    }
+	}
+
       //check if we received grants for Sidelink
       //compute the reception slots for the PSSCH. Do this here because
       //we did not have access to the frame/subframe at the reception
@@ -2744,7 +2776,7 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
       //Is it the start of a new period?
       if (((frameNo == m_slTxPoolInfo.m_nextScPeriod.frameNo && subframeNo
             == m_slTxPoolInfo.m_nextScPeriod.subframeNo)
-           || m_slTxPoolInfo.m_nextScPeriod.frameNo == 0))
+	    || m_slTxPoolInfo.m_nextScPeriod.frameNo == 0))
         {
           NS_LOG_LOGIC ("The current subframe corresponds to the start of a new Sidelink communication period... Applying the change of timing");
 
