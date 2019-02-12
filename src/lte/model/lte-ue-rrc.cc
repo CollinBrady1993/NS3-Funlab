@@ -4290,6 +4290,9 @@ void LteUeRrc::ActivateSlssTransmission ()
            param.currFrameNo=m_currFrameNo;
            param.currSubframeNo=m_currSubframeNo;
 
+           //Notify lower layers about the new SlSSID
+           SetSlssid (m_slssId);
+
            m_ChangeOfSyncRefTrace(param);
 
           //Choose SyncOffsetIndicator randomly between the two preconfigured values
