@@ -264,6 +264,7 @@ LteRlcSm::DoNotifyTxOpportunity (LteMacSapUser::TxOpportunityParameters txOpPara
   params.harqProcessId = txOpParams.harqId;
   params.componentCarrierId = txOpParams.componentCarrierId;
   params.discMsg = false;
+  params.sibslMsg = false;
 
   // RLC Performance evaluation
   RlcTag tag (Simulator::Now());
