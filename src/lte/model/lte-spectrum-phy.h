@@ -394,42 +394,39 @@ public:
   * Start a transmission of Sidelink data frame in DL and UL
   *
   *
-  * \param pb The burst of packets to be transmitted in PSSCH/PSCCH
-  * \param ctrlMsgList The list of LteControlMessage to send
+  * \param pb The burst of packets to be transmitted in PSCCH
   * \param duration The duration of the data frame
   *
   * \return true if an error occurred and the transmission was not
   * started, false otherwise.
   */
-  bool StartTxSlCtrlFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
+  bool StartTxSlCtrlFrame (Ptr<PacketBurst> pb, Time duration);
 
   /**
    * Start a transmission of Sidelink data frame in DL and UL
    *
    *
-   * \param pb The burst of packets to be transmitted in PSSCH/PSCCH
-   * \param ctrlMsgList The list of LteControlMessage to send
+   * \param pb The burst of packets to be transmitted in PSSCH
    * \param duration The duration of the data frame
    * \param groupId The group id
    *
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.
    */
-  bool StartTxSlDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration, uint8_t groupId);
+  bool StartTxSlDataFrame (Ptr<PacketBurst> pb, Time duration, uint8_t groupId);
 
   /**
    * Start a transmission of Sidelink data frame in DL and UL
    *
    *
    * \param pb The burst of packets to be transmitted in PSDCH
-   * \param ctrlMsgList The list of LteControlMessage to send
    * \param resNo The resource number in the PSDCH pool
    * \param duration The duration of the data frame
    *
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.
    */
-  bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, uint32_t resNo, Time duration);
+  bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, uint32_t resNo, Time duration);
 
   /**
   * Start a transmission of Sidelink data frame in DL and UL

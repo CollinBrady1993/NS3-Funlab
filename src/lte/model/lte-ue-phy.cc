@@ -1644,16 +1644,6 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
         {
           //check Sidelink
 
-          //check if there is a SLSS message to be transmitted
-          std::list<Ptr<LteControlMessage> >::iterator ctrlIt;
-          for (ctrlIt = ctrlMsg.begin (); ctrlIt != ctrlMsg.end (); ctrlIt++)
-            {
-              if ((*ctrlIt)->GetMessageType () == LteControlMessage::MIB_SL)
-                {
-                  mibSlFound = true;
-                }
-            }
-
           if (!m_waitingNextScPeriod)
             {
               //since we only have 1 Tx pool we can either send PSCCH or PSSCH but not both
@@ -1663,6 +1653,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                 {
                   std::list<LteUePhySapProvider::TransmitSlPhySduParameters>::iterator paramIt = params.begin ();
                   NS_ASSERT_MSG (paramIt != params.end (), "Found packet burst without associated parameters");
+                  NS_ASSERT_MSG (ctrlMsg.size () == 0, "Should not have control messages while sending SL packet burst");
 
                   std::vector <int> slRb;
                   for (int i = (*paramIt).m_rbStart; i < (*paramIt).m_rbStart + (*paramIt).m_rbLen; i++)
@@ -1697,29 +1688,21 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                         {
                           m_txPower = m_powerControl->GetPscchTxPower (slRb);
                         }
-                      //Synchronization has priority over communication
-                      //The PSCCH is transmitted only if no synchronization operations are being performed
-                      if (!mibSlFound)
+
+                      if (m_ueSlssScanningInProgress)
                         {
-                          if (m_ueSlssScanningInProgress)
-                            {
-                              NS_LOG_LOGIC (this << "trying to do a PSCCH transmission while there is a scanning in progress... Ignoring transmission");
-                            }
-                          else if (m_ueSlssMeasurementsSched.find (Simulator::Now ().GetMilliSeconds ()) != m_ueSlssMeasurementsSched.end ())     //Measurement in this subframe
-                            {
-                              NS_LOG_LOGIC ("trying to do a PSCCH transmission while measuring S-RSRP in the same subframe... Ignoring transmission");
-                            }
-                          else
-                            {
-                              SetSubChannelsForTransmission (slRb);
-                              m_uplinkSpectrumPhy->StartTxSlCtrlFrame (pb, ctrlMsg, UL_DATA_DURATION);
-                            }
+                          NS_LOG_LOGIC (this << "trying to do a PSCCH transmission while there is a scanning in progress... Ignoring transmission");
+                        }
+                      else if (m_ueSlssMeasurementsSched.find (Simulator::Now ().GetMilliSeconds ()) != m_ueSlssMeasurementsSched.end ())         //Measurement in this subframe
+                        {
+                          NS_LOG_LOGIC ("trying to do a PSCCH transmission while measuring S-RSRP in the same subframe... Ignoring transmission");
                         }
                       else
                         {
-                          //TODO: Make the transmission possible if using different RBs than MIB-SL
-                          NS_LOG_LOGIC ("trying to do a PSCCH transmission while there is a PSBCH (SLSS) transmission scheduled... Ignoring transmission ");
+                          SetSubChannelsForTransmission (slRb);
+                          m_uplinkSpectrumPhy->StartTxSlCtrlFrame (pb, UL_DATA_DURATION);
                         }
+
                       break;
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSSCH:
                       //NS_ASSERT (ctrlMsg.size () == 0); //(In the future we can have PSSCH and MIB-SL in the same subframe)
@@ -1730,28 +1713,19 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                         {
                           m_txPower = m_powerControl->GetPsschTxPower (slRb);
                         }
-                      //Synchronization has priority over communication
-                      //The PSSCH is transmitted only if no synchronization operations are being performed
-                      if (!mibSlFound)
+
+                      if (m_ueSlssScanningInProgress)
                         {
-                          if (m_ueSlssScanningInProgress)
-                            {
-                              NS_LOG_LOGIC (this << " trying to do a PSSCH transmission while there is a scanning in progress... Ignoring transmission");
-                            }
-                          else if (m_ueSlssMeasurementsSched.find (Simulator::Now ().GetMilliSeconds ()) != m_ueSlssMeasurementsSched.end ())
-                            {
-                              NS_LOG_LOGIC ("trying to do a PSSCH transmission while measuring S-RSRP in the same subframe... Ignoring transmission");
-                            }
-                          else
-                            {
-                              SetSubChannelsForTransmission (slRb);
-                              m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, ctrlMsg, UL_DATA_DURATION, (*paramIt).m_dstId);
-                            }
+                          NS_LOG_LOGIC (this << " trying to do a PSSCH transmission while there is a scanning in progress... Ignoring transmission");
+                        }
+                      else if (m_ueSlssMeasurementsSched.find (Simulator::Now ().GetMilliSeconds ()) != m_ueSlssMeasurementsSched.end ())
+                        {
+                          NS_LOG_LOGIC ("trying to do a PSSCH transmission while measuring S-RSRP in the same subframe... Ignoring transmission");
                         }
                       else
                         {
-                          //TODO: Make the transmission possible if using different RBs than MIB-SL
-                          NS_LOG_LOGIC ("trying to do a PSSCH transmission while there is a PSBCH (SLSS) transmission scheduled... Ignoring transmission ");
+                          SetSubChannelsForTransmission (slRb);
+                          m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, UL_DATA_DURATION, (*paramIt).m_dstId);
                         }
                       break;
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSDCH:
@@ -1767,7 +1741,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                       //0 added to pass by the group Id
                       //to be double checked
                       //
-                      m_uplinkSpectrumPhy->StartTxSlDiscFrame (pb, ctrlMsg, (*paramIt).m_resNo, UL_DATA_DURATION);
+                      m_uplinkSpectrumPhy->StartTxSlDiscFrame (pb, (*paramIt).m_resNo, UL_DATA_DURATION);
 
                       break;
                     default:
@@ -1782,51 +1756,6 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           else
             {
               NS_LOG_LOGIC (this << " the UE changed of timing and it is waiting for the start of a new SC period using the new timing... Delaying transmissions ");
-            }
-          //Transmit the SLSS
-          if (mibSlFound)
-            {
-              //Remove all other control packets (i.e., SCI)
-              ctrlIt = ctrlMsg.begin ();
-              while (ctrlIt != ctrlMsg.end ())
-                {
-                  if ((*ctrlIt)->GetMessageType () != LteControlMessage::MIB_SL)
-                    {
-                      ctrlIt = ctrlMsg.erase (ctrlIt);
-                    }
-                  else
-                    {
-                      ctrlIt++;
-                    }
-                }
-
-              ctrlIt = ctrlMsg.begin ();
-
-              //We assume the SyncRef selection has priority over SLSS transmission
-              //The SLSS is sent only if no scanning or measurement is performed in this subframe
-              if (m_ueSlssScanningInProgress)
-                {
-                  NS_LOG_LOGIC ("trying to do a PSBCH transmission while there is a scanning in progress... Ignoring transmission");
-                }
-              else if (m_ueSlssMeasurementsSched.find (Simulator::Now ().GetMilliSeconds ()) != m_ueSlssMeasurementsSched.end ()) //Measurement in this subframe
-                {
-                  NS_LOG_LOGIC ("trying to do a PSBCH transmission while measuring S-RSRP in the same subframe... Ignoring transmission");
-                }
-              else
-                {
-                  std::vector<int> dlRb;
-                  for (uint8_t i = 22; i < 28; i++)
-                    {
-                      dlRb.push_back (i);
-                    }
-                  if (m_enableUplinkPowerControl)
-                    {
-                      //TODO: Set the transmission power corresponding to PSBCH
-                      m_txPower = m_powerControl->GetPscchTxPower (dlRb);
-                    }
-                  SetSubChannelsForTransmission (dlRb);
-                  m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, ctrlMsg, UL_DATA_DURATION,m_slTxPoolInfo.m_currentGrants.begin ()->second.m_grant.m_groupDstId);
-                }
             }
         }
     }  // end of if (m_ulConfigured)

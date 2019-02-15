@@ -813,7 +813,7 @@ LteSpectrumPhy::StartTxSlMibFrame (Ptr<PacketBurst> pb, Time duration)
 }
 
 bool
-LteSpectrumPhy::StartTxSlCtrlFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration)
+LteSpectrumPhy::StartTxSlCtrlFrame (Ptr<PacketBurst> pb, Time duration)
 {
   NS_LOG_FUNCTION (this << pb << " ID:" << GetDevice ()->GetNode ()->GetId () << " State: " << m_state);
 
@@ -857,7 +857,6 @@ LteSpectrumPhy::StartTxSlCtrlFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteContro
         txParams->nodeId = GetDevice ()->GetNode ()->GetId ();
         txParams->slssId = m_slssId;
         txParams->packetBurst = pb;
-        txParams->ctrlMsgList = ctrlMsgList;
         m_ulDataSlCheck = true;
 
         m_channel->StartTx (txParams);
@@ -874,7 +873,7 @@ LteSpectrumPhy::StartTxSlCtrlFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteContro
 }
 
 bool
-LteSpectrumPhy::StartTxSlDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration, uint8_t groupId)
+LteSpectrumPhy::StartTxSlDataFrame (Ptr<PacketBurst> pb, Time duration, uint8_t groupId)
 {
   NS_LOG_FUNCTION (this << pb << " ID:" << GetDevice ()->GetNode ()->GetId () << " State: " << m_state);
 
@@ -919,7 +918,6 @@ LteSpectrumPhy::StartTxSlDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteContro
         txParams->groupId = groupId;
         txParams->slssId = m_slssId;
         txParams->packetBurst = pb;
-        txParams->ctrlMsgList = ctrlMsgList;
         m_ulDataSlCheck = true;
 
         m_channel->StartTx (txParams);
@@ -936,7 +934,7 @@ LteSpectrumPhy::StartTxSlDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteContro
 }
 
 bool
-LteSpectrumPhy::StartTxSlDiscFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, uint32_t resNo, Time duration)
+LteSpectrumPhy::StartTxSlDiscFrame (Ptr<PacketBurst> pb, uint32_t resNo, Time duration)
 {
   NS_LOG_FUNCTION (this << pb << " ID:" << GetDevice ()->GetNode ()->GetId () << " State: " << m_state);
 
@@ -981,7 +979,6 @@ LteSpectrumPhy::StartTxSlDiscFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteContro
         txParams->slssId = m_slssId;
         txParams->packetBurst = pb;
         txParams->resNo = resNo;
-        txParams->ctrlMsgList = ctrlMsgList;
         m_ulDataSlCheck = true;
 
         m_channel->StartTx (txParams);
