@@ -38,15 +38,15 @@ class LteEnbNetDevice;
   * Configuration needed for the timely change of subframe indication upon synchronization to
   * a different SyncRef
   */
-  struct LteSlSyncParams
-  {
-   SidelinkCommResourcePool::SubframeInfo rxSubframe; ///< Subframe where MIB was received
-   SidelinkCommResourcePool::SubframeInfo newSubframe; ///< Subframe upon synchronization
-   uint16_t slssid; ///< SLSS ID
-   uint16_t offset; ///< synchronization offset
-   LteRrcSap::MasterInformationBlockSL syncRefMib; ///< MIB
-  };
-  
+struct LteSlSyncParams
+{
+  SidelinkCommResourcePool::SubframeInfo rxSubframe;  ///< Subframe where MIB was received
+  SidelinkCommResourcePool::SubframeInfo newSubframe;  ///< Subframe upon synchronization
+  uint16_t slssid;  ///< SLSS ID
+  uint16_t offset;  ///< synchronization offset
+  LteRrcSap::MasterInformationBlockSL syncRefMib;  ///< MIB
+};
+
 /**
  * Service Access Point (SAP) offered by the UE PHY to the UE RRC for control purposes
  *
@@ -56,15 +56,14 @@ class LteEnbNetDevice;
 class LteUeCphySapProvider
 {
 public:
-
-  /** 
+  /**
    * destructor
    */
   virtual ~LteUeCphySapProvider ();
 
-  /** 
+  /**
    * reset the PHY
-   * 
+   *
    */
   virtual void Reset () = 0;
 
@@ -123,9 +122,9 @@ public:
    */
   virtual void SetDlBandwidth (uint8_t dlBandwidth) = 0;
 
-  /** 
+  /**
    * \brief Configure uplink (normally done after reception of SIB2)
-   * 
+   *
    * \param ulEarfcn The uplink carrier frequency (EARFCN)
    * \param ulBandwidth The UL bandwidth in number of PRBs
    */
@@ -138,8 +137,8 @@ public:
    */
   virtual void ConfigureReferenceSignalPower (int8_t referenceSignalPower) = 0;
 
-  /** 
-   * 
+  /**
+   *
    * \param rnti The cell-specific UE identifier
    */
   virtual void SetRnti (uint16_t rnti) = 0;
@@ -216,13 +215,13 @@ public:
     * Pass to the PHY entity a SLSS to be sent
     * \param mibSl The MIB-SL to send
     */
-   virtual void SendSlss (LteRrcSap::MasterInformationBlockSL mibSl) = 0;
-   /**
-    * Notify the PHY entity that a SyncRef has been selected and that it should apply
-    * the corresponding change of timing when appropriate
-    * \param synchParams The parameters containing the information of the selected SyncRef
-    */
-   virtual void SynchronizeToSyncRef (LteSlSyncParams synchParams) = 0;
+  virtual void SendSlss (LteRrcSap::MasterInformationBlockSL mibSl) = 0;
+  /**
+   * Notify the PHY entity that a SyncRef has been selected and that it should apply
+   * the corresponding change of timing when appropriate
+   * \param synchParams The parameters containing the information of the selected SyncRef
+   */
+  virtual void SynchronizeToSyncRef (LteSlSyncParams synchParams) = 0;
 
   /**
    * \param rsrpFilterCoefficient value. Determines the strength of
@@ -244,8 +243,7 @@ public:
 class LteUeCphySapUser
 {
 public:
-
-  /** 
+  /**
    * destructor
    */
   virtual ~LteUeCphySapUser ();
@@ -286,12 +284,12 @@ public:
   {
     std::vector <struct UeSlssMeasurementsElement> m_ueSlssMeasurementsList; ///< List of SLSS measurements to be reported to the RRC by the PHY
   };
- 
+
   /**
    * \brief Relay an MIB message from the PHY entity to the RRC layer.
    * \param cellId The ID of the eNodeB where the message originates from
    * \param mib The Master Information Block message
-   * 
+   *
    * This function is typically called after PHY receives an MIB message over
    * the BCH.
    */
@@ -334,8 +332,9 @@ public:
   /**
    * The PHY pass a received MIB-SL to the RRC
    * \param p The packet containing the MIB-SL
+   * \param slssid The SLSSID associated with the received packet
    */
-  virtual void ReceiveMibSL (Ptr<Packet> p) = 0;
+  virtual void ReceiveMibSL (Ptr<Packet> p, uint16_t slssid) = 0;
   /**
    * Notify the successful change of timing/SyncRef, and store the selected
    * (current) SyncRef information
@@ -350,7 +349,7 @@ public:
 /**
  * Template for the implementation of the LteUeCphySapProvider as a member
  * of an owner class of type C to which all methods are forwarded
- * 
+ *
  */
 template <class C>
 class MemberLteUeCphySapProvider : public LteUeCphySapProvider
@@ -408,7 +407,7 @@ MemberLteUeCphySapProvider<C>::MemberLteUeCphySapProvider ()
 }
 
 template <class C>
-void 
+void
 MemberLteUeCphySapProvider<C>::Reset ()
 {
   m_owner->DoReset ();
@@ -443,14 +442,14 @@ MemberLteUeCphySapProvider<C>::SetDlBandwidth (uint8_t dlBandwidth)
 }
 
 template <class C>
-void 
+void
 MemberLteUeCphySapProvider<C>::ConfigureUplink (uint32_t ulEarfcn, uint8_t ulBandwidth)
 {
   m_owner->DoConfigureUplink (ulEarfcn, ulBandwidth);
 }
 
 template <class C>
-void 
+void
 MemberLteUeCphySapProvider<C>::ConfigureReferenceSignalPower (int8_t referenceSignalPower)
 {
   m_owner->DoConfigureReferenceSignalPower (referenceSignalPower);
@@ -464,14 +463,14 @@ MemberLteUeCphySapProvider<C>::SetRnti (uint16_t rnti)
 }
 
 template <class C>
-void 
+void
 MemberLteUeCphySapProvider<C>::SetTransmissionMode (uint8_t txMode)
 {
   m_owner->DoSetTransmissionMode (txMode);
 }
 
 template <class C>
-void 
+void
 MemberLteUeCphySapProvider<C>::SetSrsConfigurationIndex (uint16_t srcCi)
 {
   m_owner->DoSetSrsConfigurationIndex (srcCi);
@@ -569,7 +568,7 @@ MemberLteUeCphySapProvider<C>::SynchronizeToSyncRef (LteSlSyncParams synchParams
 /**
  * Template for the implementation of the LteUeCphySapUser as a member
  * of an owner class of type C to which all methods are forwarded
- * 
+ *
  */
 template <class C>
 class MemberLteUeCphySapUser : public LteUeCphySapUser
@@ -591,7 +590,7 @@ public:
 
   virtual void ReportSlssMeasurements (LteUeCphySapUser::UeSlssMeasurementsParameters params,  uint64_t slssid, uint16_t offset);
   virtual void ReportSubframeIndication (uint16_t frameNo, uint16_t subFrameNo);
-  virtual void ReceiveMibSL (Ptr<Packet> p);
+  virtual void ReceiveMibSL (Ptr<Packet> p, uint16_t slssid);
   virtual void ReportChangeOfSyncRef (LteSlSyncParams params);
 
 private:
@@ -610,8 +609,8 @@ MemberLteUeCphySapUser<C>::MemberLteUeCphySapUser ()
 {
 }
 
-template <class C> 
-void 
+template <class C>
+void
 MemberLteUeCphySapUser<C>::RecvMasterInformationBlock (uint16_t cellId,
                                                        LteRrcSap::MasterInformationBlock mib)
 {
@@ -650,9 +649,9 @@ MemberLteUeCphySapUser<C>::ReportSubframeIndication (uint16_t frameNo, uint16_t 
 
 template <class C>
 void
-MemberLteUeCphySapUser<C>::ReceiveMibSL (Ptr<Packet> p)
+MemberLteUeCphySapUser<C>::ReceiveMibSL (Ptr<Packet> p, uint16_t slssid)
 {
-  m_owner->DoReceiveMibSL (p);
+  m_owner->DoReceiveMibSL (p, slssid);
 }
 
 template <class C>

@@ -165,25 +165,25 @@ LteUePhy::LteUePhy ()
 
 LteUePhy::LteUePhy (Ptr<LteSpectrumPhy> dlPhy, Ptr<LteSpectrumPhy> ulPhy)
   : LtePhy (dlPhy, ulPhy),
-    m_uePhySapUser (0),
-    m_ueCphySapUser (0),
-    m_state (CELL_SEARCH),
-    m_subframeNo (0),
-    m_rsReceivedPowerUpdated (false),
-    m_rsInterferencePowerUpdated (false),
-    m_dataInterferencePowerUpdated (false),
-    m_pssReceived (false),
-    m_ueMeasurementsFilterPeriod (MilliSeconds (200)),
-    m_ueMeasurementsFilterLast (MilliSeconds (0)),
-    m_rsrpSinrSampleCounter (0),
-    m_tFirstScanning (MilliSeconds (0)),
-    m_ueSlssScanningInProgress (false),
-    m_ueSlssMeasurementInProgress (false),
-    m_currNMeasPeriods (0),
-    m_currFrameNo (0),
-    m_currSubframeNo (0),
-    m_resyncRequested (false),
-    m_waitingNextScPeriod (false)
+  m_uePhySapUser (0),
+  m_ueCphySapUser (0),
+  m_state (CELL_SEARCH),
+  m_subframeNo (0),
+  m_rsReceivedPowerUpdated (false),
+  m_rsInterferencePowerUpdated (false),
+  m_dataInterferencePowerUpdated (false),
+  m_pssReceived (false),
+  m_ueMeasurementsFilterPeriod (MilliSeconds (200)),
+  m_ueMeasurementsFilterLast (MilliSeconds (0)),
+  m_rsrpSinrSampleCounter (0),
+  m_tFirstScanning (MilliSeconds (0)),
+  m_ueSlssScanningInProgress (false),
+  m_ueSlssMeasurementInProgress (false),
+  m_currNMeasPeriods (0),
+  m_currFrameNo (0),
+  m_currSubframeNo (0),
+  m_resyncRequested (false),
+  m_waitingNextScPeriod (false)
 {
   m_amc = CreateObject <LteAmc> ();
   m_powerControl = CreateObject <LteUePowerControl> ();
@@ -588,7 +588,7 @@ std::list <LteUePhySapProvider::TransmitSlPhySduParameters>
 LteUePhy::GetSlPhyParameters (Ptr<PacketBurst> pb)
 {
   NS_LOG_FUNCTION (this);
-  
+
   if (m_packetParamsQueue.at (0).size () > 0)
     {
       std::list< LteUePhySapProvider::TransmitSlPhySduParameters > ret = m_packetParamsQueue.at (0);
@@ -657,7 +657,7 @@ LteUePhy::PhyPscchPduReceived (Ptr<Packet> p)
                   txInfo.m_grant.m_trp = sciHeader.GetTrp ();
                   txInfo.m_grant.m_groupDstId = sciHeader.GetGroupDstId ();
                   txInfo.m_grant.m_mcs = sciHeader.GetMcs ();
-                  txInfo.m_grant.m_tbSize = tag.GetTbSize (); 
+                  txInfo.m_grant.m_tbSize = tag.GetTbSize ();
 
                   //insert grant
                   poolIt->m_currentGrants.insert (std::pair <uint16_t, SidelinkGrantInfo> (tag.GetRnti (), txInfo));
@@ -681,27 +681,25 @@ LteUePhy::PhyPsdchPduReceived (Ptr<Packet> p)
 }
 
 void
-LteUePhy::PhyPsbchPduReceived (Ptr<Packet> p)
+LteUePhy::PhyPsbchPduReceived (Ptr<Packet> p, uint16_t slssid)
 {
   NS_LOG_FUNCTION (this);
-  
+
   //Store the received MIB-SL during the SyncRef search
   if (m_ueSlssScanningInProgress)
     {
       MasterInformationBlockSlHeader mibSlHeader;
       p->PeekHeader (mibSlHeader);
       LteRrcSap::MasterInformationBlockSL mibSl = mibSlHeader.GetMessage ();
-      LteMibSlTag tag;
-      p->PeekPacketTag (tag);
-  
+
       uint16_t rxOffset = Simulator::Now ().GetMilliSeconds () % 40;
       m_detectedMibSl.insert (std::pair <std::pair<uint16_t, uint16_t>, LteRrcSap::MasterInformationBlockSL>
-                                (std::pair<uint16_t, uint16_t> (tag.GetSlssid (), rxOffset), mibSl));
+                                (std::pair<uint16_t, uint16_t> (slssid, rxOffset), mibSl));
     }
 
   //Pass the message to the RRC
-  m_ueCphySapUser->ReceiveMibSL (p);
-  
+  m_ueCphySapUser->ReceiveMibSL (p, slssid);
+
 }
 
 
@@ -1428,36 +1426,36 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
     InitializeDiscRxPool (frameNo, subframeNo);
 
       if (m_slTxPoolInfo.m_pool)
-	{
-	  //Check if we need to initialize the Tx pool
-	  if (m_slTxPoolInfo.m_nextScPeriod.frameNo == 0)
-	    {
-	      //pool not initialized yet
-	      m_slTxPoolInfo.m_nextScPeriod = m_slTxPoolInfo.m_pool->GetNextScPeriod (frameNo, subframeNo);
-	      //adjust because scheduler starts with frame/subframe = 1
-	      m_slTxPoolInfo.m_nextScPeriod.frameNo++;
-	      m_slTxPoolInfo.m_nextScPeriod.subframeNo++;
-	      NS_LOG_INFO ("Tx Pool initialized");
-	    }
-	  //Check if this is a new SC period
-	  if (frameNo == m_slTxPoolInfo.m_nextScPeriod.frameNo && subframeNo == m_slTxPoolInfo.m_nextScPeriod.subframeNo)
-	    {
-	      m_slTxPoolInfo.m_currentScPeriod = m_slTxPoolInfo.m_nextScPeriod;
-	      m_slTxPoolInfo.m_nextScPeriod = m_slTxPoolInfo.m_pool->GetNextScPeriod (frameNo, subframeNo);
-	      //adjust because scheduler starts with frame/subframe = 1
-	      m_slTxPoolInfo.m_nextScPeriod.frameNo++;
-	      m_slTxPoolInfo.m_nextScPeriod.subframeNo++;
-	      NS_LOG_INFO ("Starting new SC period for TX pool " << ". Next period at " << m_slTxPoolInfo.m_nextScPeriod.frameNo << "/" << m_slTxPoolInfo.m_nextScPeriod.subframeNo);
+        {
+          //Check if we need to initialize the Tx pool
+          if (m_slTxPoolInfo.m_nextScPeriod.frameNo == 0)
+            {
+              //pool not initialized yet
+              m_slTxPoolInfo.m_nextScPeriod = m_slTxPoolInfo.m_pool->GetNextScPeriod (frameNo, subframeNo);
+              //adjust because scheduler starts with frame/subframe = 1
+              m_slTxPoolInfo.m_nextScPeriod.frameNo++;
+              m_slTxPoolInfo.m_nextScPeriod.subframeNo++;
+              NS_LOG_INFO ("Tx Pool initialized");
+            }
+          //Check if this is a new SC period
+          if (frameNo == m_slTxPoolInfo.m_nextScPeriod.frameNo && subframeNo == m_slTxPoolInfo.m_nextScPeriod.subframeNo)
+            {
+              m_slTxPoolInfo.m_currentScPeriod = m_slTxPoolInfo.m_nextScPeriod;
+              m_slTxPoolInfo.m_nextScPeriod = m_slTxPoolInfo.m_pool->GetNextScPeriod (frameNo, subframeNo);
+              //adjust because scheduler starts with frame/subframe = 1
+              m_slTxPoolInfo.m_nextScPeriod.frameNo++;
+              m_slTxPoolInfo.m_nextScPeriod.subframeNo++;
+              NS_LOG_INFO ("Starting new SC period for TX pool " << ". Next period at " << m_slTxPoolInfo.m_nextScPeriod.frameNo << "/" << m_slTxPoolInfo.m_nextScPeriod.subframeNo);
 
-	      if (m_waitingNextScPeriod)
-		{
-		  NS_LOG_LOGIC ("The UE was waiting for next SC period and it just started");
-		  m_waitingNextScPeriod = false;
-		}
-	      //clear any previous grant
-	      m_slTxPoolInfo.m_currentGrants.clear ();
-	    }
-	}
+              if (m_waitingNextScPeriod)
+                {
+                  NS_LOG_LOGIC ("The UE was waiting for next SC period and it just started");
+                  m_waitingNextScPeriod = false;
+                }
+              //clear any previous grant
+              m_slTxPoolInfo.m_currentGrants.clear ();
+            }
+        }
 
       //check if we received grants for Sidelink
       //compute the reception slots for the PSSCH. Do this here because
@@ -1575,7 +1573,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           //since we send UL CQI messages all the time, we can remove them if we have a Sidelink
           //transmission
           std::list<Ptr<LteControlMessage> >::iterator ctrlIt;
-          for (ctrlIt = ctrlMsg.begin (); ctrlIt != ctrlMsg.end () ; ctrlIt++)
+          for (ctrlIt = ctrlMsg.begin (); ctrlIt != ctrlMsg.end (); ctrlIt++)
             {
               mibSlFound = (*ctrlIt)->GetMessageType () == LteControlMessage::MIB_SL;
             }
@@ -1664,8 +1662,8 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               if (pb)
                 {
                   std::list<LteUePhySapProvider::TransmitSlPhySduParameters>::iterator paramIt = params.begin ();
-                  NS_ASSERT_MSG (paramIt != params.end(), "Found packet burst without associated parameters");
-                  
+                  NS_ASSERT_MSG (paramIt != params.end (), "Found packet burst without associated parameters");
+
                   std::vector <int> slRb;
                   for (int i = (*paramIt).m_rbStart; i < (*paramIt).m_rbStart + (*paramIt).m_rbLen; i++)
                     {
@@ -1676,18 +1674,18 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   switch ((*paramIt).m_channel)
                     {
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH:
-                     NS_LOG_LOGIC (this << " UE - start TX PSBCH");
-                     
-                     NS_ASSERT_MSG (params.size () == 1, "Found more than one packet in PSBCH burst");
-                     
-                     if (m_enableUplinkPowerControl)
+                      NS_LOG_LOGIC (this << " UE - start TX PSBCH");
+
+                      NS_ASSERT_MSG (params.size () == 1, "Found more than one packet in PSBCH burst");
+
+                      if (m_enableUplinkPowerControl)
                         {
                           m_txPower = m_powerControl->GetPscchTxPower (slRb); //what's the power control for PSBCH?
                         }
-                     
-                     SetSubChannelsForTransmission (slRb);
-                     m_uplinkSpectrumPhy->StartTxSlMibFrame (pb, UL_DATA_DURATION);
-                     break;
+
+                      SetSubChannelsForTransmission (slRb);
+                      m_uplinkSpectrumPhy->StartTxSlMibFrame (pb, UL_DATA_DURATION);
+                      break;
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSCCH:
                       NS_LOG_LOGIC (this << " UE - start TX PSCCH");
                       //access the control message to store the PSSCH grant and be able to
@@ -2767,7 +2765,7 @@ LteUePhy::ScheduleNextSyncRefReselection (uint16_t endOfPrevious)
 bool
 LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
 {
-  NS_LOG_FUNCTION (this<<frameNo<<subframeNo);
+  NS_LOG_FUNCTION (this << frameNo << subframeNo);
 
   if (m_slTxPoolInfo.m_pool)
     {
@@ -2776,7 +2774,7 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
       //Is it the start of a new period?
       if (((frameNo == m_slTxPoolInfo.m_nextScPeriod.frameNo && subframeNo
             == m_slTxPoolInfo.m_nextScPeriod.subframeNo)
-	    || m_slTxPoolInfo.m_nextScPeriod.frameNo == 0))
+           || m_slTxPoolInfo.m_nextScPeriod.frameNo == 0))
         {
           NS_LOG_LOGIC ("The current subframe corresponds to the start of a new Sidelink communication period... Applying the change of timing");
 
@@ -2787,17 +2785,17 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
           SidelinkCommResourcePool::SubframeInfo currentTime;
           currentTime.frameNo = frameNo;
           currentTime.subframeNo = subframeNo;
-          NS_LOG_INFO ("mibTime "<<mibTime.frameNo<<"/"<<mibTime.subframeNo);
-          NS_LOG_INFO ("currentTime "<<currentTime.frameNo<<"/"<<currentTime.subframeNo);
-          NS_LOG_INFO ("rxSubframe "<<m_resyncParams.rxSubframe.frameNo<<"/"<<m_resyncParams.rxSubframe.subframeNo);
+          NS_LOG_INFO ("mibTime " << mibTime.frameNo << "/" << mibTime.subframeNo);
+          NS_LOG_INFO ("currentTime " << currentTime.frameNo << "/" << currentTime.subframeNo);
+          NS_LOG_INFO ("rxSubframe " << m_resyncParams.rxSubframe.frameNo << "/" << m_resyncParams.rxSubframe.subframeNo);
 
           m_resyncParams.newSubframe = mibTime + (currentTime - m_resyncParams.rxSubframe);
 
           m_resyncRequested = false;
           NS_LOG_INFO ("UE RNTI " << m_rnti
-		       << " has a TxPool and changed the Subframe Indication"
-		       << " from "<< currentTime.frameNo <<"/"<<currentTime.subframeNo
-		       << " to "<< m_resyncParams.newSubframe.frameNo <<"/"<< m_resyncParams.newSubframe.subframeNo);
+                                  << " has a TxPool and changed the Subframe Indication"
+                                  << " from " << currentTime.frameNo << "/" << currentTime.subframeNo
+                                  << " to " << m_resyncParams.newSubframe.frameNo << "/" << m_resyncParams.newSubframe.subframeNo);
 
           //Updating values used bellow
           frameNo = m_resyncParams.newSubframe.frameNo;
@@ -2887,13 +2885,13 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
       subframeNo = m_resyncParams.newSubframe.subframeNo;
 
       NS_LOG_INFO ("UE RNTI " << m_rnti << "did not have a Tx pool and changed the Subframe Indication"
-		   <<" from "<< currentTime.frameNo << "/" << currentTime.subframeNo
-                   <<" to " << m_resyncParams.newSubframe.frameNo << "/" << m_resyncParams.newSubframe.subframeNo);
+                              << " from " << currentTime.frameNo << "/" << currentTime.subframeNo
+                              << " to " << m_resyncParams.newSubframe.frameNo << "/" << m_resyncParams.newSubframe.subframeNo);
 
       //Notify RRC about the successful change of SyncRef and timing
       m_ueCphySapUser->ReportChangeOfSyncRef (m_resyncParams);
 
-      m_currFrameNo =m_resyncParams.newSubframe.frameNo;
+      m_currFrameNo = m_resyncParams.newSubframe.frameNo;
       m_currSubframeNo = m_resyncParams.newSubframe.subframeNo;
 
       //Notify the SpectrumPhy about the change of SLSSID
@@ -2935,7 +2933,7 @@ LteUePhy::DoSynchronizeToSyncRef (LteSlSyncParams synchParams)
   NS_LOG_FUNCTION (this);
 
   NS_LOG_INFO ("Synchronizing to SyncRef SLSSSID " << synchParams.slssid << " offset " << synchParams.offset);
- // NS_LOG_INFO ("The estimated CURRENT subframe indication of the SyncRef (frame/subframe): " << synchParams.newFrameNo << "/" << synchParams.newSubframeNo);
+  // NS_LOG_INFO ("The estimated CURRENT subframe indication of the SyncRef (frame/subframe): " << synchParams.newFrameNo << "/" << synchParams.newSubframeNo);
   NS_LOG_INFO ("The CURRENT subframe indication of this UE (frame/subframe): " << m_currFrameNo << "/" << m_currSubframeNo);
 
   //Request the synchronization (change of timing) for the next subframe

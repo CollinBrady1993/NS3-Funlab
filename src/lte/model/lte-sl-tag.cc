@@ -1,24 +1,37 @@
 /* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2011 Centre Tecnologic de Telecomunicacions de Catalunya (CTTC)
+ * NIST-developed software is provided by NIST as a public
+ * service. You may use, copy and distribute copies of the software in
+ * any medium, provided that you keep intact this entire notice. You
+ * may improve, modify and create derivative works of the software or
+ * any portion of the software, and you may copy and distribute such
+ * modifications or works. Modified works should carry a notice
+ * stating that you changed the software and should note the date and
+ * nature of any such change. Please explicitly acknowledge the
+ * National Institute of Standards and Technology as the source of the
+ * software.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
+ * NIST-developed software is expressly provided "AS IS." NIST MAKES
+ * NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED, IN FACT OR ARISING BY
+ * OPERATION OF LAW, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+ * WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ * NON-INFRINGEMENT AND DATA ACCURACY. NIST NEITHER REPRESENTS NOR
+ * WARRANTS THAT THE OPERATION OF THE SOFTWARE WILL BE UNINTERRUPTED
+ * OR ERROR-FREE, OR THAT ANY DEFECTS WILL BE CORRECTED. NIST DOES NOT
+ * WARRANT OR MAKE ANY REPRESENTATIONS REGARDING THE USE OF THE
+ * SOFTWARE OR THE RESULTS THEREOF, INCLUDING BUT NOT LIMITED TO THE
+ * CORRECTNESS, ACCURACY, RELIABILITY, OR USEFULNESS OF THE SOFTWARE.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *
- * Author: Marco Miozzo <marco.miozzo@cttc.es>
- * Modified by: NIST // Contributions may not be subject to US copyright.
+ * You are solely responsible for determining the appropriateness of
+ * using and distributing the software and you assume all risks
+ * associated with its use, including but not limited to the risks and
+ * costs of program errors, compliance with applicable laws, damage to
+ * or loss of data, programs or equipment, and the unavailability or
+ * interruption of operation. This software is not intended to be used
+ * in any situation where a failure could cause risk of injury or
+ * damage to property. The software developed by NIST employees is not
+ * subject to copyright protection within the United States.
  */
-
 
 #include "lte-sl-tag.h"
 #include "ns3/tag.h"
@@ -33,7 +46,7 @@ LteSlSciTag::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::LteSlSciTag")
     .SetParent<Tag> ()
-    .SetGroupName("Lte")
+    .SetGroupName ("Lte")
     .AddConstructor<LteSlSciTag> ()
     .AddAttribute ("rnti", "The rnti that indicates the UE to which packet belongs",
                    UintegerValue (0),
@@ -59,21 +72,21 @@ LteSlSciTag::GetInstanceTypeId (void) const
 
 LteSlSciTag::LteSlSciTag ()
   : m_rnti (0),
-    m_resNo (0),
-    m_tbSize (0)
+  m_resNo (0),
+  m_tbSize (0)
 {
 }
 LteSlSciTag::LteSlSciTag (uint16_t rnti, uint16_t resNo, uint32_t tbSize)
   : m_rnti (rnti),
-    m_resNo (resNo),
-    m_tbSize (tbSize)
+  m_resNo (resNo),
+  m_tbSize (tbSize)
 {
 }
-  
+
 uint32_t
 LteSlSciTag::GetSerializedSize (void) const
 {
- return 8;
+  return 8;
 }
 
 void
@@ -115,84 +128,5 @@ LteSlSciTag::Print (std::ostream &os) const
 {
   os << "rnti=" << m_rnti << ", resNo=" << (uint16_t) m_resNo << ", tbSize=" << m_tbSize;
 }
-
-/////////////////// LteMibSlTag ////////////////
-
-TypeId
-LteMibSlTag::GetTypeId (void)
-{
-  static TypeId tid = TypeId ("ns3::LteMibSlTag")
-    .SetParent<Tag> ()
-    .SetGroupName("Lte")
-    .AddConstructor<LteSlSciTag> ()
-  ;
-  return tid;
-}
-
-TypeId
-LteMibSlTag::GetInstanceTypeId (void) const
-{
-  return GetTypeId ();
-}
-
-LteMibSlTag::LteMibSlTag ()
-  : m_creationTimestamp (0),
-    m_slssid (0)
-{
-}
- 
-LteMibSlTag::LteMibSlTag (Time t)
-{
-  m_creationTimestamp = t;
-}
-
-uint32_t
-LteMibSlTag::GetSerializedSize (void) const
-{
- return 10;
-}
-
-void
-LteMibSlTag::Serialize (TagBuffer i) const
-{
-  int64_t t = m_creationTimestamp.GetNanoSeconds ();
-  i.Write ((const uint8_t *)&t, 8);
-  i.WriteU16 (m_slssid);
-}
-
-void
-LteMibSlTag::Deserialize (TagBuffer i)
-{
-  int64_t t;
-  i.Read ((uint8_t *)&t, 8);
-  m_creationTimestamp = NanoSeconds (t);
-  m_slssid = (uint64_t) i.ReadU16 ();
-}
-
-void 
-LteMibSlTag::SetSlssid (const uint16_t slssid)
-{
-  m_slssid = slssid;
-}
-
-Time
-LteMibSlTag::GetCreationTimestamp () const
-{
-  return m_creationTimestamp;
-}
-
-uint16_t
-LteMibSlTag::GetSlssid () const
-{
-  return m_slssid;
-}
-
-void
-LteMibSlTag::Print (std::ostream &os) const
-{
-  os << "slssid " << m_slssid << "timestamp " << m_creationTimestamp;
-}
-
-
 
 } // namespace ns3

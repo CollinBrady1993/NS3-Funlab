@@ -93,7 +93,7 @@ public:
 
   /**
    * \brief Get the PHY SAP provider
-   * \return a pointer to the SAP Provider 
+   * \return a pointer to the SAP Provider
    */
   LteUePhySapProvider* GetLteUePhySapProvider ();
 
@@ -260,8 +260,9 @@ public:
   /**
    * \brief PhySpectrum received a new PHY-PDU
    * \param p The packet received
+   * \param slssid The SLSSID of the received packet
    */
-  void PhyPsbchPduReceived (Ptr<Packet> p);
+  void PhyPsbchPduReceived (Ptr<Packet> p, uint16_t slssid);
 
   /**
    * \brief trigger from eNB the start from a new frame
@@ -317,12 +318,12 @@ public:
    * \note The UE will never perform the SyncRef selection process if this function
    * is not called before the start of the simulation
    */
-  void SetFirstScanningTime(Time t);
+  void SetFirstScanningTime (Time t);
   /**
    * Get the time in which the first SyncRef selection will be performed
    * \return The time in which the first SyncRef selection will be performed by the UE
    */
-  Time GetFirstScanningTime();
+  Time GetFirstScanningTime ();
   /**
    * Stores the S-RSRP of the detected SLSSs during the SyncRef selection  process
    * (i.e., during SyncRef scanning or measurement)
@@ -345,8 +346,7 @@ public:
    * \param [in] oldState
    * \param [in] newState
    */
-  typedef void (* StateTracedCallback)
-    (uint16_t cellId, uint16_t rnti, State oldState, State newState);
+  typedef void (* StateTracedCallback)(uint16_t cellId, uint16_t rnti, State oldState, State newState);
 
   /**
    * TracedCallback signature for cell RSRP and SINR report.
@@ -357,9 +357,8 @@ public:
    * \param [in] sinr
    * \param [in] componentCarrierId
    */
-  typedef void (* RsrpSinrTracedCallback)
-    (uint16_t cellId, uint16_t rnti,
-     double rsrp, double sinr, uint8_t componentCarrierId);
+  typedef void (* RsrpSinrTracedCallback)(uint16_t cellId, uint16_t rnti,
+                                          double rsrp, double sinr, uint8_t componentCarrierId);
 
   /**
    * TracedCallback signature for cell RSRP and RSRQ.
@@ -371,12 +370,10 @@ public:
    * \param [in] isServingCell
    * \param [in] componentCarrierId
    */
-  typedef void (* RsrpRsrqTracedCallback)
-    (uint16_t rnti, uint16_t cellId, double rsrp, double rsrq,
-     bool isServingCell, uint8_t componentCarrierId);
+  typedef void (* RsrpRsrqTracedCallback)(uint16_t rnti, uint16_t cellId, double rsrp, double rsrq,
+                                          bool isServingCell, uint8_t componentCarrierId);
 
 private:
-
   /**
    * Set transmit mode 1 gain function
    *
@@ -439,11 +436,11 @@ private:
    * \param [in] rbMap
    */
   void QueueSubChannelsForTransmission (std::vector <int> rbMap);
-  /** 
+  /**
    * internal method that takes care of generating CQI reports,
    * calculating the RSRP and RSRQ metrics, and generating RSRP+SINR traces
-   * 
-   * \param sinr 
+   *
+   * \param sinr
    */
   void GenerateCqiRsrpRsrq (const SpectrumValue& sinr);
   /**
@@ -591,9 +588,9 @@ private:
    *
    * \param destination The destination id
    */
-    void DoRemoveSlDestination (uint32_t destination);
+  void DoRemoveSlDestination (uint32_t destination);
 
-  // UE PHY SAP methods 
+  // UE PHY SAP methods
   virtual void DoSendMacPdu (Ptr<Packet> p);
   virtual void DoSendSlMacPdu (Ptr<Packet> p, LteUePhySapProvider::TransmitSlPhySduParameters params);
   /**
@@ -615,7 +612,7 @@ private:
   */
   std::list <LteUePhySapProvider::TransmitSlPhySduParameters> GetSlPhyParameters (Ptr<PacketBurst> pb);
 
-  
+
   /// A list of sub channels to use in TX.
   std::vector <int> m_subChannelsForTransmission;
   /// A list of sub channels to use in RX.
@@ -653,7 +650,7 @@ private:
   LteUeCphySapUser* m_ueCphySapUser; ///< UE CPhy SAP user
 
   uint16_t  m_rnti; ///< the RNTI
- 
+
   uint8_t m_transmissionMode; ///< the transmission mode
   std::vector <double> m_txModeGain; ///< the transmit mode gain
   double m_slRxGain; ///< the Sidelink SIMO gain
@@ -691,7 +688,7 @@ private:
 
   bool m_pssReceived; ///< PSS received?
   /// PssElement structure
-  struct PssElement 
+  struct PssElement
   {
     uint16_t cellId; ///< cell ID
     double pssPsdSum; ///< PSS PSD sum
@@ -771,9 +768,9 @@ private:
    */
   TracedCallback<PhyTransmissionStatParameters> m_ulPhyTransmission;
 
-  
+
   Ptr<SpectrumValue> m_noisePsd; ///< Noise power spectral density for
-                                 ///the configured bandwidth 
+  ///the configured bandwidth
 
   /**
    * The Sidelink LteSpectrumPhy associated to this LteUePhy.
@@ -781,7 +778,7 @@ private:
   Ptr<LteSpectrumPhy> m_sidelinkSpectrumPhy;
 
   Ptr<SpectrumValue> m_slNoisePsd; ///< Sidelink noise power spectral density for
-                                   ///the configured bandwidth
+  ///the configured bandwidth
 
   /**
    * If true the values of frameNo and subframeNo are selected randomly,
@@ -791,283 +788,283 @@ private:
 
   /// A queue of packet parameters to be sent.
   std::vector< std::list < LteUePhySapProvider::TransmitSlPhySduParameters > > m_packetParamsQueue;
-  
-  
+
+
   /// Sidelink communication grant related  parameters
- struct SidelinkGrant
- {
-   //fields common with SL_DCI
-   uint16_t m_rnti; ///< RNTI
-   uint16_t m_resPscch; ///< PSCCH resource index
-   uint8_t m_tpc; ///< TPC
-   uint8_t m_hopping; ///< Hopping flag
-   uint8_t m_rbStart; ///< models rb assignment
-   uint8_t m_rbLen;   ///< models rb assignment
-   uint8_t m_hoppingInfo; ///< models rb assignment when hopping is enabled
-   uint8_t m_trp; ///< Time resourse pattern (TRP)
-   uint8_t m_groupDstId; ///< Group destination id
+  struct SidelinkGrant
+  {
+    //fields common with SL_DCI
+    uint16_t m_rnti; ///< RNTI
+    uint16_t m_resPscch; ///< PSCCH resource index
+    uint8_t m_tpc; ///< TPC
+    uint8_t m_hopping; ///< Hopping flag
+    uint8_t m_rbStart; ///< models rb assignment
+    uint8_t m_rbLen;  ///< models rb assignment
+    uint8_t m_hoppingInfo; ///< models rb assignment when hopping is enabled
+    uint8_t m_trp; ///< Time resourse pattern (TRP)
+    uint8_t m_groupDstId; ///< Group destination id
 
-   //other fields
-   uint8_t m_mcs; ///< MCS
-   uint32_t m_tbSize; ///< TB size
+    //other fields
+    uint8_t m_mcs; ///< MCS
+    uint32_t m_tbSize; ///< TB size
 
-   uint32_t frameNo; ///< Frame number
-   uint32_t subframeNo; ///< Subframe number
- };
+    uint32_t frameNo; ///< Frame number
+    uint32_t subframeNo; ///< Subframe number
+  };
 
- /// SidelinkGrantInfo structure
- struct SidelinkGrantInfo
- {
-   SidelinkGrant m_grant; ///< Sidelink communication grant
-   std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo> m_pscchTx; ///< list of PSCCH transmissions within the pool
-   std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo> m_psschTx; ///< list of PSSCH transmissions within the pool
-   bool m_grantReceived; ///< Flag to indicate the reception of Sidelink communication grant
- };
+  /// SidelinkGrantInfo structure
+  struct SidelinkGrantInfo
+  {
+    SidelinkGrant m_grant; ///< Sidelink communication grant
+    std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo> m_pscchTx; ///< list of PSCCH transmissions within the pool
+    std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo> m_psschTx; ///< list of PSSCH transmissions within the pool
+    bool m_grantReceived; ///< Flag to indicate the reception of Sidelink communication grant
+  };
 
- /// Sidelink pool information
- struct PoolInfo
- {
-   Ptr<SidelinkCommResourcePool> m_pool; ///< the pool
-   SidelinkCommResourcePool::SubframeInfo m_currentScPeriod; ///< start of current period
-   SidelinkCommResourcePool::SubframeInfo m_nextScPeriod; ///< start of next period
-   uint32_t m_npscch; ///< number of PSCCH available in the pool
-   std::map<uint16_t, SidelinkGrantInfo> m_currentGrants; ///< Current Sidelink communication grants
- };
+  /// Sidelink pool information
+  struct PoolInfo
+  {
+    Ptr<SidelinkCommResourcePool> m_pool; ///< the pool
+    SidelinkCommResourcePool::SubframeInfo m_currentScPeriod; ///< start of current period
+    SidelinkCommResourcePool::SubframeInfo m_nextScPeriod; ///< start of next period
+    uint32_t m_npscch; ///< number of PSCCH available in the pool
+    std::map<uint16_t, SidelinkGrantInfo> m_currentGrants; ///< Current Sidelink communication grants
+  };
 
- PoolInfo m_slTxPoolInfo; ///< Sidelink pool information
- std::list <PoolInfo> m_sidelinkRxPools; ///< List of Sidelink communication Rx pools
- std::list <uint32_t> m_destinations; ///< List of destinations for Sidelink communication
+  PoolInfo m_slTxPoolInfo; ///< Sidelink pool information
+  std::list <PoolInfo> m_sidelinkRxPools; ///< List of Sidelink communication Rx pools
+  std::list <uint32_t> m_destinations; ///< List of destinations for Sidelink communication
 
- /// Sidelink discovery grant
- struct DiscGrant
- {
-   uint16_t m_rnti; ///< RNTI
-   uint8_t m_resPsdch; ///< m_resPsdch A randomly chosen resource index from the PSDCH resource pool
- };
+  /// Sidelink discovery grant
+  struct DiscGrant
+  {
+    uint16_t m_rnti; ///< RNTI
+    uint8_t m_resPsdch; ///< m_resPsdch A randomly chosen resource index from the PSDCH resource pool
+  };
 
- /// Sidelink discovery grant info
- struct DiscGrantInfo
- {
-   DiscGrant m_grant; ///< Sidelink discovery grant
-   std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx; ///< List of PSDCH transmissions within the pool
-   bool m_grantReceived; ///< Flag to indicate the reception of Sidelink discovery grant
- };
+  /// Sidelink discovery grant info
+  struct DiscGrantInfo
+  {
+    DiscGrant m_grant; ///< Sidelink discovery grant
+    std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx; ///< List of PSDCH transmissions within the pool
+    bool m_grantReceived; ///< Flag to indicate the reception of Sidelink discovery grant
+  };
 
- /// Sidelink discovery pool information
- struct DiscPoolInfo
- {
-   Ptr<SidelinkDiscResourcePool> m_pool; ///< the discover resource pool
-   SidelinkDiscResourcePool::SubframeInfo m_currentDiscPeriod; ///< start of current period
-   SidelinkDiscResourcePool::SubframeInfo m_nextDiscPeriod; ///< start of next period
-   uint32_t m_npsdch; ///< number of PSDCH available in the pool
-   std::map<uint16_t, DiscGrantInfo> m_currentGrants; ///< Current Sidelink discovery grants
- };
+  /// Sidelink discovery pool information
+  struct DiscPoolInfo
+  {
+    Ptr<SidelinkDiscResourcePool> m_pool; ///< the discover resource pool
+    SidelinkDiscResourcePool::SubframeInfo m_currentDiscPeriod; ///< start of current period
+    SidelinkDiscResourcePool::SubframeInfo m_nextDiscPeriod; ///< start of next period
+    uint32_t m_npsdch; ///< number of PSDCH available in the pool
+    std::map<uint16_t, DiscGrantInfo> m_currentGrants; ///< Current Sidelink discovery grants
+  };
 
- DiscPoolInfo m_discTxPools;  ///< Discovery Tx pool information
- std::list <DiscPoolInfo> m_discRxPools; ///< List of Sidelink discovery Rx pools
+  DiscPoolInfo m_discTxPools; ///< Discovery Tx pool information
+  std::list <DiscPoolInfo> m_discRxPools; ///< List of Sidelink discovery Rx pools
 
- uint8_t m_discResPsdch; ///< A randomly chosen resource index from the PSDCH resource pool by UE MAC
+  uint8_t m_discResPsdch; ///< A randomly chosen resource index from the PSDCH resource pool by UE MAC
 
- /**
-  * Summary results of measuring a specific SyncRef. Used for layer-1 filtering.
-  */
- struct UeSlssMeasurementsElement
- {
-   double srsrpSum;   ///< Sum of S-RSRP sample values in linear unit.
-   uint8_t srsrpNum;  ///< Number of S-RSRP samples.
- };
- /**
-  * Stores the S-RSRP information of the SyncRefs detected during the scanning process,
-  * indexed by the SLSSID of the SyncRef and the offset it uses for transmitting the SLSSs
-  */
- std::map <std::pair<uint16_t,uint16_t>, UeSlssMeasurementsElement> m_ueSlssDetectionMap;
- /**
-  * Represents the S-RSRP measurement schedule for the current measurement process.
-  * It is used for knowing when the UE needs to take samples of the detected SyncRefs S-RSRP.
-  * The index is the simulation time and the elements are the SyncRef identifiers (SLSSID and offset)
-  */
- std::map <int64_t, std::pair<uint16_t,uint16_t> > m_ueSlssMeasurementsSched;
- /**
-  * Stores the S-RSRP information of the SyncRefs in measurement during the measurement process
-  * indexed by the SLSSID of the SyncRef and the offset it uses for transmitting the SLSSs
-  */
- std::map <std::pair<uint16_t,uint16_t>, UeSlssMeasurementsElement> m_ueSlssMeasurementsMap;
- /**
-  * Time period for searching/scanning to detect available SyncRefs (supporting SyncRef selection)
-  */
- Time m_ueSlssScanningPeriod;
- /**
-  * Time period for taking S-RSRP samples of the detected SyncRefs (supporting SyncRef selection)
-  */
- Time m_ueSlssMeasurementPeriod;
- /**
-  * Time period for taking S-RSRP samples of the selected SyncRef (supporting SLSS transmission decision)
-  */
- Time m_ueSlssEvaluationPeriod;
- /**
-  *  The number of samples the UE takes during the measurement and evaluation periods
-  */
- uint16_t m_nSamplesSrsrpMeas;
- /**
-  * Time for the first SyncRef selection period
-  */
- Time m_tFirstScanning;
- /**
-  * Random number generator used for determining the time between SyncRef selection processes
-  */
- Ptr<UniformRandomVariable> m_nextScanRdm;
- /**
-  * True if a SyncRef selection is in progress and the UE is performing the SyncRef search/scanning
-  */
- bool m_ueSlssScanningInProgress;
- /**
-  * True if a SyncRef selection is in progress and the UE is performing the S-RSRP measurements,
-  * either of the detected SyncRefs (measurement sub-process) or the selected one (evaluation sub-process)
-  */
- bool m_ueSlssMeasurementInProgress;
- /**
-  * Number of S-RSRP measurement periods already performed in SyncRef selection process in progress
-  * (1 = measurement, 2 = measurement + evaluation)
-  */
- uint16_t m_currNMeasPeriods;
- /**
-  * The minimum S-RSRP value for considering a SyncRef S-RSRP sample valid
-  */
- double m_minSrsrp;
- /**
-  * Stores the received MIB-SL during the SyncRef search/scanning.
-  * Used to determine the detected SyncRefs, as SyncRefs with valid S-RSRP but without
-  * successfully decoded/received MIB-SL are not considered detected
-  */
- std::map <std::pair<uint16_t,uint16_t>, LteRrcSap::MasterInformationBlockSL> m_detectedMibSl;
- /**
-  * Initial frame number
-  */
- uint32_t m_initFrameNo;
- /**
-  * Initial subframe number
-  */
- uint32_t m_initSubframeNo;
- /**
-  * Current frame number
-  */
- uint32_t m_currFrameNo;
- /**
-  * Current subframe number
-  */
- uint32_t m_currSubframeNo;
- 
- /**
-  * Parameters to be used for the change of subframe indication upon synchronization to
-  * a different SyncRef
-  */
- LteSlSyncParams m_resyncParams;
- /**
-  * True if the RRC instructed to synchronize to a different SyncRef
-  */
- bool m_resyncRequested;
- /**
-  * True if the UE changed of timing (synchronized to a different SyncRef) and have to
-  * wait the start of a new sideliink communication period for transmitting the data
-  * (the subframe indication changed and the data indication in the SCI of the current
-  * period is not valid anymore)
-  */
- bool m_waitingNextScPeriod;
+  /**
+   * Summary results of measuring a specific SyncRef. Used for layer-1 filtering.
+   */
+  struct UeSlssMeasurementsElement
+  {
+    double srsrpSum;  ///< Sum of S-RSRP sample values in linear unit.
+    uint8_t srsrpNum; ///< Number of S-RSRP samples.
+  };
+  /**
+   * Stores the S-RSRP information of the SyncRefs detected during the scanning process,
+   * indexed by the SLSSID of the SyncRef and the offset it uses for transmitting the SLSSs
+   */
+  std::map <std::pair<uint16_t,uint16_t>, UeSlssMeasurementsElement> m_ueSlssDetectionMap;
+  /**
+   * Represents the S-RSRP measurement schedule for the current measurement process.
+   * It is used for knowing when the UE needs to take samples of the detected SyncRefs S-RSRP.
+   * The index is the simulation time and the elements are the SyncRef identifiers (SLSSID and offset)
+   */
+  std::map <int64_t, std::pair<uint16_t,uint16_t> > m_ueSlssMeasurementsSched;
+  /**
+   * Stores the S-RSRP information of the SyncRefs in measurement during the measurement process
+   * indexed by the SLSSID of the SyncRef and the offset it uses for transmitting the SLSSs
+   */
+  std::map <std::pair<uint16_t,uint16_t>, UeSlssMeasurementsElement> m_ueSlssMeasurementsMap;
+  /**
+   * Time period for searching/scanning to detect available SyncRefs (supporting SyncRef selection)
+   */
+  Time m_ueSlssScanningPeriod;
+  /**
+   * Time period for taking S-RSRP samples of the detected SyncRefs (supporting SyncRef selection)
+   */
+  Time m_ueSlssMeasurementPeriod;
+  /**
+   * Time period for taking S-RSRP samples of the selected SyncRef (supporting SLSS transmission decision)
+   */
+  Time m_ueSlssEvaluationPeriod;
+  /**
+   *  The number of samples the UE takes during the measurement and evaluation periods
+   */
+  uint16_t m_nSamplesSrsrpMeas;
+  /**
+   * Time for the first SyncRef selection period
+   */
+  Time m_tFirstScanning;
+  /**
+   * Random number generator used for determining the time between SyncRef selection processes
+   */
+  Ptr<UniformRandomVariable> m_nextScanRdm;
+  /**
+   * True if a SyncRef selection is in progress and the UE is performing the SyncRef search/scanning
+   */
+  bool m_ueSlssScanningInProgress;
+  /**
+   * True if a SyncRef selection is in progress and the UE is performing the S-RSRP measurements,
+   * either of the detected SyncRefs (measurement sub-process) or the selected one (evaluation sub-process)
+   */
+  bool m_ueSlssMeasurementInProgress;
+  /**
+   * Number of S-RSRP measurement periods already performed in SyncRef selection process in progress
+   * (1 = measurement, 2 = measurement + evaluation)
+   */
+  uint16_t m_currNMeasPeriods;
+  /**
+   * The minimum S-RSRP value for considering a SyncRef S-RSRP sample valid
+   */
+  double m_minSrsrp;
+  /**
+   * Stores the received MIB-SL during the SyncRef search/scanning.
+   * Used to determine the detected SyncRefs, as SyncRefs with valid S-RSRP but without
+   * successfully decoded/received MIB-SL are not considered detected
+   */
+  std::map <std::pair<uint16_t,uint16_t>, LteRrcSap::MasterInformationBlockSL> m_detectedMibSl;
+  /**
+   * Initial frame number
+   */
+  uint32_t m_initFrameNo;
+  /**
+   * Initial subframe number
+   */
+  uint32_t m_initSubframeNo;
+  /**
+   * Current frame number
+   */
+  uint32_t m_currFrameNo;
+  /**
+   * Current subframe number
+   */
+  uint32_t m_currSubframeNo;
 
- /**
-  * Set the upper limit for the random values generated by m_nextScanRdm
-  *
-  * \param t The upper limit for m_nextScanRdm
-  */
- void SetUeSlssInterScanningPeriodMax(Time t);
- /**
-  * Set the lower limit for the random values generated by m_nextScanRdm
-  *
-  * \param t The lower limit for m_nextScanRdm
-  */
- void SetUeSlssInterScanningPeriodMin(Time t);
- /**
-  * Notify the start of a new SyncRef selection process, starting with the
-  * SyncRef search/scanning
-  */
- void StartSlssScanning ();
- /**
-  * Notify the end of the SyncRef search/scanning,
-  * keep only the six detected SyncRef (with received MIB-SL) with highest S-RSRP,
-  * create the S-RSRP measurement schedule for each of them and start the measurement
-  * process
-  */
- void EndSlssScanning ();
- /**
-  * Notify the start of a S-RSRP measurement process.
-  * The S-RSRP measurement is used for two sub-processes:
-  * 1. Measurement: collect the S-RSRP samples of the detected SyncRefs for determining
-  *    the suitable SyncRef to select and synchronize with, and
-  * 2. Evaluation: collect the S-RSRP of the selected SyncRef (if any) to determine if the UE needs
-  *    to become itself a SyncRef and start transmitting SLSS
-  *
-  * \param slssid The SLSSID of the selected SyncRef if the function is called for Evaluation,
-  *               0 if it is called for Measurement
-  * \param offset The offset in which the selected SyncRef sends SLSS if the function is called
-  *               for Evaluation, 0 if it is called for Measurement
-  */
- void StartSlssMeasurements (uint64_t slssid, uint16_t offset);
- /**
-  * Perform L1 filtering of the S-RSRP samples collected during the measurement process
-  * for each SyncRef, and report them to the RRC
-  *
-  * \param slssid The SLSSID of the selected SyncRef if the measurement process was called for
-  *               Evaluation, 0 if was is called for Measurement
-  * \param offset The offset in which the selected SyncRef sends SLSS if the process was called
-  *               for Evaluation, 0 if it was called for Measurement
-  */
- void ReportSlssMeasurements (uint64_t slssid,uint16_t offset);
- /**
-  * Schedule the next SyncRef selection process.
-  * The function is called at the end of the SyncRef selection process in progress
-  *
-  * \param endOfPrevious This indicates after which sub-process the SyncRef selection process ended:
-  *                      0 if it ended after scanning, 1 if it ended after measurement,
-  *                      or 2 if it ends after evaluation
-  */
- void ScheduleNextSyncRefReselection(uint16_t endOfPrevious);
- /**
-  * Apply the change of timing (change of frame/subframe indication) when appropriate.
-  * The change of timing is instructed when the UE selected and wants to synchronize to a given
-  * SyncRef. The change is applied immediately upon resynchronization request if the UE is
-  * not transmitting Sidelink communication at the moment. Otherwise, the change is delayed until
-  * the end of the current Sidelink communication period to avoid the loss of already scheduled
-  * transmissions (the subframe indication will change, and the data indication in the SCI
-  * of the current period will not be valid anymore).
-  *
-  * \param frameNo The current frame number
-  * \param subframeNo The current subframe number
-  * \return True if change of timings performed successfully
-  */
- bool ChangeOfTiming(uint32_t frameNo, uint32_t subframeNo);
+  /**
+   * Parameters to be used for the change of subframe indication upon synchronization to
+   * a different SyncRef
+   */
+  LteSlSyncParams m_resyncParams;
+  /**
+   * True if the RRC instructed to synchronize to a different SyncRef
+   */
+  bool m_resyncRequested;
+  /**
+   * True if the UE changed of timing (synchronized to a different SyncRef) and have to
+   * wait the start of a new sideliink communication period for transmitting the data
+   * (the subframe indication changed and the data indication in the SCI of the current
+   * period is not valid anymore)
+   */
+  bool m_waitingNextScPeriod;
 
- // UE CPHY SAP methods related to synchronization
- /**
-  * Do Set Sidelink synchronization id function
-  * The RRC set the SLSSID value for lower layers
-  *
-  * \param slssid The Sidelink synchronization id
-  */
- void DoSetSlssId(uint64_t slssid);
- /**
-  * Do Send Sidelink synchronization signal function
-  * The RRC instructs the PHY to send a MIB-SL in the PSBCH
-  *
-  * \param mibSl The Sidelink Master Information Block
-  */
- //void DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl);
- /**
-  * Do synchronize to the SyncRef function
-  * The RRC instructs the PHY to synchronize to a given SyncRef and apply the corresponding change of timing
-  *
-  * \param synchParama The synchronization parameters
-  */
- void DoSynchronizeToSyncRef (LteSlSyncParams synchParams);
+  /**
+   * Set the upper limit for the random values generated by m_nextScanRdm
+   *
+   * \param t The upper limit for m_nextScanRdm
+   */
+  void SetUeSlssInterScanningPeriodMax (Time t);
+  /**
+   * Set the lower limit for the random values generated by m_nextScanRdm
+   *
+   * \param t The lower limit for m_nextScanRdm
+   */
+  void SetUeSlssInterScanningPeriodMin (Time t);
+  /**
+   * Notify the start of a new SyncRef selection process, starting with the
+   * SyncRef search/scanning
+   */
+  void StartSlssScanning ();
+  /**
+   * Notify the end of the SyncRef search/scanning,
+   * keep only the six detected SyncRef (with received MIB-SL) with highest S-RSRP,
+   * create the S-RSRP measurement schedule for each of them and start the measurement
+   * process
+   */
+  void EndSlssScanning ();
+  /**
+   * Notify the start of a S-RSRP measurement process.
+   * The S-RSRP measurement is used for two sub-processes:
+   * 1. Measurement: collect the S-RSRP samples of the detected SyncRefs for determining
+   *    the suitable SyncRef to select and synchronize with, and
+   * 2. Evaluation: collect the S-RSRP of the selected SyncRef (if any) to determine if the UE needs
+   *    to become itself a SyncRef and start transmitting SLSS
+   *
+   * \param slssid The SLSSID of the selected SyncRef if the function is called for Evaluation,
+   *               0 if it is called for Measurement
+   * \param offset The offset in which the selected SyncRef sends SLSS if the function is called
+   *               for Evaluation, 0 if it is called for Measurement
+   */
+  void StartSlssMeasurements (uint64_t slssid, uint16_t offset);
+  /**
+   * Perform L1 filtering of the S-RSRP samples collected during the measurement process
+   * for each SyncRef, and report them to the RRC
+   *
+   * \param slssid The SLSSID of the selected SyncRef if the measurement process was called for
+   *               Evaluation, 0 if was is called for Measurement
+   * \param offset The offset in which the selected SyncRef sends SLSS if the process was called
+   *               for Evaluation, 0 if it was called for Measurement
+   */
+  void ReportSlssMeasurements (uint64_t slssid,uint16_t offset);
+  /**
+   * Schedule the next SyncRef selection process.
+   * The function is called at the end of the SyncRef selection process in progress
+   *
+   * \param endOfPrevious This indicates after which sub-process the SyncRef selection process ended:
+   *                      0 if it ended after scanning, 1 if it ended after measurement,
+   *                      or 2 if it ends after evaluation
+   */
+  void ScheduleNextSyncRefReselection (uint16_t endOfPrevious);
+  /**
+   * Apply the change of timing (change of frame/subframe indication) when appropriate.
+   * The change of timing is instructed when the UE selected and wants to synchronize to a given
+   * SyncRef. The change is applied immediately upon resynchronization request if the UE is
+   * not transmitting Sidelink communication at the moment. Otherwise, the change is delayed until
+   * the end of the current Sidelink communication period to avoid the loss of already scheduled
+   * transmissions (the subframe indication will change, and the data indication in the SCI
+   * of the current period will not be valid anymore).
+   *
+   * \param frameNo The current frame number
+   * \param subframeNo The current subframe number
+   * \return True if change of timings performed successfully
+   */
+  bool ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo);
+
+  // UE CPHY SAP methods related to synchronization
+  /**
+   * Do Set Sidelink synchronization id function
+   * The RRC set the SLSSID value for lower layers
+   *
+   * \param slssid The Sidelink synchronization id
+   */
+  void DoSetSlssId (uint64_t slssid);
+  /**
+   * Do Send Sidelink synchronization signal function
+   * The RRC instructs the PHY to send a MIB-SL in the PSBCH
+   *
+   * \param mibSl The Sidelink Master Information Block
+   */
+  //void DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl);
+  /**
+   * Do synchronize to the SyncRef function
+   * The RRC instructs the PHY to synchronize to a given SyncRef and apply the corresponding change of timing
+   *
+   * \param synchParama The synchronization parameters
+   */
+  void DoSynchronizeToSyncRef (LteSlSyncParams synchParams);
 
 }; // end of `class LteUePhy`
 

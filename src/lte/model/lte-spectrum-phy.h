@@ -54,8 +54,8 @@ struct TbId_t
 {
   uint16_t m_rnti; ///< RNTI
   uint8_t m_layer; ///< layer
-  
-  public:
+
+public:
   TbId_t ();
   /**
    * Constructor
@@ -64,12 +64,12 @@ struct TbId_t
    * \param b Layer
    */
   TbId_t (const uint16_t a, const uint8_t b);
-  
+
   friend bool operator == (const TbId_t &a, const TbId_t &b);
   friend bool operator < (const TbId_t &a, const TbId_t &b);
 };
 
-  
+
 /// tbInfo_t structure
 struct tbInfo_t
 {
@@ -94,7 +94,7 @@ struct SlTbId_t
   uint16_t m_rnti; ///< source SL-RNTI
   uint8_t m_l1dst; ///< layer 1 group Id
 
-  public:
+public:
   SlTbId_t ();
   /**
    * Constructor
@@ -131,7 +131,7 @@ struct SlDiscTbId_t
   uint16_t m_rnti; ///< source SL-RNTI
   uint8_t m_resPsdch; ///< PSDCH resource number
 
-  public:
+public:
   SlDiscTbId_t ();
   /**
    * Constructor
@@ -181,7 +181,7 @@ struct LteSpectrumSignalParametersSlMibFrame;
 struct SlRxPacketInfo_t
 {
   Ptr<LteSpectrumSignalParametersSlFrame> params;
-  std::vector<int> rbBitmap;  ///< RB bitmap 
+  std::vector<int> rbBitmap;  ///< RB bitmap
 };
 
 /// SlCtrlPacketInfo_t structure
@@ -207,17 +207,24 @@ typedef Callback< void > LtePhyRxDataEndErrorCallback;
 */
 typedef Callback< void, Ptr<Packet> > LtePhyRxDataEndOkCallback;
 
+/**
+* This method is used by the LteSpectrumPhy to notify the PHY that a
+* previously started RX attempt has been successfully completed.
+*
+* \param packet The received Packet
+*/
+typedef Callback< void, Ptr<Packet>, uint16_t > LtePhyRxPsbchEndOkCallback;
 
 /**
 * This method is used by the LteSpectrumPhy to notify the PHY that a
-* previously started RX of a control frame attempt has been 
+* previously started RX of a control frame attempt has been
 * successfully completed.
 */
 typedef Callback< void, std::list<Ptr<LteControlMessage> > > LtePhyRxCtrlEndOkCallback;
 
 /**
 * This method is used by the LteSpectrumPhy to notify the PHY that a
-* previously started RX of a control frame attempt has terminated 
+* previously started RX of a control frame attempt has terminated
 * without success.
 */
 typedef Callback< void > LtePhyRxCtrlEndErrorCallback;
@@ -254,7 +261,7 @@ typedef Callback< void, uint16_t, Ptr<SpectrumValue> > LtePhyRxSlssCallback;
  * The LteSpectrumPhy models the physical layer of LTE
  *
  * It supports a single antenna model instance which is
- * used for both transmission and reception.  
+ * used for both transmission and reception.
  */
 class LteSpectrumPhy : public SpectrumPhy
 {
@@ -333,9 +340,9 @@ public:
    */
   void SetNoisePowerSpectralDensity (Ptr<const SpectrumValue> noisePsd);
 
-  /** 
+  /**
    * reset the internal state
-   * 
+   *
    */
   void Reset ();
 
@@ -353,11 +360,11 @@ public:
  
   /**
    * set the AntennaModel to be used
-   * 
+   *
    * \param a The Antenna Model
    */
   void SetAntenna (Ptr<AntennaModel> a);
-  
+
   /**
   * Start a transmission of data frame in DL and UL
   *
@@ -370,7 +377,7 @@ public:
   * started, false otherwise.
   */
   bool StartTxDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
-  
+
   /**
    * Start a transmission of Sidelink data frame in DL and UL
    *
@@ -381,20 +388,20 @@ public:
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.
    */
-   bool StartTxSlMibFrame (Ptr<PacketBurst> pb, Time duration);
+  bool StartTxSlMibFrame (Ptr<PacketBurst> pb, Time duration);
 
-   /**
-   * Start a transmission of Sidelink data frame in DL and UL
-   *
-   *
-   * \param pb The burst of packets to be transmitted in PSSCH/PSCCH
-   * \param ctrlMsgList The list of LteControlMessage to send
-   * \param duration The duration of the data frame
-   *
-   * \return true if an error occurred and the transmission was not
-   * started, false otherwise.
-   */
-   bool StartTxSlCtrlFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
+  /**
+  * Start a transmission of Sidelink data frame in DL and UL
+  *
+  *
+  * \param pb The burst of packets to be transmitted in PSSCH/PSCCH
+  * \param ctrlMsgList The list of LteControlMessage to send
+  * \param duration The duration of the data frame
+  *
+  * \return true if an error occurred and the transmission was not
+  * started, false otherwise.
+  */
+  bool StartTxSlCtrlFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
 
   /**
    * Start a transmission of Sidelink data frame in DL and UL
@@ -408,7 +415,7 @@ public:
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.
    */
-   bool StartTxSlDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration, uint8_t groupId);
+  bool StartTxSlDataFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration, uint8_t groupId);
 
   /**
    * Start a transmission of Sidelink data frame in DL and UL
@@ -422,22 +429,22 @@ public:
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.
    */
-   bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, uint32_t resNo, Time duration);
-   
-   /**
-   * Start a transmission of Sidelink data frame in DL and UL
-   *
-   *
-   * \param pb The burst of packets to be transmitted in PSDCH
-   * \param ctrlMsgList The list of LteControlMessage to send
-   * \param duration The duration of the data frame
-   *
-   * \return true if an error occurred and the transmission was not
-   * started, false otherwise.
-   */
-   bool StartTxSlMibFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
-   
-   
+  bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, uint32_t resNo, Time duration);
+
+  /**
+  * Start a transmission of Sidelink data frame in DL and UL
+  *
+  *
+  * \param pb The burst of packets to be transmitted in PSDCH
+  * \param ctrlMsgList The list of LteControlMessage to send
+  * \param duration The duration of the data frame
+  *
+  * \return true if an error occurred and the transmission was not
+  * started, false otherwise.
+  */
+  bool StartTxSlMibFrame (Ptr<PacketBurst> pb, std::list<Ptr<LteControlMessage> > ctrlMsgList, Time duration);
+
+
   /**
   * Start a transmission of control frame in DL
   *
@@ -449,8 +456,8 @@ public:
   * started, false otherwise.
   */
   bool StartTxDlCtrlFrame (std::list<Ptr<LteControlMessage> > ctrlMsgList, bool pss);
-  
-  
+
+
   /**
   * Start a transmission of control frame in UL
   *
@@ -474,7 +481,7 @@ public:
    * \param c The callback
    */
   void SetLtePhyRxDataEndOkCallback (LtePhyRxDataEndOkCallback c);
-  
+
   /**
    * set the callback for the successful end of a PSCCH RX, as part of the
    * interconnections between the PHY and the MAC
@@ -497,18 +504,18 @@ public:
    *
    * \param c The callback
    */
-  void SetLtePhyRxPsbchEndOkCallback (LtePhyRxDataEndOkCallback c);
+  void SetLtePhyRxPsbchEndOkCallback (LtePhyRxPsbchEndOkCallback c);
 
   /**
-  * set the callback for the successful end of a RX ctrl frame, as part 
+  * set the callback for the successful end of a RX ctrl frame, as part
   * of the interconnections between the LteSpectrumPhy and the PHY
   *
   * \param c The callback
   */
   void SetLtePhyRxCtrlEndOkCallback (LtePhyRxCtrlEndOkCallback c);
-  
+
   /**
-  * set the callback for the erroneous end of a RX ctrl frame, as part 
+  * set the callback for the erroneous end of a RX ctrl frame, as part
   * of the interconnections between the LteSpectrumPhy and the PHY
   *
   * \param c The callback
@@ -524,7 +531,7 @@ public:
   void SetLtePhyRxPssCallback (LtePhyRxPssCallback c);
 
   /**
-  * set the callback for the DL HARQ feedback as part of the 
+  * set the callback for the DL HARQ feedback as part of the
   * interconnections between the LteSpectrumPhy and the PHY
   *
   * \param c The callback
@@ -545,7 +552,7 @@ public:
    */
   void SetState (State newState);
 
-  /** 
+  /**
    * \brief Set the Cell Identifier
    * \param cellId The Cell Identifier
    */
@@ -578,7 +585,7 @@ public:
    *          processing chain
    */
   void AddRsPowerChunkProcessor (Ptr<LteChunkProcessor> p);
-  
+
   /**
    *
    *
@@ -587,7 +594,7 @@ public:
    */
   void AddDataPowerChunkProcessor (Ptr<LteChunkProcessor> p);
 
-  /** 
+  /**
    *
    *
    * \param p The new LteChunkProcessor to be added to the data processing chain
@@ -609,21 +616,21 @@ public:
    * \param p The new LteChunkProcessor to be added to the data processing chain
    */
   void AddInterferenceDataChunkProcessor (Ptr<LteChunkProcessor> p);
-  
-  
-  /** 
+
+
+  /**
    *
    *
    * \param p The new LteChunkProcessor to be added to the ctrl processing chain
    */
   void AddCtrlSinrChunkProcessor (Ptr<LteChunkProcessor> p);
-  
-  /** 
+
+  /**
    *
    *
    * \param p The new LteSlChunkProcessor to be added to the Sidelink processing chain
    */
-   void AddSlSinrChunkProcessor (Ptr<LteSlChunkProcessor> p);
+  void AddSlSinrChunkProcessor (Ptr<LteSlChunkProcessor> p);
 
   /**
    *
@@ -640,8 +647,8 @@ public:
   void AddSlInterferenceChunkProcessor (Ptr<LteSlChunkProcessor> p);
 
   /**
-  * 
-  * 
+  *
+  *
   * \param rnti the RNTI of the source of the TB
   * \param ndi new data indicator flag
   * \param size the size of the TB
@@ -665,41 +672,41 @@ public:
    * \param map The map of RB(s) used
    * \param rv The redundancy version
    */
-   void AddExpectedTb (uint16_t  rnti, uint8_t l1dst, uint8_t ndi, uint16_t size, uint8_t mcs, std::vector<int> map, uint8_t rv);
+  void AddExpectedTb (uint16_t  rnti, uint8_t l1dst, uint8_t ndi, uint16_t size, uint8_t mcs, std::vector<int> map, uint8_t rv);
 
-   /**
-    * For Sidelink Discovery
-    * no mcs, size fixed to 232, no l1dst
-    *
-    * \param rnti The RNTI of the source of the TB
-    * \param resPsdch The PSDCH resource identifier
-    * \param ndi The new data indicator flag
-    * \param map map of RBs used
-    * \param rv The redundancy version
-    */
-   void AddExpectedTb (uint16_t  rnti, uint8_t resPsdch, uint8_t ndi, std::vector<int> map, uint8_t rv);
+  /**
+   * For Sidelink Discovery
+   * no mcs, size fixed to 232, no l1dst
+   *
+   * \param rnti The RNTI of the source of the TB
+   * \param resPsdch The PSDCH resource identifier
+   * \param ndi The new data indicator flag
+   * \param map map of RBs used
+   * \param rv The redundancy version
+   */
+  void AddExpectedTb (uint16_t  rnti, uint8_t resPsdch, uint8_t ndi, std::vector<int> map, uint8_t rv);
 
 
-  /** 
+  /**
    *
    *
    * \param sinr vector of SINR perceived per each RB
    */
   void UpdateSinrPerceived (const SpectrumValue& sinr);
-  
-  /** 
+
+  /**
    *
    *
    * \param sinr vector of SINR perceived per each RB per Sidelink packet
    */
-   void UpdateSlSinrPerceived (std::vector <SpectrumValue> sinr);
+  void UpdateSlSinrPerceived (std::vector <SpectrumValue> sinr);
 
   /**
    *
    *
    * \param signal vector of signal perceived per each RB per Sidelink packet
    */
-   void UpdateSlSigPerceived (std::vector <SpectrumValue> signal);
+  void UpdateSlSigPerceived (std::vector <SpectrumValue> signal);
 
   /**
    *
@@ -714,10 +721,10 @@ public:
    * \param txMode UE transmission mode (SISO, MIMO tx diversity, ...)
    */
   void SetTransmissionMode (uint8_t txMode);
-  
 
-  /** 
-   * 
+
+  /**
+   *
    * \return The previously set channel
    */
   Ptr<SpectrumChannel> GetChannel ();
@@ -738,15 +745,15 @@ public:
 
   /// allow LteUePhy class friend access
   friend class LteUePhy;
-  
- /**
-  * Assign a fixed random variable stream number to the random variables
-  * used by this model.  Return the number of streams (possibly zero) that
-  * have been assigned.
-  *
-  * \param stream The first stream index to use
-  * \return The number of stream indices assigned by this model
-  */
+
+  /**
+   * Assign a fixed random variable stream number to the random variables
+   * used by this model.  Return the number of streams (possibly zero) that
+   * have been assigned.
+   *
+   * \param stream The first stream index to use
+   * \return The number of stream indices assigned by this model
+   */
   int64_t AssignStreams (int64_t stream);
 
   /**
@@ -776,18 +783,16 @@ public:
   *
   * \param [in] TB The transport block index
   */
-  typedef void (* DropSlTbTracedCallback)
-       (uint64_t);
+  typedef void (* DropSlTbTracedCallback)(uint64_t);
   /**
   * TracedCallback signature for Sidelink start Rx.
   *
   * \param [in] pointer The pointer to LteSpectrumPhy
   */
-  typedef void (* SlStartRxTracedCallback)
-       (Ptr<LteSpectrumPhy>);
+  typedef void (* SlStartRxTracedCallback)(Ptr<LteSpectrumPhy>);
 
 private:
-  /** 
+  /**
    * \brief Change state function
    *
    * \param newState The new state to set
@@ -807,15 +812,15 @@ private:
   void EndRxUlSrs ();
   /// End receive Sidelink Data function
   void EndRxSlFrame ();
- 
-  /** 
+
+  /**
    * \brief Set transmit mode gain function
    *
    * \param txMode The transmit mode
    * \param gain The gain to set
    */
   void SetTxModeGain (uint8_t txMode, double gain);
-  
+
   /**
    * \brief Set Sidelink transmit mode gain function
    * Average gain for SIMO based on [CatreuxMIMO]
@@ -838,19 +843,19 @@ private:
    * \param pktIndexes Indexes of PSCCH messages received
    */
   void RxSlPscch (std::vector<uint32_t> pktIndexes);
-  
+
   /**
    * \brief Process received PSSCH messages function
    * \param pktIndexes Indexes of PSSCH messages received
    */
   void RxSlPssch (std::vector<uint32_t> pktIndexes);
-  
+
   /**
    * \brief Process received PSDCH messages function
    * \param pktIndexes Indexes of PSDCH messages received
    */
   void RxSlPsdch (std::vector<uint32_t> pktIndexes);
-  
+
   /**
    * \brief Process received PSBCH messages function
    * \param pktIndexes Indexes of PSBCH messages received
@@ -867,11 +872,11 @@ private:
   Ptr<SpectrumValue> m_txPsd; ///< the transmit PSD
   Ptr<PacketBurst> m_txPacketBurst; ///< the transmit packet burst
   std::list<Ptr<PacketBurst> > m_rxPacketBurstList; ///< the receive burst list
-  
+
   std::list<Ptr<LteControlMessage> > m_txControlMessageList; ///< the transmit control message list
   std::list<Ptr<LteControlMessage> > m_rxControlMessageList; ///< the receive control message list
-  
-  
+
+
   State m_state; ///< the state
   Time m_firstRxStart; ///< the first receive start
   Time m_firstRxDuration; ///< the first receive duration
@@ -882,12 +887,12 @@ private:
   TracedCallback<Ptr<const Packet> >      m_phyRxEndOkTrace; ///< the phy receive end ok trace callback
   TracedCallback<Ptr<const Packet> >      m_phyRxEndErrorTrace; ///< the phy receive end error trace callback
 
-  LtePhyRxDataEndErrorCallback   m_ltePhyRxDataEndErrorCallback; ///< the LTE phy receive data end error callback 
+  LtePhyRxDataEndErrorCallback   m_ltePhyRxDataEndErrorCallback; ///< the LTE phy receive data end error callback
   LtePhyRxDataEndOkCallback      m_ltePhyRxDataEndOkCallback; ///< the LTE phy receive data end ok callback
   LtePhyRxDataEndOkCallback      m_ltePhyRxPscchEndOkCallback; ///< the LTE phy receive PSCCH end ok callback
   LtePhyRxDataEndOkCallback      m_ltePhyRxPsdchEndOkCallback; ///< the LTE phy receive PSDCH end ok callback
-  LtePhyRxDataEndOkCallback      m_ltePhyRxPsbchEndOkCallback; ///< the LTE phy receive PSBCH end ok callback
-  
+  LtePhyRxPsbchEndOkCallback      m_ltePhyRxPsbchEndOkCallback; ///< the LTE phy receive PSBCH end ok callback
+
   LtePhyRxCtrlEndOkCallback     m_ltePhyRxCtrlEndOkCallback; ///< the LTE phy receive control end ok callback
   LtePhyRxCtrlEndErrorCallback  m_ltePhyRxCtrlEndErrorCallback; ///< the LTE phy receive control end error callback
   LtePhyRxPssCallback  m_ltePhyRxPssCallback; ///< the LTE phy receive PSS callback
@@ -896,7 +901,7 @@ private:
   Ptr<LteInterference> m_interferenceCtrl; ///< the control interference
 
   uint16_t m_cellId; ///< the cell ID
-  
+
   uint8_t m_componentCarrierId; ///< the component carrier ID
   expectedTbs_t m_expectedTbs; ///< the expected TBS
   expectedDiscTbs_t m_expectedDiscTbs; ///< the expected Sidelink Discovery TBS
@@ -915,7 +920,7 @@ private:
   Ptr<UniformRandomVariable> m_random; ///< Uniform random variable used to toss for the reception of the TB
   bool m_dataErrorModelEnabled; ///< when true (default) the phy error model is enabled
   bool m_ctrlErrorModelEnabled; ///< when true (default) the phy error model is enabled for DL ctrl frame
-  
+
   bool m_ctrlFullDuplexEnabled; ///< when true the PSCCH operates in Full Duplex mode (disabled by default).
 
   bool m_dropRbOnCollisionEnabled; ///< when true, drop all receptions on colliding RBs regardless SINR value.
@@ -953,7 +958,7 @@ private:
    */
   TracedCallback<PhyReceptionStatParameters> m_dlPhyReception;
 
-  
+
   /**
    * Trace information regarding PHY stats from UL Rx perspective
    * PhyReceptionStatParameters (see lte-common.h)
@@ -975,13 +980,13 @@ private:
   /**
    * The `SlStartRx` trace source. Trace fired when reception at Sidelink starts.
    */
-  TracedCallback<Ptr<LteSpectrumPhy>> m_slStartRx;
+  TracedCallback<Ptr<LteSpectrumPhy> > m_slStartRx;
 
   EventId m_endTxEvent; ///< end transmit event
   EventId m_endRxDataEvent; ///< end receive data event
   EventId m_endRxDlCtrlEvent; ///< end receive DL control event
   EventId m_endRxUlSrsEvent; ///< end receive UL SRS event
-  
+
 
 };
 
