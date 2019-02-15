@@ -4389,13 +4389,14 @@ LteUeRrc::SendSlss ()
           mibslHeader.SetMessage (mibSl);
           Ptr<Packet> p = Create<Packet>();
           p->AddHeader (mibslHeader);
-
+          
           LteMacSapProvider::TransmitPduParameters params;
           params.rnti = m_rnti;
-          params.srcL2Id = 0; //not used for discovery messages
-          params.dstL2Id = 0; //not used for discovery messages
-          params.lcid = 0; //not used  for discovery messages
-          params.harqProcessId = 0; //not used for discovery messages
+          params.srcL2Id = 0; //not used for MIB-SL messages
+          params.dstL2Id = 0; //not used for MIB-SL messages
+          params.lcid = 0; //not used for MIB-SL messages
+          params.harqProcessId = 0; //not used for MIB-SL messages
+          params.layer = 0; //not used for MIB-SL messages
           params.discMsg = false;
           params.sibslMsg = true;
           params.componentCarrierId = 0;
@@ -4404,8 +4405,6 @@ LteUeRrc::SendSlss ()
           m_SendSlssTrace (m_imsi,slssid,m_txSlSyncOffsetIndicator,mibSl.inCoverage,mibSl.directFrameNo,mibSl.directSubframeNo);
 
           m_macSapProvider->TransmitPdu (params);
-
-
 
         }
 
@@ -4424,19 +4423,6 @@ LteUeRrc::SendSlss ()
 
       m_slssTxEvent = Simulator::Schedule (MilliSeconds (nextSLSS), &LteUeRrc::SendSlss, this);
       NS_LOG_LOGIC (this << " UE IMSI " << m_imsi << " scheduled a SLSS to be sent in " << nextSLSS << " ms");
-      /*
-      //Schedule the sent of the SLSS if it wasn't scheduled already
-      if (m_slssTxTime.GetMilliSeconds() == Simulator::Now ().GetMilliSeconds ())
-        {
-          Simulator::Schedule (MilliSeconds(nextSLSS), &LteUeRrc::SendSlss, this);
-          m_slssTxTime = MilliSeconds(Simulator::Now().GetMilliSeconds()+nextSLSS);
-          NS_LOG_LOGIC (this << " UE IMSI "<<m_imsi <<" scheduled a SLSS to be sent in "<<nextSLSS<<" ms");
-        }
-      else
-        {
-          NS_LOG_LOGIC (this << " UE IMSI "<<m_imsi <<" Duplicated SLSS scheduling, ignoring");
-        }
-      */
     }
 }
 

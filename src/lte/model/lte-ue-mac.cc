@@ -1101,6 +1101,35 @@ LteUeMac::DoReceiveSlSciPhyPdu (Ptr<Packet> p)
 {
   NS_LOG_FUNCTION (this);
 
+  LteSlSciHeader sciHeader;
+  p->PeekHeader (sciHeader);
+  LteSlSciTag tag;
+  p->PeekPacketTag (tag);
+  
+  //Keep track of the subframes in which PSSCH receptions can occur so we don't
+  //transmit discovery during that time
+  std::list <uint32_t>::iterator it;
+  for (it = m_sidelinkDestinations.begin (); it != m_sidelinkDestinations.end (); it++)
+    {
+      if (sciHeader.GetGroupDstId () == ((*it) & 0xFF))
+      {
+          NS_LOG_INFO ("received SCI for group " << (uint32_t)((*it) & 0xFF) << " from rnti " << tag.GetRnti ());
+          
+          std::list <Ptr<SidelinkRxCommResourcePool> >::iterator poolIt = m_sidelinkRxPools.begin ();
+          
+          SidelinkCommResourcePool::SubframeInfo tmp = (*poolIt)->GetCurrentScPeriod (m_frameNo, m_subframeNo);
+          std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo> psschTx = (*poolIt)->GetPsschTransmissions (tmp, sciHeader.GetTrp(), sciHeader.GetRbStart(), sciHeader.GetRbLen());
+          std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo>::iterator rxIt;
+          for (rxIt = psschTx.begin (); rxIt != psschTx.end (); rxIt++)
+            {
+              //adjust for index starting at 1
+              rxIt->subframe.frameNo++;
+              rxIt->subframe.subframeNo++;
+              NS_LOG_INFO ("Subframe Rx" << rxIt->subframe.frameNo << "/" << rxIt->subframe.subframeNo);
+              m_psschRxSet.insert(rxIt->subframe);
+            }
+      }
+    }
 }
 
 void

@@ -470,7 +470,8 @@ private:
   std::map <uint32_t, PoolInfo > m_sidelinkTxPoolsMap; ///< Map of Sidelink Tx pools with destination L2 ID as its key
   std::list <Ptr<SidelinkRxCommResourcePool> > m_sidelinkRxPools; ///< List of Sidelink communication reception pools
   std::list <uint32_t> m_sidelinkDestinations; ///< List of Sidelink communication destinations
-
+  std::set <SidelinkCommResourcePool::SubframeInfo> m_psschRxSet; ///< List of reception opportunities on PSSCH
+  
   Ptr<LteAmc> m_amc; ///< Pointer to LteAmc class; needed now since UE is doing scheduling
   Ptr<UniformRandomVariable> m_ueSelectedUniformVariable;  ///<  A uniform random variable used to choose random resources, RB start
                                                            ///<  and iTrp values in UE selected mode

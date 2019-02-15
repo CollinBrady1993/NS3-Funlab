@@ -1452,8 +1452,6 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   NS_LOG_LOGIC ("The UE was waiting for next SC period and it just started");
                   m_waitingNextScPeriod = false;
                 }
-              //clear any previous grant
-              m_slTxPoolInfo.m_currentGrants.clear ();
             }
         }
 
@@ -2131,8 +2129,6 @@ LteUePhy::DoRemoveSlCommTxPool ()
   NS_LOG_FUNCTION (this);
   NS_LOG_DEBUG ("Removing Sidelink Communication Tx pool");
   m_slTxPoolInfo.m_pool = NULL;
-  m_slTxPoolInfo.m_npscch = 0;
-  m_slTxPoolInfo.m_currentGrants.clear ();
 }
 
 void
@@ -2219,8 +2215,6 @@ LteUePhy::DoSetSlCommTxPool (Ptr<SidelinkTxCommResourcePool> pool)
 {
   NS_LOG_FUNCTION (this << pool );
   m_slTxPoolInfo.m_pool = pool;
-  m_slTxPoolInfo.m_npscch = pool->GetNPscch ();
-  m_slTxPoolInfo.m_currentGrants.clear ();
   m_slTxPoolInfo.m_nextScPeriod.frameNo = 0; //init to 0 to make it invalid
   m_slTxPoolInfo.m_nextScPeriod.subframeNo = 0; //init to 0 to make it invalid
 }
@@ -2246,7 +2240,6 @@ LteUePhy::DoSetSlCommRxPools (std::list<Ptr<SidelinkRxCommResourcePool> > pools)
         {
           PoolInfo newpool;
           newpool.m_pool = *poolIt;
-          newpool.m_npscch = (*poolIt)->GetNPscch ();
           newpool.m_currentGrants.clear ();
           m_sidelinkRxPools.push_back (newpool);
         }
@@ -2768,8 +2761,6 @@ LteUePhy::ChangeOfTiming (uint32_t frameNo, uint32_t subframeNo)
           NS_LOG_INFO ("UE RNTI " << m_rnti << " Next Sidelink communication Tx period at frame/subframe: "
                                   << m_slTxPoolInfo.m_nextScPeriod.frameNo << "/"
                                   << m_slTxPoolInfo.m_nextScPeriod.subframeNo);
-          //clear any previous grant
-          m_slTxPoolInfo.m_currentGrants.clear ();
 
           //Don't try to send Sidelink communication until the start of the next period
           m_waitingNextScPeriod = true;

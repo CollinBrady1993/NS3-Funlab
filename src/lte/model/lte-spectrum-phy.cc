@@ -2013,19 +2013,6 @@ LteSpectrumPhy::RxSlPscch (std::vector<uint32_t> pktIndexes)
               errorRate = LteNistErrorModel::GetPscchBler (m_fadingModel,LteNistErrorModel::SISO, GetMeanSinr (m_slSinrPerceived[pktIndex] * m_slRxGain,m_rxPacketInfo.at (pktIndex).rbBitmap)).tbler;
               corrupt = m_random->GetValue () > errorRate ? false : true;
               NS_LOG_DEBUG (this << " PSCCH Decoding, errorRate " << errorRate << " error " << corrupt);
-              /*
-              else if (m_rxPacketInfo[i].m_rxControlMessage->GetMessageType () == LteControlMessage::MIB_SL)
-                {
-                  //Average gain for SIMO based on [CatreuxMIMO] --> m_slSinrPerceived[i] * 2.51189
-                  errorRate = LteNistErrorModel::GetPsbchBler (m_fadingModel,LteNistErrorModel::SISO, GetMeanSinr (m_slSinrPerceived[i] * m_slRxGain, m_rxPacketInfo[i].rbBitmap)).tbler;
-                  corrupt = m_random->GetValue () > errorRate ? false : true;
-                  NS_LOG_DEBUG (this << " PSBCH Decoding, errorRate " << errorRate << " error " << corrupt);
-                }
-              else
-                {
-                  NS_LOG_DEBUG (this << " Unknown SL control message ");
-                }
-              */
             }
         }
       else
@@ -2606,7 +2593,6 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
       prsparams.m_layer =  0;
       prsparams.m_mcs = 0;     //for discovery, we use a fixed modulation (no mcs defined), use 0 to identify discovery
       prsparams.m_size = 232;     // discovery message has a static size
-      prsparams.m_rv = (*itTbDisc).second.rv;
       prsparams.m_ndi = (*itTbDisc).second.ndi;
       prsparams.m_correctness = (uint8_t) !(*itTbDisc).second.corrupt;
       prsparams.m_sinrPerRb = GetMeanSinr (m_slSinrPerceived[(*itSinrDisc).second] * m_slRxGain, (*itTbDisc).second.rbBitmap);
@@ -2780,30 +2766,21 @@ LteSpectrumPhy::RxSlPsbch (std::vector<uint32_t> pktIndexes)
           rbDecodedBitmap.insert ( m_rxPacketInfo.at (pktIndex).rbBitmap.begin (), m_rxPacketInfo.at (pktIndex).rbBitmap.end ());
         }
 
-      // Add PSCCH trace.
-      /*
-      Ptr<Packet> pkt = m_rxPacketInfo[pktIndex].params->packetBurst->GetPackets ().front ();
-      LteSlSciHeader sciHeader;
-      pkt->PeekHeader (sciHeader);
-      LteSlSciTag tag;
-      pkt->PeekPacketTag (tag);
-      SlPhyReceptionStatParameters params;
-      params.m_timestamp = Simulator::Now ().GetMilliSeconds ();
-      params.m_cellId = m_cellId;
-      params.m_imsi = 0;       // it will be set by DlPhyTransmissionCallback in LteHelper
-      params.m_rnti = tag.GetRnti ();
-      params.m_mcs = sciHeader.GetMcs ();
-      params.m_size = pkt->GetSize ();
-      params.m_rbStart = sciHeader.GetRbStart ();
-      params.m_rbLen = sciHeader.GetRbLen ();
-      params.m_resPscch = tag.GetResNo ();
-      params.m_groupDstId = sciHeader.GetGroupDstId ();
-      params.m_iTrp = sciHeader.GetTrp ();
-      params.m_hopping = sciHeader.GetHoppingInfo ();
-      params.m_correctness = (uint8_t) !corrupt;
-      // Call trace
-      m_slPscchReception (params);
-      */
+      // Add PSBCH trace
+      PhyReceptionStatParameters prsparams;
+      prsparams.m_timestamp = Simulator::Now ().GetMilliSeconds ();
+      prsparams.m_cellId = m_cellId;
+      prsparams.m_imsi = 0;     // it will be set by DlPhyTransmissionCallback in LteHelper
+      prsparams.m_rnti = 0;
+      prsparams.m_txMode = m_transmissionMode;
+      prsparams.m_layer = 0;
+      prsparams.m_mcs = 0;     //for PSBCH, we use a fixed modulation (no mcs defined), use 0 to identify discovery
+      prsparams.m_size = m_rxPacketInfo.at (pktIndex).params->packetBurst->GetSize();     
+      prsparams.m_rv = 0;
+      prsparams.m_ndi = 1;
+      prsparams.m_correctness = !corrupt;
+      prsparams.m_sinrPerRb = GetMeanSinr (m_slSinrPerceived[pktIndex] * m_slRxGain, m_rxPacketInfo.at (pktIndex).rbBitmap);
+      m_slPhyReception (prsparams);
     }
 
   if (pktIndexes.size () > 0)
