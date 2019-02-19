@@ -607,7 +607,7 @@ private:
 
   /**
   * Gets the transmission parameters for the given packet burst
-  * \param pkt The sidelink packet
+  * \param pb The sidelink packet burst
    * \returns the transmission parameters for the given packet burst
   */
   std::list <LteUePhySapProvider::TransmitSlPhySduParameters> GetSlPhyParameters (Ptr<PacketBurst> pb);
@@ -1050,18 +1050,12 @@ private:
    * \param slssid The Sidelink synchronization id
    */
   void DoSetSlssId (uint64_t slssid);
-  /**
-   * Do Send Sidelink synchronization signal function
-   * The RRC instructs the PHY to send a MIB-SL in the PSBCH
-   *
-   * \param mibSl The Sidelink Master Information Block
-   */
-  //void DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl);
+
   /**
    * Do synchronize to the SyncRef function
    * The RRC instructs the PHY to synchronize to a given SyncRef and apply the corresponding change of timing
    *
-   * \param synchParama The synchronization parameters
+   * \param synchParams The synchronization parameters
    */
   void DoSynchronizeToSyncRef (LteSlSyncParams synchParams);
 

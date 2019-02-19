@@ -506,7 +506,7 @@ private:
    * This function is called by UE MAC to notify UE RRC about the reception of
    * sidelink discovery message
    *
-   * \param msg sidelink discovery message
+   * \param p sidelink discovery packet
    */
   void DoNotifyDiscoveryReception (Ptr<Packet> p);
   // CMAC SAP methods related to Sidelink synchronization
@@ -617,7 +617,7 @@ private:
   /**
    * Report sidelink synchronization signal measurements function
    *
-   * \param params LteUeCphySapUser::UeSlssMeasurementsParameters
+   * \param params The sidelink measurements
    * \param slssId The sidelink synchronization signal identifier
    * \param offset The sidelik synchronization signal offset
    *
@@ -627,7 +627,7 @@ private:
   /**
    * Report change of SyncRef function
    *
-   * \param param Synchronization information
+   * \param params Synchronization information
    *
    * Notify the successful change of timing/SyncRef, and store the selected/current SyncRef information
    */
