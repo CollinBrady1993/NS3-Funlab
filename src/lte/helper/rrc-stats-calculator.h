@@ -72,8 +72,40 @@ public:
 
   /** 
    * Trace sink for the ns3::LteUeRrc::DiscoveryMonitoring trace source
+   *
+   * \param rrcStats
+   * \param path
+   * \param imsi
+   * \param cellId
+   * \param rnti
+   * \param discMsg
    */
   static void DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, LteSlDiscHeader discMsg);
+
+  /**
+   * Notifies the stats calculator that a RRC has received a Sidelink discovery message.
+   * \param imsi The IMSI of the UE
+   * \param cellId The cell id
+   * \param rnti The RNTI of the UE
+   * \param discMsg The LteSlDiscHeader storing the Sidelink discovery header information
+   */
+  void RrcDiscoveryMonitoring (uint64_t imsi, uint16_t cellId, uint16_t rnti, LteSlDiscHeader discMsg);
+
+  /**
+   * Set the name of the file where the Sidelink RRC discovery
+   * monitoring statistics will be stored.
+   *
+   * \param outputFilename string with the name of the file
+   */
+  void SetSlDiscRrcOutputFilename (std::string outputFilename);
+
+  /**
+   * Get the name of the file where the Sidelink RRC discovery
+   * monitoring statistics will be stored.
+   *
+   * \return the outputFilename string with the name of the file
+   */
+  std::string GetSlDiscRrcOutputFilename ();
 
 private:
   /**

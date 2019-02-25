@@ -53,12 +53,12 @@ class LteSlDiscHeader : public Header
 public:
   enum DiscoveryMsgType : uint8_t
   {
-    DISC_OPEN_ANNOUNCEMENT = 0x41, /* Open discovery announce model A */
-    DISC_RESTRICTED_ANNOUNCEMENT = 0x81, /* Restricted discovery announce model A */
-    DISC_RESTRICTED_RESPONSE = 0x82, /* Restricted discovery response model B */
-    DISC_RELAY_ANNOUNCEMENT = 0x91, /* Relay Discovery Announcement in model A */
-    DISC_RELAY_SOLICITATION = 0x96, /* Relay Discovery Announcement in model A */
-    DISC_RELAY_RESPONSE = 0x92, /* UE-to-Network Relay Discovery Response in model B */
+    DISC_OPEN_ANNOUNCEMENT = 65, /* Open discovery announce model A */
+    DISC_RESTRICTED_ANNOUNCEMENT = 129, /* Restricted discovery announce model A */
+    DISC_RESTRICTED_RESPONSE = 130, /* Restricted discovery response model B */
+    DISC_RELAY_ANNOUNCEMENT = 145, /* Relay Discovery Announcement in model A */
+    DISC_RELAY_SOLICITATION = 150, /* Relay Discovery Announcement in model B */
+    DISC_RELAY_RESPONSE = 146, /* UE-to-Network Relay Discovery Response in model B */
   };
 
   /**
@@ -71,8 +71,12 @@ public:
 
   void SetMic (uint32_t mic);
   void SetUtcBaseCounder (uint8_t counter);
+  uint8_t BuildDiscoveryMsgType ();
 
-  uint8_t GetMessageType () const;
+  uint8_t GetDiscoveryMsgType () const;
+  uint8_t GetDiscoveryType () const;
+  uint8_t GetDiscoveryContentType () const;
+  uint8_t GetDiscoveryModel () const;
   uint32_t GetMic () const;
   uint8_t GetUtcBaseCounter () const;
 
@@ -105,7 +109,10 @@ private:
   /* Message Type variable shall have the following values:
      65 for ProSe Open Discovery announce for Model A.
      145 for ProSe Restricted UE-to-Network Relay Discovery announce for Model A. */
-  uint8_t m_msgType;
+  uint8_t m_discoveryMsgType;
+  uint8_t m_discoveryType;
+  uint8_t m_discoveryContentType;
+  uint8_t m_discoveryModel;
 
   uint64_t m_appCode;
   uint32_t m_relayServiceCode;
@@ -147,7 +154,6 @@ public:
   uint8_t GetHoppingInfo () const;
   uint8_t GetTrp () const;
   uint8_t GetMcs () const;
-  //uint8_t GetTiming () const;
   uint8_t GetGroupDstId () const;
   
   static TypeId GetTypeId (void);
@@ -158,14 +164,12 @@ public:
   virtual uint32_t Deserialize (Buffer::Iterator start);
 
 private:
-  //uint16_t  m_rnti; ///< RNTI
   bool   m_hopping; ///< hopping flag
   uint8_t   m_rbStart; ///< models rb assignment
   uint8_t   m_rbLen;   ///< models rb assignment
   uint8_t   m_hoppingInfo; ///< models rb assignment when hopping is enabled
   uint8_t   m_trp; ///< Time resourse pattern (TRP)
   uint8_t   m_mcs; ///< MCS
-  //uint16_t  m_timing; ///< Timing advance indication
   uint8_t   m_groupDstId; ///< Group destination ID
 };
 

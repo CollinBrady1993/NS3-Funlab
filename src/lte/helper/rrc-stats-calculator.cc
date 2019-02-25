@@ -60,34 +60,53 @@ RrcStatsCalculator::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::RrcStatsCalculator")
     .SetParent<LteStatsCalculator> ()
+    .SetGroupName("LTE")
     .AddConstructor<RrcStatsCalculator> ()
+    .AddAttribute ("SlDiscRxRrcOutputFilename",
+                   "Name of the file where the where the Sidelink RRC discovery "
+                   "monitoring statistics will be saved.",
+                   StringValue ("SlDiscRxRrcStats.txt"),
+                   MakeStringAccessor (&RrcStatsCalculator::SetSlDiscRrcOutputFilename),
+                   MakeStringChecker ())
   ;
   return tid;
 }
 
 void
-RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, LteSlDiscHeader discMsg)
+RrcStatsCalculator::SetSlDiscRrcOutputFilename (std::string outputFilename)
 {
-  NS_LOG_INFO ("Writing Discovery Monitoring Stats in SlDiscRxRrcStats.txt");
+  LteStatsCalculator::SetSlOutputFilename (outputFilename);
+}
+
+std::string
+RrcStatsCalculator::GetSlDiscRrcOutputFilename (void)
+{
+  return LteStatsCalculator::GetSlOutputFilename ();
+}
+
+void
+RrcStatsCalculator::RrcDiscoveryMonitoring (uint64_t imsi, uint16_t cellId, uint16_t rnti, LteSlDiscHeader discMsg)
+{
+  NS_LOG_INFO ("Writing Discovery Monitoring Stats in "<< GetSlDiscRrcOutputFilename ().c_str ());
 
   std::ofstream outFile;
-  if ( rrcStats->m_discoveryMonitoringRrcFirstWrite == true )
+  if (m_discoveryMonitoringRrcFirstWrite == true )
     {
-      outFile.open ("SlDiscRxRrcStats.txt");
+      outFile.open (GetSlDiscRrcOutputFilename ().c_str ());
       if (!outFile.is_open ())
         {
-          NS_LOG_ERROR ("Can't open file SlDiscRxRrcStats.txt");
+          NS_LOG_ERROR ("Can't open file " << GetSlDiscRrcOutputFilename ().c_str ());
           return;
         }
-      rrcStats->m_discoveryMonitoringRrcFirstWrite = false;
+      m_discoveryMonitoringRrcFirstWrite = false;
       outFile << "Time\tIMSI\tCellId\tRNTI\tDiscType\tContentType\tDiscModel\tContent" << std::endl;
     }
   else
     {
-      outFile.open ("SlDiscRxRrcStats.txt",  std::ios_base::app);
+      outFile.open (GetSlDiscRrcOutputFilename ().c_str (),  std::ios_base::app);
       if (!outFile.is_open ())
         {
-          NS_LOG_ERROR ("Can't open file SlDiscRxRrcStats.txt");
+          NS_LOG_ERROR ("Can't open file " << GetSlDiscRrcOutputFilename ().c_str ());
           return;
         }
     }
@@ -95,8 +114,10 @@ RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator>
 
   outFile << Simulator::Now ().GetSeconds () << "\t" << imsi << "\t" << cellId << "\t" << rnti << "\t";
 
-  uint8_t msgType = discMsg.GetMessageType();
-  outFile << (uint16_t) (msgType >> 6) << "\t" << (uint16_t) ((msgType >> 2) & 0xF) << "\t" << (uint16_t) (msgType & 0x3) << "\t";
+  uint8_t msgType = discMsg.GetDiscoveryMsgType ();
+
+  outFile << (uint16_t) discMsg.GetDiscoveryType ()  << "\t" << (uint16_t) discMsg.GetDiscoveryContentType ()
+                                                             << "\t" << (uint16_t) discMsg.GetDiscoveryModel ()<< "\t";
 
   switch (msgType)
     {
@@ -114,8 +135,17 @@ RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator>
       }
       break;
     default:
-      NS_LOG_ERROR ("Invalid discovery message type " << msgType);
+      NS_FATAL_ERROR ("Invalid discovery message type " << msgType);
     }
 }
+
+void
+RrcStatsCalculator::DiscoveryMonitoringRrcTraceCallback (Ptr<RrcStatsCalculator> rrcStats, std::string path, uint64_t imsi, uint16_t cellId, uint16_t rnti, LteSlDiscHeader discMsg)
+{
+  NS_LOG_FUNCTION (rrcStats << path);
+
+  rrcStats->RrcDiscoveryMonitoring (imsi, cellId, rnti, discMsg);
+}
+
 
 } // namespace ns3

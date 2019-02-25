@@ -45,7 +45,10 @@ NS_LOG_COMPONENT_DEFINE ("LteSlHeader");
 NS_OBJECT_ENSURE_REGISTERED (LteSlDiscHeader);
 
 LteSlDiscHeader::LteSlDiscHeader ()
-  : m_msgType (0),
+: m_discoveryMsgType (0),
+  m_discoveryType (0),
+  m_discoveryContentType (0),
+  m_discoveryModel (0),
   m_appCode (0),
   m_relayServiceCode (0),
   m_info (0),
@@ -62,26 +65,38 @@ LteSlDiscHeader::LteSlDiscHeader ()
 
 LteSlDiscHeader::~LteSlDiscHeader ()
 {
-  m_msgType = 0;
+  m_discoveryMsgType = 0;
 }
 
 void
 LteSlDiscHeader::SetOpenDiscoveryAnnounceParameters (uint64_t appCode)
 {
-  m_msgType = DISC_OPEN_ANNOUNCEMENT;
+  //DISC_OPEN_ANNOUNCEMENT
+  m_discoveryType = 1;
+  m_discoveryContentType = 0;
+  m_discoveryModel = 1;
+  m_discoveryMsgType = BuildDiscoveryMsgType ();
   m_appCode = appCode;
 }
 void
 LteSlDiscHeader::SetRestrictedDiscoveryAnnounceParameters (uint64_t appCode)
 {
-  m_msgType = DISC_RESTRICTED_ANNOUNCEMENT;
+  //DISC_RESTRICTED_ANNOUNCEMENT;
+  m_discoveryType = 2;
+  m_discoveryContentType = 0;
+  m_discoveryModel = 1;
+  m_discoveryMsgType = BuildDiscoveryMsgType ();
   m_appCode = appCode;
 }
 
 void
 LteSlDiscHeader::SetRelayAnnouncementParameters (uint32_t serviceCode, uint64_t announcerInfo, uint32_t relayUeId, uint32_t status)
 {
-  m_msgType = DISC_RELAY_ANNOUNCEMENT;
+  //DISC_RELAY_ANNOUNCEMENT;
+  m_discoveryType = 2;
+  m_discoveryContentType = 4;
+  m_discoveryModel = 1;
+  m_discoveryMsgType = BuildDiscoveryMsgType ();
   m_relayServiceCode = serviceCode;
   m_info = announcerInfo;
   m_relayUeId = relayUeId;
@@ -90,7 +105,11 @@ LteSlDiscHeader::SetRelayAnnouncementParameters (uint32_t serviceCode, uint64_t 
 void
 LteSlDiscHeader::SetRelaySoliciationParameters (uint32_t serviceCode, uint64_t discovererInfo, uint32_t relayUeId)
 {
-  m_msgType = DISC_RELAY_SOLICITATION;
+  //DISC_RELAY_SOLICITATION;
+  m_discoveryType = 2;
+  m_discoveryContentType = 5;
+  m_discoveryModel = 2;
+  m_discoveryMsgType = BuildDiscoveryMsgType ();
   m_relayServiceCode = serviceCode;
   m_info = discovererInfo;
   m_relayUeId = relayUeId;
@@ -98,11 +117,27 @@ LteSlDiscHeader::SetRelaySoliciationParameters (uint32_t serviceCode, uint64_t d
 void
 LteSlDiscHeader::SetRelayResponseParameters (uint32_t serviceCode, uint64_t discovereeInfo, uint32_t relayUeId, uint32_t status)
 {
-  m_msgType = DISC_RELAY_RESPONSE;
+  //DISC_RELAY_RESPONSE;
+  m_discoveryType = 2;
+  m_discoveryContentType = 4;
+  m_discoveryModel = 2;
+  m_discoveryMsgType = BuildDiscoveryMsgType ();
   m_relayServiceCode = serviceCode;
   m_info = discovereeInfo;
   m_relayUeId = relayUeId;
   m_statusIndicator = status;
+}
+
+uint8_t
+LteSlDiscHeader::BuildDiscoveryMsgType ()
+{
+  uint8_t msgType = ((m_discoveryType & 0x03) << 6) | ((m_discoveryContentType & 0x0F) << 2) | (m_discoveryModel & 0x03);
+
+  NS_ABORT_MSG_IF (msgType != DISC_OPEN_ANNOUNCEMENT && msgType != DISC_RESTRICTED_ANNOUNCEMENT &&
+                   msgType != DISC_RESTRICTED_RESPONSE && msgType != DISC_RELAY_ANNOUNCEMENT &&
+                   msgType != DISC_RELAY_SOLICITATION && msgType != DISC_RELAY_RESPONSE,
+                   "unknown discovery message type " << (uint16_t) msgType);
+  return msgType;
 }
 
 
@@ -181,9 +216,27 @@ LteSlDiscHeader::GetUtcBaseCounter () const
 
 
 uint8_t
-LteSlDiscHeader::GetMessageType () const
+LteSlDiscHeader::GetDiscoveryMsgType () const
 {
-  return m_msgType;
+  return m_discoveryMsgType;
+}
+
+uint8_t
+LteSlDiscHeader::GetDiscoveryType () const
+{
+  return m_discoveryType;
+}
+
+uint8_t
+LteSlDiscHeader::GetDiscoveryContentType () const
+{
+  return m_discoveryContentType;
+}
+
+uint8_t
+LteSlDiscHeader::GetDiscoveryModel () const
+{
+  return m_discoveryModel;
 }
 
 
@@ -220,10 +273,11 @@ LteSlDiscHeader::Serialize (Buffer::Iterator start) const
 {
   Buffer::Iterator i = start;
 
-  i.WriteU8 (m_msgType);
+  i.WriteU8 (m_discoveryMsgType);
+
   uint8_t padding = 0;
 
-  switch (m_msgType)
+  switch (m_discoveryMsgType)
     {
     case DISC_OPEN_ANNOUNCEMENT:
     case DISC_RESTRICTED_ANNOUNCEMENT:
@@ -274,10 +328,15 @@ LteSlDiscHeader::Deserialize (Buffer::Iterator start)
 {
   Buffer::Iterator i = start;
 
-  m_msgType = i.ReadU8 ();
+  m_discoveryMsgType = i.ReadU8 ();
+
+  m_discoveryType = (m_discoveryMsgType >> 6) & 0x03;
+  m_discoveryContentType = (m_discoveryMsgType >> 2) & 0x0F;
+  m_discoveryModel = m_discoveryMsgType & 0x03;
+
   uint8_t padding[15];
   uint64_t tmp;
-  switch (m_msgType)
+  switch (m_discoveryMsgType)
     {
     case DISC_OPEN_ANNOUNCEMENT:
     case DISC_RESTRICTED_ANNOUNCEMENT:

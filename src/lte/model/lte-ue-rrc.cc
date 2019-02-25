@@ -4157,7 +4157,7 @@ void LteUeRrc::DoNotifyDiscoveryReception (Ptr<Packet> p)
   LteSlDiscHeader discHeader;
   p->RemoveHeader (discHeader);
 
-  uint8_t msgType = discHeader.GetMessageType ();
+  uint8_t msgType = discHeader.GetDiscoveryMsgType ();
   if (msgType == LteSlDiscHeader::DISC_OPEN_ANNOUNCEMENT || msgType == LteSlDiscHeader::DISC_RESTRICTED_ANNOUNCEMENT)
     { //open or restricted announcement
       if (m_sidelinkConfiguration->IsMonitoringApp (discHeader.GetApplicationCode ()))

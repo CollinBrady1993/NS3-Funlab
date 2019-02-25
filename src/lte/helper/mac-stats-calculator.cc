@@ -352,28 +352,29 @@ MacStatsCalculator::SlUeDchScheduling (SlUeMacStatParameters params, LteSlDiscHe
         }
     }
 
-	
   outFile << Simulator::Now ().GetSeconds () << "\t" << params.m_imsi << "\t" << params.m_rnti << "\t";
-  uint8_t msgType = discMsg.GetMessageType ();
-  outFile << (uint16_t) (msgType >> 6) << "\t" << (uint16_t) ((msgType >> 2) & 0xF) << "\t" << (uint16_t) (msgType & 0x3) << "\t";
+  uint8_t msgType = discMsg.GetDiscoveryMsgType ();
+  outFile << (uint16_t) discMsg.GetDiscoveryType ()  << "\t" << (uint16_t) discMsg.GetDiscoveryContentType ()
+                                                               << "\t" << (uint16_t) discMsg.GetDiscoveryModel ()<< "\t";
+
 
   switch (msgType)
-    {
-    case 0x91://UE-to-Network Relay Discovery Announcement in model A
-    case 0x92://UE-to-Network Relay Discovery Response in model B
-      {  	
-        outFile << std::hex << discMsg.GetRelayServiceCode () << ";" << std::hex << discMsg.GetInfo () << ";" << std::hex << discMsg.GetRelayUeId () << ";" << std::hex << discMsg.GetStatusIndicator () << ";" << std::hex << 0 << std::endl;
+  {
+    case LteSlDiscHeader::DISC_RELAY_ANNOUNCEMENT://UE-to-Network Relay Discovery Announcement in model A
+    case LteSlDiscHeader::DISC_RELAY_RESPONSE://UE-to-Network Relay Discovery Response in model B
+      {
+        outFile << discMsg.GetRelayServiceCode () << ";" << discMsg.GetInfo () << ";" << discMsg.GetRelayUeId () << ";" << discMsg.GetStatusIndicator () << ";" << 0 << std::endl;
       }
       break;
-    case 0x41:
-    case 0x81:
+    case LteSlDiscHeader::DISC_OPEN_ANNOUNCEMENT:
+    case LteSlDiscHeader::DISC_RESTRICTED_ANNOUNCEMENT:
       { //open or restricted announcement
-        outFile << std::hex << discMsg.GetApplicationCode () << std::endl;
+        outFile << discMsg.GetApplicationCode () << std::endl;
       }
       break;
     default:
-      NS_LOG_ERROR ("Invalid discovery message type " << (uint16_t) discMsg.GetMessageType ());
-    }
+      NS_FATAL_ERROR ("Invalid discovery message type " << (uint16_t) msgType);
+  }
 }
 
 void
