@@ -528,12 +528,12 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
           poolIt->second.m_miSlHarqProcessPacket->AddPacket (params.pdu);
 
           LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
-          phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSSCH;
-          phyParams.m_rbStart = (*allocIt).rbStart;
-          phyParams.m_rbLen = (*allocIt).nbRb;
+          phyParams.channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSSCH;
+          phyParams.rbStart = (*allocIt).rbStart;
+          phyParams.rbLen = (*allocIt).nbRb;
           uint8_t rv = poolIt->second.m_psschTx.size () % 4;
           NS_ASSERT (rv == 0); //to be removed once confirmed
-          phyParams.m_rv = rv == 0 ? rv : 4 - rv;
+          phyParams.rv = rv == 0 ? rv : 4 - rv;
 
           m_uePhySapProvider->SendSlMacPdu (params.pdu, phyParams);
           //m_uePhySapProvider->SendMacPdu (params.pdu);
@@ -1449,10 +1449,10 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
       if (m_slSynchPendingTxMsg)
        {
           LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
-          phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH;
-          phyParams.m_rbStart = 22;
-          phyParams.m_rbLen = 6;
-          phyParams.m_rv = 0;
+          phyParams.channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH;
+          phyParams.rbStart = 22;
+          phyParams.rbLen = 6;
+          phyParams.rv = 0;
           m_uePhySapProvider->SendSlMacPdu (m_slSynchPendingTxMsg, phyParams);
           //clear pending message, but should probably be done after handling discovery/communication
           //to avoid sending messages as well
@@ -1571,13 +1571,13 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
 
                   LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
-                  phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSDCH;
-                  phyParams.m_rbStart = (*allocIt).rbStart;
-                  phyParams.m_rbLen = (*allocIt).nbRb;
-                  phyParams.m_resNo = m_discTxPool.m_currentGrant.m_resPsdch;
+                  phyParams.channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSDCH;
+                  phyParams.rbStart = (*allocIt).rbStart;
+                  phyParams.rbLen = (*allocIt).nbRb;
+                  phyParams.resNo = m_discTxPool.m_currentGrant.m_resPsdch;
                   uint8_t rv = m_discTxPool.m_psdchTx.size () % (m_discTxPool.m_pool->GetNumRetx () + 1);
                   NS_ASSERT (rv == 0);   //to be removed once confirmed
-                  phyParams.m_rv = rv == 0 ? rv : m_discTxPool.m_pool->GetNumRetx () + 1 - rv;
+                  phyParams.rv = rv == 0 ? rv : m_discTxPool.m_pool->GetNumRetx () + 1 - rv;
 
                   m_uePhySapProvider->SendSlMacPdu (*discMsg, phyParams);
                 }
@@ -1855,10 +1855,10 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
               p->AddPacketTag (tag);
 
               LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
-              phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSCCH;
-              phyParams.m_rbStart = (*allocIt).rbStart;
-              phyParams.m_rbLen = (*allocIt).nbRb;
-              phyParams.m_resNo = poolIt->second.m_currentGrant.m_resPscch;
+              phyParams.channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSCCH;
+              phyParams.rbStart = (*allocIt).rbStart;
+              phyParams.rbLen = (*allocIt).nbRb;
+              phyParams.resNo = poolIt->second.m_currentGrant.m_resPscch;
 
               m_uePhySapProvider->SendSlMacPdu (p, phyParams);
 
@@ -2041,10 +2041,10 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                     {
                       Ptr<Packet> pkt = (*j)->Copy ();
                       LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
-                      phyParams.m_channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSSCH;
-                      phyParams.m_rbStart = (*allocIt).rbStart;
-                      phyParams.m_rbLen = (*allocIt).nbRb;
-                      phyParams.m_rv = (4 - poolIt->second.m_psschTx.size () % 4);
+                      phyParams.channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSSCH;
+                      phyParams.rbStart = (*allocIt).rbStart;
+                      phyParams.rbLen = (*allocIt).nbRb;
+                      phyParams.rv = (4 - poolIt->second.m_psschTx.size () % 4);
                       m_uePhySapProvider->SendSlMacPdu (pkt, phyParams);
                     }
                 }

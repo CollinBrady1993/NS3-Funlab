@@ -1654,13 +1654,13 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   NS_ASSERT_MSG (ctrlMsg.size () == 0, "Should not have control messages while sending SL packet burst");
 
                   std::vector <int> slRb;
-                  for (int i = (*paramIt).m_rbStart; i < (*paramIt).m_rbStart + (*paramIt).m_rbLen; i++)
+                  for (int i = (*paramIt).rbStart; i < (*paramIt).rbStart + (*paramIt).rbLen; i++)
                     {
                       NS_LOG_LOGIC (this << " Transmitting sidelink on RB " << i);
                       slRb.push_back (i);
                     }
 
-                  switch ((*paramIt).m_channel)
+                  switch ((*paramIt).channel)
                     {
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH:
                       NS_LOG_LOGIC (this << " UE - start TX PSBCH");
@@ -1723,7 +1723,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                       else
                         {
                           SetSubChannelsForTransmission (slRb);
-                          m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, UL_DATA_DURATION, (*paramIt).m_dstId);
+                          m_uplinkSpectrumPhy->StartTxSlDataFrame (pb, UL_DATA_DURATION, (*paramIt).dstId);
                         }
                       break;
                     case LteUePhySapProvider::TransmitSlPhySduParameters::PSDCH:
@@ -1739,7 +1739,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                       //0 added to pass by the group Id
                       //to be double checked
                       //
-                      m_uplinkSpectrumPhy->StartTxSlDiscFrame (pb, (*paramIt).m_resNo, UL_DATA_DURATION);
+                      m_uplinkSpectrumPhy->StartTxSlDiscFrame (pb, (*paramIt).resNo, UL_DATA_DURATION);
 
                       break;
                     default:

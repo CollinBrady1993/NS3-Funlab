@@ -181,7 +181,7 @@ LteSlDiscHeader::GetStatusIndicator () const
 }
 
 uint8_t
-LteSlDiscHeader::GetURDSCommposition () const
+LteSlDiscHeader::GetURDSComposition () const
 {
   if (m_relayUeId != 0)
     {

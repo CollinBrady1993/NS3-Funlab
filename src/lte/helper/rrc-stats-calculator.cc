@@ -63,7 +63,7 @@ RrcStatsCalculator::GetTypeId (void)
     .SetGroupName("LTE")
     .AddConstructor<RrcStatsCalculator> ()
     .AddAttribute ("SlDiscRxRrcOutputFilename",
-                   "Name of the file where the where the Sidelink RRC discovery "
+                   "Name of the file where the Sidelink RRC discovery "
                    "monitoring statistics will be saved.",
                    StringValue ("SlDiscRxRrcStats.txt"),
                    MakeStringAccessor (&RrcStatsCalculator::SetSlDiscRrcOutputFilename),

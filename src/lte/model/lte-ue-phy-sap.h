@@ -52,21 +52,21 @@ public:
           PSCCH,
           PSSCH,
           PSDCH
-      } m_channel;      
+      } channel;      
     //Common information
-    uint8_t   m_rbStart; ///< models rb assignment
-    uint8_t   m_rbLen;   ///< models rb assignment
+    uint8_t   rbStart; ///< models rb assignment
+    uint8_t   rbLen;   ///< models rb assignment
 
     //PSCCH, PSDCH
-    uint32_t m_resNo; ///< the resource index from the communication/discovery pool 
+    uint32_t resNo; ///< the resource index from the communication/discovery pool 
 
     //PSDH and PSSCH information
-    uint8_t   m_rv;       ///< indicates HARQ revision number
+    uint8_t   rv;       ///< indicates HARQ revision number
     
     //PSSCH information
-    uint8_t   m_hopping; ///< hopping flag
-    uint8_t   m_hoppingInfo; ///< models rb assignment when hopping is enabled
-    uint8_t   m_dstId;   ///< layer 1 destination
+    uint8_t   hopping; ///< hopping flag
+    uint8_t   hoppingInfo; ///< models rb assignment when hopping is enabled
+    uint8_t   dstId;   ///< layer 1 destination
   };
 
   /**

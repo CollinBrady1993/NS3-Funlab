@@ -69,35 +69,172 @@ public:
   LteSlDiscHeader ();
   ~LteSlDiscHeader ();
 
+  /*
+   * Set the MIC 
+   *
+   * \param mic The MIC attribute
+   */
   void SetMic (uint32_t mic);
+  
+  /*
+   * Set the UTC base counter 
+   * 
+   * \param counter the UTC base counter
+   */
   void SetUtcBaseCounder (uint8_t counter);
+  
+  /*
+   * Builds and return the discovery message type value
+   * 
+   * \return the discovery message type
+   */
   uint8_t BuildDiscoveryMsgType ();
 
+  /*
+   * Get the discovery message type
+   * 
+   * \return the discovery message type
+   */
   uint8_t GetDiscoveryMsgType () const;
+  
+  /*
+   * Get the discovery type
+   * 
+   * \return the discovery type
+   */
   uint8_t GetDiscoveryType () const;
+  
+  /*
+   * Get the discovery content type
+   * 
+   * \return the discovery content type
+   */
   uint8_t GetDiscoveryContentType () const;
+  
+  /*
+   * Get the discovery model
+   *
+   * \return the discovery model
+   */
   uint8_t GetDiscoveryModel () const;
+  
+  /*
+   * Get the MIC
+   * 
+   * \return the MIC
+   */
   uint32_t GetMic () const;
+  
+  /*
+   * Get the UTC base counter
+   * 
+   * \return the UTC base counter
+   */
   uint8_t GetUtcBaseCounter () const;
 
+  /*
+   * Get the application code
+   * 
+   * \return the application code
+   */
   uint64_t GetApplicationCode () const;
+  
+  /*
+   * Get the relay service code
+   * 
+   * \return the relay service code
+   */
   uint32_t GetRelayServiceCode () const;
+  
+  /*
+   * Get the user info
+   * 
+   * \return the user info
+   */
   uint64_t GetInfo () const;
+  
+  /*
+   * Get the relay UE ID
+   * 
+   * \return the relay UE ID
+   */
   uint32_t GetRelayUeId () const;
+  
+  /*
+   * Get the status indicator
+   * 
+   * \return the status indicator
+   */
   uint8_t GetStatusIndicator () const;
-  uint8_t GetURDSCommposition () const;
+  
+  /*
+   * Get the URDS composition
+   * 
+   * \return the URDS composition
+   */
+  uint8_t GetURDSComposition () const;
+  
+  /*
+   * Get the group
+   * 
+   * \return the group
+   */
   uint32_t GetGroup () const;
+  
+  /*
+   * Get the group info
+   * 
+   * \return the group info
+   */
   uint32_t GetGroupInfo () const;
 
-
+  /*
+   * Set the parameters for open discovery announcement
+   * 
+   * \param appCode The application code
+   */
   void SetOpenDiscoveryAnnounceParameters (uint64_t appCode);
+  
+  /*
+   * Set the parameters for the restricted discovery announcement
+   * 
+   * \param appCode The application code
+   */
   void SetRestrictedDiscoveryAnnounceParameters (uint64_t appCode);
 
+  /*
+   * Set the parameters for the UE-to-Network relay announcement
+   * 
+   * \param serviceCode the service code
+   * \param announcerInfo the announcer information
+   * \param relayUeId the layer 2 ID of the relay node
+   * \param status the status code
+   */
   void SetRelayAnnouncementParameters (uint32_t serviceCode, uint64_t announcerInfo, uint32_t relayUeId, uint32_t status);
+
+  /*
+   * Set the parameters for the UE-to-Network relay solicitation
+   * 
+   * \param serviceCode the service code
+   * \param discovererInfo the discoverer information
+   * \param relayUeId the layer 2 ID of the relay node
+   */
   void SetRelaySoliciationParameters (uint32_t serviceCode, uint64_t discovererInfo, uint32_t relayUeId);
+
+  /*
+   * Set the parameters for the UE-to-Network relay response
+   * 
+   * \param serviceCode the service code
+   * \param discovereeInfo the announcer information
+   * \param relayUeId the layer 2 ID of the relay node
+   * \param status the status code
+   */
   void SetRelayResponseParameters (uint32_t serviceCode, uint64_t discovereeInfo, uint32_t relayUeId, uint32_t status);
 
-
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
   static TypeId GetTypeId (void);
   virtual TypeId GetInstanceTypeId (void) const;
   virtual void Print (std::ostream &os) const;
