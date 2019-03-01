@@ -478,6 +478,7 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
       tag.SetRnti (params.rnti);
       params.pdu->AddPacketTag (tag);
       //queue message until next discovery period
+      NS_ABORT_MSG_IF (m_discPendingTxMsgs.size () > 0, "Currently at most one discovery message per period is supported");
       m_discPendingTxMsgs.push_back (params.pdu);
     }
   else if (params.sibslMsg)
@@ -536,7 +537,6 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
           phyParams.rv = rv == 0 ? rv : 4 - rv;
 
           m_uePhySapProvider->SendSlMacPdu (params.pdu, phyParams);
-          //m_uePhySapProvider->SendMacPdu (params.pdu);
         }
     }
 }
