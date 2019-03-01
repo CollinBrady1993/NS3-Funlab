@@ -180,7 +180,7 @@ struct LteSpectrumSignalParametersSlMibFrame;
  */
 struct SlRxPacketInfo_t
 {
-  Ptr<LteSpectrumSignalParametersSlFrame> params;
+  Ptr<LteSpectrumSignalParametersSlFrame> params; ///< Parameters of sidelink signal
   std::vector<int> rbBitmap;  ///< RB bitmap
 };
 

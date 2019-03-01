@@ -40,29 +40,29 @@ class LteUePhySapProvider
 {
 public:
   virtual ~LteUePhySapProvider ();
-  
+
   /**
    * Parameters for LteUePhySapProvider::TransmitPhySdu
    */
   struct TransmitSlPhySduParameters
   {
-    enum SidelinkChannel
-      {
-        PSBCH,
-          PSCCH,
-          PSSCH,
-          PSDCH
-      } channel;      
+    enum SidelinkChannel ///< The list of sidelink channels
+    {
+      PSBCH,
+      PSCCH,
+      PSSCH,
+      PSDCH
+    } channel;    ///< channel over which the packet needs to be transmitted
     //Common information
     uint8_t   rbStart; ///< models rb assignment
     uint8_t   rbLen;   ///< models rb assignment
 
     //PSCCH, PSDCH
-    uint32_t resNo; ///< the resource index from the communication/discovery pool 
+    uint32_t resNo; ///< the resource index from the communication/discovery pool
 
     //PSDH and PSSCH information
     uint8_t   rv;       ///< indicates HARQ revision number
-    
+
     //PSSCH information
     uint8_t   hopping; ///< hopping flag
     uint8_t   hoppingInfo; ///< models rb assignment when hopping is enabled
@@ -88,9 +88,9 @@ public:
   */
   virtual void SendLteControlMessage (Ptr<LteControlMessage> msg) = 0;
 
-  /** 
+  /**
    * Send a preamble on the PRACH
-   * 
+   *
    * \param prachId the ID of the preamble
    * \param raRnti the RA RNTI
    */
@@ -160,7 +160,7 @@ public:
    * \param frameNo The current PHY frame number
    * \param subframeNo The current PHY subframe number
    */
-   virtual void NotifyChangeOfTiming (uint32_t frameNo, uint32_t subframeNo) = 0;
+  virtual void NotifyChangeOfTiming (uint32_t frameNo, uint32_t subframeNo) = 0;
 
   /**
    * Notify the MAC that Sidelink is configured

@@ -591,7 +591,17 @@ private:
   void DoRemoveSlDestination (uint32_t destination);
 
   // UE PHY SAP methods
+  /**
+   * \brief Sends a MAC PDU
+   * \param p The packet to transmit
+   */
   virtual void DoSendMacPdu (Ptr<Packet> p);
+
+  /**
+   * \brief Sends a sidelink MAC PDU
+   * \param p The packet to transmit
+   * \param params control information for the transmission of the packet
+   */
   virtual void DoSendSlMacPdu (Ptr<Packet> p, LteUePhySapProvider::TransmitSlPhySduParameters params);
   /**
    * Send LTE control message function

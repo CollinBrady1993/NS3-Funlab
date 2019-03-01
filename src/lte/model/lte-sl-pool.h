@@ -1,7 +1,7 @@
 /* -*-  Mode: C++; c-file-style: "gnu"; indent-tabs-mode:nil; -*- */
 /*
  * NIST-developed software is provided by NIST as a public
- * service. You may use, copy and distribute copies of the software in 
+ * service. You may use, copy and distribute copies of the software in
  * any medium, provided that you keep intact this entire notice. You
  * may improve, modify and create derivative works of the software or
  * any portion of the software, and you may copy and distribute such
@@ -99,7 +99,7 @@ public:
       res.subframeNo = tmp1 % 10;
       return res;
     }
-    
+
     /**
      * Checks if two subframe locations are identical
      * \param lhs One of the subframe location
@@ -148,8 +148,7 @@ public:
    * \param [in] oldState
    * \param [in] newState
    */
-  typedef void (*ScPeriodTracedCallback)
-    (const uint32_t frameNo, const uint32_t subframeNo, const uint32_t nextScPeriod);
+  typedef void (*ScPeriodTracedCallback)(const uint32_t frameNo, const uint32_t subframeNo, const uint32_t nextScPeriod);
 
   /**
    * Checks if two Sidelink pool configurations are identical
@@ -254,10 +253,10 @@ public:
    */
   std::vector<uint8_t> GetValidRBstart (uint8_t rbLen);
 
- /**
-  * Computes all valid rbStart values for every Lcrb value from range [0,10]
-  * \return A vector of vectors which contains valid rbStart indexes for corresponding Lcrb value
-  */
+  /**
+   * Computes all valid rbStart values for every Lcrb value from range [0,10]
+   * \return A vector of vectors which contains valid rbStart indexes for corresponding Lcrb value
+   */
   std::vector< std::vector<uint8_t> > GetValidAllocations ();
 
 protected:
@@ -437,7 +436,7 @@ public:
    * \param identity The pool identity
    */
   void SetUeSelectedTxParameters (uint8_t identity);
-  
+
   /**
    * Returns the index of the resource pool
    * \return the index of the resource pool
@@ -449,19 +448,19 @@ public:
    * \return The MCS to use
    */
   uint8_t GetMcs ();
-  
+
   /**
    * Returns the pool identity
    * \return The pool identity
    */
   uint8_t GetPoolIdentity ();
-  
+
 protected:
   //Fields for UE selected pools
   LteRrcSap::SlTxParameters m_scTxParameters; ///< configuration of the control channel
   LteRrcSap::SlTxParameters m_dataTxParameters; ///< configuration of the shared channel
-  uint8_t m_poolIdentity;
-  
+  uint8_t m_poolIdentity; ///< identity of the individual pool entry configured for sidelink transmission
+
   //Fields for scheduled pools
   uint16_t m_slrnti; ///< Sidelink RNTI
   LteRrcSap::SlMacMainConfigSl m_macMainConfig; ///< MAC layer configuration
@@ -740,7 +739,7 @@ public:
    * \param identity The pool identity
    */
   void SetUeSelectedTxParameters (uint8_t identity);
- 
+
   /**
    * Returns the transmission probability
    * \return The transmission probability
@@ -758,7 +757,7 @@ public:
    * \return The pool identity
    */
   uint8_t GetPoolIdentity ();
-  
+
 protected:
   //Fields for UE selected pools
   LteRrcSap::PoolSelection m_poolSelection; ///< method for selecting the pool
@@ -766,7 +765,7 @@ protected:
   LteRrcSap::PoolSelectionRsrpBased m_poolSelectionRsrpBased; ///< parameters for the RSRP based selection
   LteRrcSap::TxProbability m_txProbability;  ///< transmission probability
   bool m_txProbChanged; ///< indicates if the transmission probability has changed
-  uint8_t m_poolIdentity;
+  uint8_t m_poolIdentity; ///< identity of the individual pool entry configured for sidelink transmission
 
   //Fields for scheduled pools
   LteRrcSap::SlDiscResourcePool m_discTxConfig; ///< resource configuration

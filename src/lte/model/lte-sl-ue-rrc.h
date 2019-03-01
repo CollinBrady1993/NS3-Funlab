@@ -53,7 +53,7 @@
 
 namespace ns3 {
 
-  class LteUeRrc;
+class LteUeRrc;
 /**
  * \ingroup lte
  * Manages Sidelink information for this UE
@@ -75,39 +75,49 @@ class LteSlUeRrc : public Object
 public:
   LteSlUeRrc ();
   virtual ~LteSlUeRrc (void);
-    
-    enum DiscoveryModel
-      {
-        ModelA = 0, //announce
-        ModelB      //request/response
-      };
 
-    enum DiscoveryRole
-      {
-        Discoveree = 0, // equivalent to monitor in model A
-        Discovered      // equivalent to announce in model A
-      };
+  /// The type of discovery model
+  enum DiscoveryModel
+  {
+    ModelA = 0,     //announce
+    ModelB          //request/response
+  };
 
-    enum RelayRole
-      {
-        RemoteUE = 0,
-        RelayUE
-      };
+  /// The role of the UE in the discovery process
+  enum DiscoveryRole
+  {
+    Discoveree = 0,     // equivalent to monitor in model A
+    Discovered          // equivalent to announce in model A
+  };
 
-    struct AppServiceInfo {
-      //DiscoveryModel model; //Only model A supported for ProSe application
-      DiscoveryRole role;
-      uint64_t appCode;
-      EventId txTimer; //timer for transmitting announcement or requests
-    };
+  /// The role of the UE in the UE-to-Network relay process
+  enum RelayRole
+  {
+    RemoteUE = 0,
+    RelayUE
+  };
 
-    struct RelayServiceInfo {
-      DiscoveryModel model;
-      RelayRole role;
-      uint32_t serviceCode;
-      EventId txTimer; //timer for transmitting announcement or requests
-    };
-    
+  /**
+   * Information for application discovery
+   */
+  struct AppServiceInfo
+  {
+    DiscoveryRole role;   ///< The role of the UE in the discovery process
+    uint64_t appCode;   ///< The application code to announce or monitor
+    EventId txTimer;   ///< Timer for transmitting announcement or requests
+  };
+
+  /**
+   * Information for relay service discovery
+   */
+  struct RelayServiceInfo
+  {
+    DiscoveryModel model;   ///< The discovery model to use
+    RelayRole role;   ///< The role of the UE in the UE-to-Network relay operation
+    uint32_t serviceCode;   ///< The relay service code
+    EventId txTimer;   ///< Timer for transmitting announcement or requests
+  };
+
   /**
    * \brief makes a copy of the sidelink configuration
    * \return a copy of the sidelink configuration
@@ -248,7 +258,7 @@ protected:
    * \param role Indicates if announcing or monitoring
    */
   void StartDiscoveryApps (std::list<uint64_t> payloads, DiscoveryRole role);
-  
+
   /**
    * \brief Remove Sidelink discovery applications
    * Remove applications depending on the interest (monitoring or announcing)   *
@@ -287,12 +297,14 @@ protected:
   /**
    * Checks if the given app must be discovered
    * \param appCode The application code
+   * \return true if the UE is monitoring announcements for the given application code
    */
   bool IsMonitoringApp (uint64_t appCode);
-    
+
   /**
    * Checks if the given app must be announced
    * \param appCode The application code
+   * \return true if the UE is announcing the given application code
    */
   bool IsAnnouncingApp (uint64_t appCode);
 
@@ -320,8 +332,8 @@ protected:
    * \param model discovery model (A or B)
    * \param role UE role (remote UE or relay node)
    */
-  void StartRelayService (uint32_t serviceCode, LteSlUeRrc::DiscoveryModel model, LteSlUeRrc::RelayRole role); 
-    
+  void StartRelayService (uint32_t serviceCode, LteSlUeRrc::DiscoveryModel model, LteSlUeRrc::RelayRole role);
+
   /**
    * Stops UE-to-Network relay process
    * \param serviceCode relay service code to use
@@ -336,7 +348,8 @@ protected:
 
   /**
    * Indicates if the device is monitoring messages for the given service code
-   *\param serviceCode relay service code to use
+   * \param serviceCode relay service code to use
+   * \return true is the UE is monitoring for the given relay service code
    */
   bool IsMonitoringRelayServiceCode (uint32_t serviceCode);
 
@@ -414,9 +427,9 @@ private:
    */
   std::map <uint64_t, AppServiceInfo> m_announcingAppsMap;
   /**
-   * list of relay services used by this device 
+   * list of relay services used by this device
    */
-  std::map <uint32_t, RelayServiceInfo> m_relayServicesMap;  
+  std::map <uint32_t, RelayServiceInfo> m_relayServicesMap;
   /**
    * Active Tx pool for discovery
    */

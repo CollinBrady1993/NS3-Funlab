@@ -171,31 +171,31 @@ public:
   void UlScheduling (uint16_t cellId, uint64_t imsi,uint32_t frameNo, uint32_t subframeNo,
                      uint16_t rnti, uint8_t mcsTb, uint16_t sizeTb, uint8_t componentCarrierId);
 
-  
-  /** 
+
+  /**
    * Trace sink for the ns3::LteEnbMac::DlScheduling trace source
-   * 
-   * \param macStats 
-   * \param path 
+   *
+   * \param macStats
+   * \param path
    * \param dlSchedulingCallbackInfo DlSchedulingCallbackInfo structure containing all downlink information that is generated what DlScheduling traces is fired
    */
   static void DlSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, DlSchedulingCallbackInfo dlSchedulingCallbackInfo);
 
-  /** 
+  /**
    * Trace sink for the ns3::LteEnbMac::UlScheduling trace source
-   * 
-   * \param macStats 
-   * \param path 
-   * \param frameNo 
-   * \param subframeNo 
-   * \param rnti 
-   * \param mcs 
-   * \param size 
+   *
+   * \param macStats
+   * \param path
+   * \param frameNo
+   * \param subframeNo
+   * \param rnti
+   * \param mcs
+   * \param size
    * \param componentCarrierId
    */
   static void UlSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path,
-                             uint32_t frameNo, uint32_t subframeNo, uint16_t rnti,
-                             uint8_t mcs, uint16_t size, uint8_t componentCarrierId);
+                                    uint32_t frameNo, uint32_t subframeNo, uint16_t rnti,
+                                    uint8_t mcs, uint16_t size, uint8_t componentCarrierId);
   //Sidelink
 
   /**
@@ -214,8 +214,12 @@ public:
    */
   static void SlUeSchSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, SlUeMacStatParameters params);
 
-  /** 
+  /**
    * Notifies the stats calculator that a Sidelink PSDCH UE MAC transmission has occurred.
+   * \param macStats
+   * \param path
+   * \param params
+   * \param discMsg The LteSlDiscHeader
    */
   static void SlUeDchSchedulingCallback (Ptr<MacStatsCalculator> macStats, std::string path, SlUeMacStatParameters params, LteSlDiscHeader discMsg);
 
@@ -225,14 +229,16 @@ public:
    */
   void SlUeCchScheduling (SlUeMacStatParameters params);
 
-   /**
-   * Notifies the stats calculator that a Sidelink PSSCH UE MAC scheduling has occurred.
-   * \param params The SlUeMacStatParameters
-   */
+  /**
+  * Notifies the stats calculator that a Sidelink PSSCH UE MAC scheduling has occurred.
+  * \param params The SlUeMacStatParameters
+  */
   void SlUeSchScheduling (SlUeMacStatParameters params);
 
   /**
    * Notifies the stats calculator that a Sidelink PSDCH UE MAC scheduling has occurred.
+   * \param params The SlUeMacStatParameters
+   * \param discMsg The LteSlDiscHeader
    */
   void SlUeDchScheduling (SlUeMacStatParameters params, LteSlDiscHeader discMsg);
 
