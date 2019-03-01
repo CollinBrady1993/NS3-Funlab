@@ -79,7 +79,7 @@ public:
   * \return a pointer to the LTE CMAC SAP provider
   */
   LteUeCmacSapProvider*  GetLteUeCmacSapProvider (void);
-  
+
   /**
   * \brief Set the component carried ID
   * \param index The component carrier ID
@@ -97,7 +97,7 @@ public:
   * \param s A pointer to the PHY SAP Provider
   */
   void SetLteUePhySapProvider (LteUePhySapProvider* s);
-  
+
   /**
   * \brief Forwarded from LteUePhySapUser: trigger the start from a new frame
   *
@@ -106,14 +106,14 @@ public:
   */
   void DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo);
 
- /**
-  * Assign a fixed random variable stream number to the random variables
-  * used by this model.  Return the number of streams (possibly zero) that
-  * have been assigned.
-  *
-  * \param stream The first stream index to use
-  * \return The number of stream indices assigned by this model
-  */
+  /**
+   * Assign a fixed random variable stream number to the random variables
+   * used by this model.  Return the number of streams (possibly zero) that
+   * have been assigned.
+   *
+   * \param stream The first stream index to use
+   * \return The number of stream indices assigned by this model
+   */
   int64_t AssignStreams (int64_t stream);
 
   /**
@@ -129,15 +129,6 @@ public:
    * \return pointer to the discovery transmission pool
    */
   Ptr<SidelinkTxDiscResourcePool> GetDiscTxPool ();
-
-  /**
-   * TracedCallback signature for transmission of discovery message.
-   *
-   * \param [in] rnti The RNTI of the UE
-   * \param [in] discMsg The discovery message
-   */
-  typedef void (* DiscoveryAnnouncementTracedCallback)
-    (const uint16_t rnti, const SlDiscMsg discMsg);
 
 private:
   // forwarded from MAC SAP
@@ -164,7 +155,7 @@ private:
   /**
    * Start contention based random access procedure function
    */
-   void DoStartContentionBasedRandomAccessProcedure ();
+  void DoStartContentionBasedRandomAccessProcedure ();
   /**
    * Set RNTI
    *
@@ -255,7 +246,7 @@ private:
    */
   void DoRemoveSlDestination (uint32_t destination);
 
-   //Sidelink discovery
+  //Sidelink discovery
 
   /**
    * Set Sidelink discovery transmission pool function
@@ -315,17 +306,17 @@ private:
    * The PHY notifies the MAC the Sidelink is activated
    */
   void DoNotifySidelinkEnabled ();
-  
+
   // internal methods
   /**
    * Randomly select and send RA preamble function
    */
   void RandomlySelectAndSendRaPreamble ();
- /**
-  * Send RA preamble function
-  *
-  * \param contention if true randomly select and send the RA preamble
-  */
+  /**
+   * Send RA preamble function
+   *
+   * \param contention if true randomly select and send the RA preamble
+   */
   void SendRaPreamble (bool contention);
   /**
    * Start waiting for RA response function
@@ -337,11 +328,11 @@ private:
    * \param raResponse The random access response received
    */
   void RecvRaResponse (BuildRarListElement_s raResponse);
- /**
-  * RA response timeout function
-  *
-  * \param contention if true randomly select and send the RA preamble
-  */
+  /**
+   * RA response timeout function
+   *
+   * \param contention if true randomly select and send the RA preamble
+   */
   void RaResponseTimeout (bool contention);
   /**
    * Send report buffer status
@@ -360,7 +351,6 @@ private:
   uint8_t m_componentCarrierId;
 
 private:
-
   /// LcInfo structure
   struct LcInfo
   {
@@ -377,13 +367,13 @@ private:
 
   LteUePhySapProvider* m_uePhySapProvider; ///< UE Phy SAP provider
   LteUePhySapUser* m_uePhySapUser; ///< UE Phy SAP user
-  
+
   std::map <uint8_t, LteMacSapProvider::ReportBufferStatusParameters> m_ulBsrReceived; ///< BSR received from RLC (the last one)
-  
-  
+
+
   Time m_bsrPeriodicity; ///< BSR periodicity
   Time m_bsrLast; ///< BSR last
-  
+
   bool m_freshUlBsr; ///< true when a BSR has been received in the last TTI
 
   uint8_t m_harqProcessId; ///< HARQ process ID
@@ -471,10 +461,10 @@ private:
   std::list <Ptr<SidelinkRxCommResourcePool> > m_sidelinkRxPools; ///< List of Sidelink communication reception pools
   std::list <uint32_t> m_sidelinkDestinations; ///< List of Sidelink communication destinations
   std::set <SidelinkCommResourcePool::SubframeInfo> m_psschRxSet; ///< List of reception opportunities on PSSCH
-  
+
   Ptr<LteAmc> m_amc; ///< Pointer to LteAmc class; needed now since UE is doing scheduling
   Ptr<UniformRandomVariable> m_ueSelectedUniformVariable;  ///<  A uniform random variable used to choose random resources, RB start
-                                                           ///<  and iTrp values in UE selected mode
+  ///<  and iTrp values in UE selected mode
   //fields for fixed UE_SELECTED pools
   uint8_t m_slKtrp; ///< Number of active resource blocks in the TRP used.
   uint8_t m_setTrpIndex; ///< TRP index to be used
@@ -517,18 +507,18 @@ private:
 
   Ptr<Packet> m_slSynchPendingTxMsg; ///< MIB-SL message to send
 
-  
+
   /**
    * Trace information regarding Sidelink PSCCH UE scheduling.
    * SlUeMacStatParameters (see lte-common.h)
    */
- TracedCallback<SlUeMacStatParameters> m_slPscchScheduling;  //m_slUeScheduling
+  TracedCallback<SlUeMacStatParameters> m_slPscchScheduling; //m_slUeScheduling
 
- /**
-  * Trace information regarding Sidelink PSSCH UE scheduling.
-  * SlUeMacStatParameters (see lte-common.h)
-  */
- TracedCallback<SlUeMacStatParameters> m_slPsschScheduling; //m_slSharedChUeScheduling
+  /**
+   * Trace information regarding Sidelink PSSCH UE scheduling.
+   * SlUeMacStatParameters (see lte-common.h)
+   */
+  TracedCallback<SlUeMacStatParameters> m_slPsschScheduling; //m_slSharedChUeScheduling
 
   /**
    * Trace information regarding Sidelink PSDCH UE scheduling

@@ -196,23 +196,6 @@ struct SciListElement_s
 };
 
 /**
- * \brief See section 11.2.5 3GPP TS 24.334
- * \struct SlDiscMsg
- */
-struct SlDiscMsg
-{
-  uint16_t  m_rnti; ///< added for modeling
-  uint8_t   m_resPsdch; ///< added for modeling
-  uint8_t m_msgType; ///< Message Type
-  /* Payload variable may contain different content for different purposes.
-  For example, Payload for 'ProSe Open Discovery announce for Model A' contains 184 bit Prose Application Code.
-  Payload for 'ProSe Restricted UE-to-Network Relay Discovery announce for Model A' contains 24 bit Relay Service Code, 48 bit Announcer Info, 24 bit Prose Relay UE ID, 8 bit Status Indicator, 80 bit Spare. */
-  uint8_t m_pc5_disc_payload[23]; ///< The payload
-  uint32_t m_mic; ///< Message Integrity Check (MIC)
-  uint8_t m_utcBasedCounter; ///< UTC-based counter
-};
-
-/**
 * \brief Base class for storing the values of vendor specific parameters
 */
 struct VendorSpecificValue : public SimpleRefCount<VendorSpecificValue>

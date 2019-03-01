@@ -444,15 +444,6 @@ public:
    */
 
   typedef void (* SendSLSSTracedCallback)(const uint64_t imsi, const uint64_t slssid, const uint16_t txOffset, const bool inCoverage,  const uint16_t frame, const uint16_t subframe);
-  /**
-   * TracedCallback signature for reception of discovery message.
-   *
-   * \param [in] imsi
-   * \param [in] cellId
-   * \param [in] rnti
-   * \param [in] SlDiscMsg
-   */
-  typedef void (* DiscoveryMonitoringTracedCallback)(const uint64_t imsi, const uint16_t cellId, const uint16_t rnti, const SlDiscMsg discMsg);
 
   /**
    * Sends a discovery message
