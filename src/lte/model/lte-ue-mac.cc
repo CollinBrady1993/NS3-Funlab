@@ -1576,7 +1576,6 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   phyParams.rbLen = (*allocIt).nbRb;
                   phyParams.resNo = m_discTxPool.m_currentGrant.m_resPsdch;
                   uint8_t rv = m_discTxPool.m_psdchTx.size () % (m_discTxPool.m_pool->GetNumRetx () + 1);
-                  NS_ASSERT (rv == 0);   //to be removed once confirmed
                   phyParams.rv = rv == 0 ? rv : m_discTxPool.m_pool->GetNumRetx () + 1 - rv;
 
                   m_uePhySapProvider->SendSlMacPdu (*discMsg, phyParams);
