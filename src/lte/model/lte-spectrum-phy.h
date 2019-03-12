@@ -65,7 +65,20 @@ public:
    */
   TbId_t (const uint16_t a, const uint8_t b);
 
+  /**
+   * \brief Implements equal operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if the elements are equal
+   */
   friend bool operator == (const TbId_t &a, const TbId_t &b);
+
+  /**
+   * \brief Implements less operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if a is less than b
+   */
   friend bool operator < (const TbId_t &a, const TbId_t &b);
 };
 
@@ -104,7 +117,21 @@ public:
    */
   SlTbId_t (const uint16_t a, const uint8_t b);
 
+  /**
+   * \brief Implements equal operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if the elements are equal
+   */
   friend bool operator == (const SlTbId_t &a, const SlTbId_t &b);
+
+  /**
+   * \brief Implements less operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if a is less than b
+   */
+
   friend bool operator < (const SlTbId_t &a, const SlTbId_t &b);
 };
 
@@ -141,7 +168,20 @@ public:
    */
   SlDiscTbId_t (const uint16_t a, const uint8_t b);
 
+  /**
+   * \brief Implements equal operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if the elements are equal
+   */
   friend bool operator == (const SlDiscTbId_t &a, const SlDiscTbId_t &b);
+
+  /**
+   * \brief Implements less operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if a is less than b
+   */
   friend bool operator < (const SlDiscTbId_t &a, const SlDiscTbId_t &b);
 };
 
@@ -156,6 +196,7 @@ struct SlDisctbInfo_t
   bool corrupt; ///< whether is corrupt
   bool harqFeedbackSent; ///< is HARQ feedback sent
   double sinr; ///< mean SINR
+  int index; ///< index of the packet received in the reception buffer
 };
 
 /// Map to store Sidelink discovery expected TBs
@@ -190,7 +231,20 @@ struct SlCtrlPacketInfo_t
   double sinr; ///< SINR
   int index; ///< index of the packet received in the reception buffer
 
+  /**
+   * \brief Implements equal operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if the elements are equal
+   */
   friend bool operator == (const SlCtrlPacketInfo_t &a, const SlCtrlPacketInfo_t &b);
+
+  /**
+   * \brief Implements less operator
+   * \param a element to compare
+   * \param b element to compare
+   * \return true if a is less than b
+   */
   friend bool operator < (const SlCtrlPacketInfo_t &a, const SlCtrlPacketInfo_t &b);
 };
 
@@ -421,12 +475,13 @@ public:
    *
    * \param pb The burst of packets to be transmitted in PSDCH
    * \param resNo The resource number in the PSDCH pool
+   * \param rv The redundancy version number
    * \param duration The duration of the data frame
    *
    * \return true if an error occurred and the transmission was not
    * started, false otherwise.
    */
-  bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, uint32_t resNo, Time duration);
+  bool StartTxSlDiscFrame (Ptr<PacketBurst> pb, uint32_t resNo, uint8_t rv, Time duration);
 
   /**
   * Start a transmission of Sidelink data frame in DL and UL
@@ -644,18 +699,18 @@ public:
   void AddSlInterferenceChunkProcessor (Ptr<LteSlChunkProcessor> p);
 
   /**
-  *
-  *
-  * \param rnti the RNTI of the source of the TB
-  * \param ndi new data indicator flag
-  * \param size the size of the TB
-  * \param mcs the MCS of the TB
-  * \param map the map of RB(s) used
-  * \param layer the layer (in case of MIMO tx)
-  * \param harqId the id of the HARQ process (valid only for DL)
-  * \param rv the redundancy version
-  * \param downlink true when the TB is for DL
-  */
+   *
+   *
+   * \param rnti the RNTI of the source of the TB
+   * \param ndi new data indicator flag
+   * \param size the size of the TB
+   * \param mcs the MCS of the TB
+   * \param map the map of RB(s) used
+   * \param layer the layer (in case of MIMO tx)
+   * \param harqId the id of the HARQ process (valid only for DL)
+   * \param rv the redundancy version
+   * \param downlink true when the TB is for DL
+   */
   void AddExpectedTb (uint16_t  rnti, uint8_t ndi, uint16_t size, uint8_t mcs, std::vector<int> map, uint8_t layer, uint8_t harqId, uint8_t rv, bool downlink);
 
   /**
@@ -673,15 +728,16 @@ public:
 
   /**
    * For Sidelink Discovery
-   * no mcs, size fixed to 232, no l1dst
+   * no mcs, size fixed to 232 bits, no l1dst
    *
    * \param rnti The RNTI of the source of the TB
    * \param resPsdch The PSDCH resource identifier
    * \param ndi The new data indicator flag
    * \param map map of RBs used
    * \param rv The redundancy version
+   * \param index The packet index in the list of discovery messages received
    */
-  void AddExpectedTb (uint16_t  rnti, uint8_t resPsdch, uint8_t ndi, std::vector<int> map, uint8_t rv);
+  void AddExpectedTb (uint16_t  rnti, uint8_t resPsdch, uint8_t ndi, std::vector<int> map, uint8_t rv, int index);
 
 
   /**

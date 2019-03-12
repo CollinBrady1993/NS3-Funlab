@@ -44,7 +44,6 @@
 #include "ns3/enum.h"
 #include "lte-sl-header.h"
 #include "lte-sl-tag.h"
-#include "ns3/lte-spectrum-signal-parameters.h"
 #include <ns3/pointer.h>
 
 namespace ns3 {
@@ -934,7 +933,7 @@ LteSpectrumPhy::StartTxSlDataFrame (Ptr<PacketBurst> pb, Time duration, uint8_t 
 }
 
 bool
-LteSpectrumPhy::StartTxSlDiscFrame (Ptr<PacketBurst> pb, uint32_t resNo, Time duration)
+LteSpectrumPhy::StartTxSlDiscFrame (Ptr<PacketBurst> pb, uint32_t resNo, uint8_t rv, Time duration)
 {
   NS_LOG_FUNCTION (this << pb << " ID:" << GetDevice ()->GetNode ()->GetId () << " State: " << m_state);
 
@@ -979,6 +978,7 @@ LteSpectrumPhy::StartTxSlDiscFrame (Ptr<PacketBurst> pb, uint32_t resNo, Time du
         txParams->slssId = m_slssId;
         txParams->packetBurst = pb;
         txParams->resNo = resNo;
+        txParams->rv = rv;
         m_ulDataSlCheck = true;
 
         m_channel->StartTx (txParams);
@@ -1612,7 +1612,7 @@ LteSpectrumPhy::AddExpectedTb (uint16_t  rnti, uint8_t l1dst, uint8_t ndi, uint1
 }
 
 void
-LteSpectrumPhy::AddExpectedTb (uint16_t  rnti, uint8_t resPsdch, uint8_t ndi, std::vector<int> map, uint8_t rv)
+LteSpectrumPhy::AddExpectedTb (uint16_t  rnti, uint8_t resPsdch, uint8_t ndi, std::vector<int> map, uint8_t rv, int index)
 {
   NS_LOG_FUNCTION (this << " RNTI: " << rnti << " resPsdch " << resPsdch << " NDI " << (uint16_t)ndi << " RV " << (uint16_t)rv);
 
@@ -1626,8 +1626,10 @@ LteSpectrumPhy::AddExpectedTb (uint16_t  rnti, uint8_t resPsdch, uint8_t ndi, st
       //might be a TB of an unreceived packet (due to high path loss)
       m_expectedDiscTbs.erase (it);
     }
-  // insert new entry
-  SlDisctbInfo_t tbInfo = {ndi, resPsdch, map, rv, 0.0, false, false};
+  // insert new entry.
+  // SINR value of -100 is used just to initialize the sinr member of SlDisctbInfo_t.
+  // It is updated when the SINR is computed for the received discovery TB.
+  SlDisctbInfo_t tbInfo = {ndi, resPsdch, map, rv, 0.0, false, false, -100, index};
 
   m_expectedDiscTbs.insert (std::pair<SlDiscTbId_t, SlDisctbInfo_t> (tbId,tbInfo));
 
@@ -1887,7 +1889,7 @@ LteSpectrumPhy::EndRxSlFrame ()
         }
       else
         {
-          NS_LOG_ERROR ("Invalid sidelink packet type");
+          NS_ABORT_MSG ("Invalid sidelink packet type");
         }
     }
 
@@ -2305,28 +2307,21 @@ LteSpectrumPhy::RxSlPssch (std::vector<uint32_t> pktIndexes)
 void
 LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
 {
-  NS_LOG_FUNCTION (this << "Nb PSDCH messages:" << pktIndexes.size ());
+  NS_LOG_FUNCTION (this << "Number of PSDCH messages: " << pktIndexes.size ());
 
-  std::map<SlDiscTbId_t, uint32_t> expectedTbToSinrDiscIndex;
   for (uint32_t i = 0; i < pktIndexes.size (); i++)
     {
-      uint32_t pktIndex = pktIndexes[i];
+      uint32_t pktIndex = pktIndexes [i];
       Ptr<LteSpectrumSignalParametersSlDiscFrame> params = DynamicCast<LteSpectrumSignalParametersSlDiscFrame> (m_rxPacketInfo.at (pktIndex).params);
-      NS_ASSERT (params);
+      NS_ABORT_MSG_IF (params == nullptr, "No Sidelink discovery parameters associated with the received packet");
       Ptr<PacketBurst> pb = params->packetBurst;
-      NS_ASSERT_MSG (pb->GetNPackets () == 1, "Received PSDCH burst with more than one packet");
+      NS_ABORT_MSG_IF (pb->GetNPackets () > 1, "Received PSDCH burst with more than one packet");
       Ptr<Packet> pkt = pb->GetPackets ().front ();
-
-      // retrieve TB info of this packet
-      SlDiscTbId_t tbId;
       LteRadioBearerTag tag;
       pkt->PeekPacketTag (tag);
-      tbId.m_rnti = tag.GetRnti ();
-      tbId.m_resPsdch = params->resNo;
-      expectedTbToSinrDiscIndex.insert (std::pair<SlDiscTbId_t, uint8_t> (tbId, pktIndexes[i]));
 
+      // retrieve TB info of this packet
       std::list<Ptr<SidelinkDiscResourcePool> >::iterator discIt;
-      uint16_t txCount = 0;
       std::vector <int> rbMap;
       for (discIt = m_discRxPools.begin (); discIt != m_discRxPools.end (); discIt++)
         {
@@ -2347,56 +2342,21 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
                     }
                   if (m_rxPacketInfo.at (pktIndex).rbBitmap == rbMap)
                     {
-                      //Here, it may happen that the first transmission and the retransmission is
-                      //on the identical RBs but different subframes. If this happens, this while
-                      //loop will break on txCount == 1 (Note, we don't have access to the subframe
-                      //number here). The code starting with if (m_psdchTx.size () > 1)
-                      //will take care of such conditions.
-                      txCount++;
                       NS_LOG_DEBUG (this << " PSDCH RB matched");
+                      NS_ABORT_MSG_IF (params->rv > m_psdchTx.size (), "RV number can not be greater than the total "
+                                       "number of transmissions");
+                      uint8_t ndi = params->rv == 0 ? 1 : 0;
+                      NS_LOG_DEBUG (this << " Adding expected TB.");
+                      AddExpectedTb (tag.GetRnti (), params->resNo, ndi, rbMap, params->rv, pktIndex);
                       break;
                     }
                   else
                     {
                       rbMap.clear ();
                     }
-
                   txIt++;
                 }
-
-              //If there are retransmissions we need to keep track of all the transmissions to properly
-              //compute the NDI and RV.
-              if (m_psdchTx.size () > 1)
-                {
-                  std::map <uint16_t, uint16_t>::iterator it;
-                  it = m_slDiscTxCount.find (tbId.m_rnti);
-                  if (it == m_slDiscTxCount.end ())
-                    {
-                      m_slDiscTxCount.insert (std::pair <uint16_t, uint16_t > (tbId.m_rnti, 1));
-                    }
-                  else
-                    {
-                      it->second++;
-                      txCount = it->second;
-                      NS_LOG_DEBUG ("It is a Retransmission. Transmission count = " << txCount);
-                    }
-
-                  if (it->second == m_psdchTx.size ())
-                    {
-                      NS_LOG_DEBUG ("We reached the maximum Transmissions (Tx + ReTx) = " << txCount);
-                      it->second = 0;
-                    }
-                }
-              NS_LOG_DEBUG (this << " PSDCH transmission " << txCount);
-              //reception
-              NS_LOG_DEBUG (this << " Expecting PSDCH reception on PSDCH resource " << (uint16_t) (tbId.m_resPsdch));
-              NS_ABORT_MSG_IF (txCount == 0, "PSDCH txCount should be greater than zero");
-              uint8_t rv = txCount - 1;
-              NS_ABORT_MSG_IF (rv > m_psdchTx.size (), " RV number can not be greater than total number of transmissions");
-              bool ndi = txCount == 1 ? true : false;
-              NS_LOG_DEBUG (this << " Adding expected TB.");
-              AddExpectedTb (tbId.m_rnti, tbId.m_resPsdch, ndi, rbMap, rv);
-              txCount = 0;
+              // It is needed if in future the model would support more than one RX pool
               rbMap.clear ();
             }
         }
@@ -2407,15 +2367,13 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
 //container to store the RB indices of the decoded TBs
   std::set<int> rbDecodedBitmap;
   std::set<SlCtrlPacketInfo_t> sortedDiscMessages;
-  std::map<SlDiscTbId_t, uint32_t>::iterator itSinrDisc;
 
   for (expectedDiscTbs_t::iterator it = m_expectedDiscTbs.begin (); it != m_expectedDiscTbs.end (); it++)
     {
-      itSinrDisc = expectedTbToSinrDiscIndex.find ((*it).first);
-      double meanSinr = GetMeanSinr (m_slSinrPerceived[(*itSinrDisc).second], (*it).second.rbBitmap);
+      double meanSinr = GetMeanSinr (m_slSinrPerceived[(*it).second.index], (*it).second.rbBitmap);
       SlCtrlPacketInfo_t pInfo;
       pInfo.sinr = meanSinr;
-      pInfo.index = (*itSinrDisc).second;
+      pInfo.index = (*it).second.index;
       sortedDiscMessages.insert (pInfo);
       NS_LOG_DEBUG ("sortedDiscMessages size = " << sortedDiscMessages.size () << " SINR = " << pInfo.sinr << " Index = " << pInfo.index);
     }
@@ -2460,9 +2418,8 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
       tbId.m_resPsdch = params->resNo;
       itTbDisc =  m_expectedDiscTbs.find (tbId);
 
-      itSinrDisc = expectedTbToSinrDiscIndex.find ((*itTbDisc).first);
-      NS_ABORT_MSG_IF ((itSinrDisc == expectedTbToSinrDiscIndex.end ()), " Unable to retrieve SINR of the expected TB");
-      NS_LOG_DEBUG ("SINR value index of this TB in m_slSinrPerceived vector is " << (*itSinrDisc).second);
+      NS_ABORT_MSG_IF ((itTbDisc == m_expectedDiscTbs.end ()), " Unable to retrieve SINR of the expected TB");
+      NS_LOG_DEBUG ("SINR value index of this TB in m_slSinrPerceived vector is " << (*itTbDisc).second.index);
       // avoid to check for errors when error model is not enabled
       if (m_slDiscoveryErrorModelEnabled)
         {
@@ -2494,7 +2451,9 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
                 }
             }
 
-          TbErrorStats_t tbStats = LteNistErrorModel::GetPsdchBler (m_fadingModel,LteNistErrorModel::SISO, GetMeanSinr (m_slSinrPerceived[(*itSinrDisc).second] * m_slRxGain, (*itTbDisc).second.rbBitmap),  harqInfoList);
+          TbErrorStats_t tbStats = LteNistErrorModel::GetPsdchBler (m_fadingModel,LteNistErrorModel::SISO,
+                                                                    GetMeanSinr (m_slSinrPerceived[(*itTbDisc).second.index] * m_slRxGain,
+                                                                                 (*itTbDisc).second.rbBitmap), harqInfoList);
           (*itTbDisc).second.sinr = tbStats.sinr;
 
           if (!((*itTbDisc).second.corrupt))
@@ -2583,7 +2542,6 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
         }
 
       //traces for discovery rx
-      //we would know it is discovery mcs=0 and size=232
       PhyReceptionStatParameters prsparams;
       prsparams.m_timestamp = Simulator::Now ().GetMilliSeconds ();
       prsparams.m_cellId = m_cellId;
@@ -2591,12 +2549,12 @@ LteSpectrumPhy::RxSlPsdch (std::vector<uint32_t> pktIndexes)
       prsparams.m_rnti = (*itTbDisc).first.m_rnti;
       prsparams.m_txMode = m_transmissionMode;
       prsparams.m_layer =  0;
-      prsparams.m_mcs = 0;     //for discovery, we use a fixed modulation (no mcs defined), use 0 to identify discovery
-      prsparams.m_size = 232;     // discovery message has a static size
+      prsparams.m_mcs = 8;     //for discovery, we use a fixed QPSK modulation
+      prsparams.m_size = m_rxPacketInfo.at (pktIndex).params->packetBurst->GetSize ();     // discovery message has a static size
       prsparams.m_ndi = (*itTbDisc).second.ndi;
       prsparams.m_correctness = (uint8_t) !(*itTbDisc).second.corrupt;
-      prsparams.m_sinrPerRb = GetMeanSinr (m_slSinrPerceived[(*itSinrDisc).second] * m_slRxGain, (*itTbDisc).second.rbBitmap);
-      prsparams.m_rv = harqInfoList.size ();
+      prsparams.m_sinrPerRb = GetMeanSinr (m_slSinrPerceived[(*itTbDisc).second.index] * m_slRxGain, (*itTbDisc).second.rbBitmap);
+      prsparams.m_rv = (*itTbDisc).second.rv;
       m_slPhyReception (prsparams);
     }
 

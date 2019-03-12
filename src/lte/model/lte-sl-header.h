@@ -288,7 +288,7 @@ public:
    * @param rbStart Resource block index of the start of the transmission
    * @param rbLen Number of resource blocks to be used by the transmission
    * @param hoppingInfo Frequency hopping configuration
-   * @param trp Transmit Repeat Pattern
+   * @param trp Time Resource Pattern
    * @param mcs Modulation and coding scheme used to transmit the message
    * @param groupId The layer 1 group identity
    */

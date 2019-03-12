@@ -831,8 +831,18 @@ private:
     bool m_grantReceived; ///< Flag to indicate the reception of Sidelink communication grant
   };
 
-  /// Sidelink pool information
-  struct PoolInfo
+  /// Sidelink Tx pool information
+  struct TxPoolInfo
+  {
+    Ptr<SidelinkCommResourcePool> m_pool; ///< the pool
+    SidelinkCommResourcePool::SubframeInfo m_currentScPeriod; ///< start of current period
+    SidelinkCommResourcePool::SubframeInfo m_nextScPeriod; ///< start of next period
+  };
+
+  TxPoolInfo m_slTxPoolInfo; ///< Sidelink pool information
+  
+  /// Sidelink Rx pool information
+  struct RxPoolInfo
   {
     Ptr<SidelinkCommResourcePool> m_pool; ///< the pool
     SidelinkCommResourcePool::SubframeInfo m_currentScPeriod; ///< start of current period
@@ -840,8 +850,7 @@ private:
     std::map<uint16_t, SidelinkGrantInfo> m_currentGrants; ///< Current Sidelink communication grants
   };
 
-  PoolInfo m_slTxPoolInfo; ///< Sidelink pool information
-  std::list <PoolInfo> m_sidelinkRxPools; ///< List of Sidelink communication Rx pools
+  std::list <RxPoolInfo> m_sidelinkRxPools; ///< List of Sidelink communication Rx pools
   std::list <uint32_t> m_destinations; ///< List of destinations for Sidelink communication
 
   /// Sidelink discovery grant

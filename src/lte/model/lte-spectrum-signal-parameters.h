@@ -269,6 +269,7 @@ struct LteSpectrumSignalParametersSlDiscFrame : public LteSpectrumSignalParamete
   LteSpectrumSignalParametersSlDiscFrame (const LteSpectrumSignalParametersSlDiscFrame& p);
 
   uint32_t resNo; ///< Resource number
+  uint8_t rv; ///< Redundancy version
 
 };
 

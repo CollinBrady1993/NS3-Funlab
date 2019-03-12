@@ -45,7 +45,7 @@ NS_LOG_COMPONENT_DEFINE ("LteSlHeader");
 NS_OBJECT_ENSURE_REGISTERED (LteSlDiscHeader);
 
 LteSlDiscHeader::LteSlDiscHeader ()
-: m_discoveryMsgType (0),
+  : m_discoveryMsgType (0),
   m_discoveryType (0),
   m_discoveryContentType (0),
   m_discoveryModel (0),
@@ -133,9 +133,9 @@ LteSlDiscHeader::BuildDiscoveryMsgType ()
 {
   uint8_t msgType = ((m_discoveryType & 0x03) << 6) | ((m_discoveryContentType & 0x0F) << 2) | (m_discoveryModel & 0x03);
 
-  NS_ABORT_MSG_IF (msgType != DISC_OPEN_ANNOUNCEMENT && msgType != DISC_RESTRICTED_ANNOUNCEMENT &&
-                   msgType != DISC_RESTRICTED_RESPONSE && msgType != DISC_RELAY_ANNOUNCEMENT &&
-                   msgType != DISC_RELAY_SOLICITATION && msgType != DISC_RELAY_RESPONSE,
+  NS_ABORT_MSG_IF (msgType != DISC_OPEN_ANNOUNCEMENT && msgType != DISC_RESTRICTED_ANNOUNCEMENT
+                   && msgType != DISC_RESTRICTED_RESPONSE && msgType != DISC_RELAY_ANNOUNCEMENT
+                   && msgType != DISC_RELAY_SOLICITATION && msgType != DISC_RELAY_RESPONSE,
                    "unknown discovery message type " << (uint16_t) msgType);
   return msgType;
 }
@@ -481,9 +481,9 @@ LteSlSciHeader::Serialize (Buffer::Iterator start) const
 
   //we change the order so the serialize/deserialize is easier
   //write flag and TRP
-  uint8_t hopFlagAndTrp = m_hopping ? 1 << 7:0;
-  hopFlagAndTrp = hopFlagAndTrp & m_trp & 0x7F;
-  i.WriteU8 (hopFlagAndTrp);  
+  uint8_t hopFlagAndTrp = m_hopping ? 1 << 7 : 0;
+  hopFlagAndTrp = hopFlagAndTrp | (m_trp & 0x7F);
+  i.WriteU8 (hopFlagAndTrp);
   i.WriteU8 (m_mcs);
   i.WriteU8 (m_groupDstId);
   i.WriteU8 (m_rbStart);
@@ -497,14 +497,14 @@ LteSlSciHeader::Deserialize (Buffer::Iterator start)
   Buffer::Iterator i = start;
 
   uint8_t tmp = i.ReadU8 ();
-  m_hopping = (tmp & 0x8) != 0;
+  m_hopping = (tmp & 0x80) != 0;
   m_trp = tmp & 0x7F;
   m_mcs = i.ReadU8 ();
   m_groupDstId = i.ReadU8 ();
   m_rbStart = i.ReadU8 ();
   m_rbLen = i.ReadU8 ();
   m_hoppingInfo = i.ReadU8 ();
-  
+
   return GetSerializedSize ();
 }
 

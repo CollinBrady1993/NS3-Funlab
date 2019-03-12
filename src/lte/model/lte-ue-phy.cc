@@ -634,7 +634,7 @@ LteUePhy::PhyPscchPduReceived (Ptr<Packet> p)
 
           //todo, how to find the pool among the available ones?
           //right now just use the first one
-          std::list <PoolInfo>::iterator poolIt = m_sidelinkRxPools.begin ();
+          std::list <RxPoolInfo>::iterator poolIt = m_sidelinkRxPools.begin ();
           if (poolIt == m_sidelinkRxPools.end ())
             {
               NS_LOG_INFO (this << " No Rx pool configured");
@@ -1459,7 +1459,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
       //compute the reception slots for the PSSCH. Do this here because
       //we did not have access to the frame/subframe at the reception
 
-      std::list <PoolInfo>::iterator it;
+      std::list <RxPoolInfo>::iterator it;
       for (it = m_sidelinkRxPools.begin (); it != m_sidelinkRxPools.end (); it++)
         {
           std::map <uint16_t, SidelinkGrantInfo>::iterator grantIt = it->m_currentGrants.begin ();
@@ -1739,7 +1739,7 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                       //0 added to pass by the group Id
                       //to be double checked
                       //
-                      m_uplinkSpectrumPhy->StartTxSlDiscFrame (pb, (*paramIt).resNo, UL_DATA_DURATION);
+                      m_uplinkSpectrumPhy->StartTxSlDiscFrame (pb, (*paramIt).resNo, (*paramIt).rv, UL_DATA_DURATION);
 
                       break;
                     default:
@@ -2108,7 +2108,6 @@ LteUePhy::DoSetSlDiscTxPool (Ptr<SidelinkTxDiscResourcePool> pool)
   NS_LOG_FUNCTION (this << pool);
   m_discTxPools.m_pool = pool;
   m_discTxPools.m_npsdch = pool->GetNPsdch ();
-  m_discTxPools.m_currentGrants.clear ();
   m_discTxPools.m_nextDiscPeriod.frameNo = 0;
   m_discTxPools.m_nextDiscPeriod.subframeNo = 0;
 }
@@ -2120,7 +2119,6 @@ LteUePhy::DoRemoveSlDiscTxPool ()
   NS_LOG_DEBUG ("Removing Sidelink Discovery Tx pool");
   m_discTxPools.m_pool = NULL;
   m_discTxPools.m_npsdch = 0;
-  m_discTxPools.m_currentGrants.clear ();
 }
 
 void
@@ -2228,7 +2226,7 @@ LteUePhy::DoSetSlCommRxPools (std::list<Ptr<SidelinkRxCommResourcePool> > pools)
   for (poolIt = pools.begin (); poolIt != pools.end (); poolIt++)
     {
       bool found = false;
-      std::list<PoolInfo >::iterator currentPoolIt;
+      std::list<RxPoolInfo >::iterator currentPoolIt;
       for (currentPoolIt = m_sidelinkRxPools.begin (); currentPoolIt != m_sidelinkRxPools.end () && !found; currentPoolIt++)
         {
           if (*poolIt == currentPoolIt->m_pool)
@@ -2238,7 +2236,7 @@ LteUePhy::DoSetSlCommRxPools (std::list<Ptr<SidelinkRxCommResourcePool> > pools)
         }
       if (!found)
         {
-          PoolInfo newpool;
+          RxPoolInfo newpool;
           newpool.m_pool = *poolIt;
           newpool.m_currentGrants.clear ();
           m_sidelinkRxPools.push_back (newpool);

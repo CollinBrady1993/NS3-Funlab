@@ -254,6 +254,7 @@ LteSpectrumSignalParametersSlDiscFrame::LteSpectrumSignalParametersSlDiscFrame (
   NS_LOG_FUNCTION (this << &p);
   nodeId = p.nodeId;
   resNo = p.resNo;
+  rv = p.rv;
   slssId = p.slssId;
   if (p.packetBurst)
     {
