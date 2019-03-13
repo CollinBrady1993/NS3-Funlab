@@ -51,23 +51,42 @@ public:
       PSBCH,
       PSCCH,
       PSSCH,
-      PSDCH
-    } channel;    ///< channel over which the packet needs to be transmitted
+      PSDCH,
+      INVALID_CH ///special value for uninitialized channel
+    } channel {
+      INVALID_CH
+    };                       ///< channel over which the packet needs to be transmitted
     //Common information
-    uint8_t   rbStart; ///< models rb assignment
-    uint8_t   rbLen;   ///< models rb assignment
+    //Common information
+    uint8_t   rbStart {
+      std::numeric_limits<uint8_t>::max ()
+    };                                                     ///< models rb assignment
+    uint8_t   rbLen {
+      std::numeric_limits<uint8_t>::max ()
+    };                                                   ///< models rb assignment
 
     //PSCCH, PSDCH
-    uint32_t resNo; ///< the resource index from the communication/discovery pool
+    uint32_t resNo {
+      std::numeric_limits<uint32_t>::max ()
+    };                                                   ///< the resource index from the communication/discovery pool
 
     //PSDH and PSSCH information
-    uint8_t   rv;       ///< indicates HARQ revision number
+    uint8_t   rv {
+      std::numeric_limits<uint8_t>::max ()
+    };                                                      ///< indicates HARQ revision number
 
     //PSSCH information
-    uint8_t   hopping; ///< hopping flag
-    uint8_t   hoppingInfo; ///< models rb assignment when hopping is enabled
-    uint8_t   dstId;   ///< layer 1 destination
+    uint8_t   hopping {
+      std::numeric_limits<uint8_t>::max ()
+    };                                                     ///< hopping flag
+    uint8_t   hoppingInfo {
+      std::numeric_limits<uint8_t>::max ()
+    };                                                         ///< models rb assignment when hopping is enabled
+    uint8_t   dstId {
+      std::numeric_limits<uint8_t>::max ()
+    };                                                   ///< layer 1 destination
   };
+
 
   /**
   * \brief Send The MAC PDU to the channel
