@@ -2589,11 +2589,9 @@ LteSpectrumPhy::RxSlPsbch (std::vector<uint32_t> pktIndexes)
 {
   NS_LOG_FUNCTION (this << "Nb PSBCH messages:" << pktIndexes.size ());
 
-
-  std::vector<uint16_t> slssidVector;
   for (uint32_t i = 0; i < pktIndexes.size (); i++)
     {
-      uint32_t pktIndex = pktIndexes[i];
+      uint32_t pktIndex = pktIndexes [i];
       Ptr<LteSpectrumSignalParametersSlMibFrame> params = DynamicCast<LteSpectrumSignalParametersSlMibFrame> (m_rxPacketInfo.at (pktIndex).params);
       NS_ASSERT (params);
 
@@ -2603,7 +2601,6 @@ LteSpectrumPhy::RxSlPsbch (std::vector<uint32_t> pktIndexes)
         {
           m_ltePhyRxSlssCallback (params->slssId, params->psd);
         }
-      slssidVector.push_back (params->slssId);
     }
 
 
@@ -2752,7 +2749,8 @@ LteSpectrumPhy::RxSlPsbch (std::vector<uint32_t> pktIndexes)
               for (it = rxControlMessageOkList.begin (); it != rxControlMessageOkList.end (); it++)
                 {
 
-                  m_ltePhyRxPsbchEndOkCallback (m_rxPacketInfo.at (*it).params->packetBurst->GetPackets ().front (), slssidVector.at (*it));
+                  m_ltePhyRxPsbchEndOkCallback (m_rxPacketInfo.at (*it).params->packetBurst->GetPackets ().front (),
+                                                m_rxPacketInfo.at (*it).params->slssId);
                 }
             }
         }
