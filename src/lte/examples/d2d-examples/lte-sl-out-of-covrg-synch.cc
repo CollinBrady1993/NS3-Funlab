@@ -121,38 +121,34 @@ NotifySendOfSlss (Ptr<OutputStreamWrapper> stream, uint64_t imsi, uint64_t slssi
 /*
  * The topology is the following:
  *
- *			UE1..........(20 m)..........UE2..........(20 m)..........UE3
+ *          UE1..........(20 m)..........UE2..........(20 m)..........UE3
  *    (0.0, 0.0, 1.5)             (20.0, 0.0, 1.5)             (40.0, 0.0, 1.5)
  *
  * The node roles:
- * 			Tx							 Rx							  Rx
+ *          Tx                           Rx                           Rx
  *
  * The timeline:
  *
- *2 s ..Start SyncRef
- * 		selection
- *    	(None)
+ * 2 s ..Start SyncRef
+ * selection
+ *    (None)
  *
- *3 s ..Start..................... Unable to Rx Data ...... Unable to Rx Data
- *	 	transmissions
- *		(Becomes Sync Ref)
+ * 3 s ..Start..................... Unable to Rx Data ...... Unable to Rx Data
+ *      transmissions
+ *    (Becomes Sync Ref)
  *
- *4 s ............................ Start SyncRef........... Unable to Rx Data
- *								   selection
- *	 							   (Synchronize
- *	 							   to UE1)
+ * 4 s ............................ Start SyncRef........... Unable to Rx Data
+ *                                  selection
+ *                              (Synchronize to UE1)
  *
- *								   Starts receiving
- *								   packets
+ *                              Starts receiving packets
  *
- *6 s ...................................................... Start SyncRef
- *	 														 selection
- *	 														 (Synchronize
- *	 														 to UE1)
+ * 6 s ...................................................... Start SyncRef
+ *                                                            selection
+ *                                                        (Synchronize to UE1)
  *
- *															 Starts receiving
- *															 packets
- *10 s ........................................................................
+ *                                                        Starts receiving packets
+ * 10 s ........................................................................
  */
 
 NS_LOG_COMPONENT_DEFINE ("lte-sl-out-of-covrg-synch");
@@ -282,11 +278,11 @@ int main (int argc, char *argv[])
 
   //Install LTE UE devices to the nodes
   NetDeviceContainer ueDevs = lteHelper->InstallUeDevice (ueNodes);
-  
+
   //Fix the random number stream
   uint16_t randomStream = 1;
   randomStream += lteHelper->AssignStreams (ueDevs, randomStream);
-  
+
   //Sidelink pre-configuration for the UEs
   Ptr<LteSlUeRrc> ueSidelinkConfiguration = CreateObject<LteSlUeRrc> ();
   ueSidelinkConfiguration->SetSlEnabled (true);
@@ -333,14 +329,14 @@ int main (int argc, char *argv[])
   //Set initial SLSSID and start of the first scanning for all UEs
   uint16_t base_t = 2000; //ms
   for (uint16_t devIt = 0; devIt < ueDevs.GetN (); devIt++)
-  {
-	  ueDevs.Get (devIt)->GetObject<LteUeNetDevice> ()->GetRrc ()->SetSlssid (devIt+10);
-	  ueDevs.Get (devIt)->GetObject<LteUeNetDevice> ()->GetPhy ()->SetFirstScanningTime (MilliSeconds (base_t + (devIt*base_t)));
-      std::cout<< "IMSI "<< ueDevs.Get (devIt)->GetObject<LteUeNetDevice> ()->GetRrc ()->GetImsi()
-    		   << " SLSSID "<< devIt+10
-			   << " First Scan "  << base_t + (devIt*base_t) << " ms"<< std::endl;
+    {
+      ueDevs.Get (devIt)->GetObject<LteUeNetDevice> ()->GetRrc ()->SetSlssid (devIt + 10);
+      ueDevs.Get (devIt)->GetObject<LteUeNetDevice> ()->GetPhy ()->SetFirstScanningTime (MilliSeconds (base_t + (devIt * base_t)));
+      std::cout << "IMSI " << ueDevs.Get (devIt)->GetObject<LteUeNetDevice> ()->GetRrc ()->GetImsi ()
+                << " SLSSID " << devIt + 10
+                << " First Scan "  << base_t + (devIt * base_t) << " ms" << std::endl;
 
-  }
+    }
   //Tracing synchronization stuffs
   AsciiTraceHelper ascii;
   Ptr<OutputStreamWrapper> streamSyncRef = ascii.CreateFileStream ("SyncRef.txt");
@@ -348,12 +344,12 @@ int main (int argc, char *argv[])
   Ptr<OutputStreamWrapper> streamSendOfSlss = ascii.CreateFileStream ("TxSlss.txt");
   *streamSendOfSlss->GetStream () << "Time\tIMSI\tSLSSID\ttxOffset\tinCoverage\tFrameNo\tSframeNo" << std::endl;
   for (uint32_t i = 0; i < ueDevs.GetN (); ++i)
-  {
-	  Ptr<LteUeRrc> ueRrc =  ueDevs.Get (i)->GetObject<LteUeNetDevice> ()->GetRrc ();
-	  ueRrc->TraceConnectWithoutContext ("ChangeOfSyncRef", MakeBoundCallback (&NotifyChangeOfSyncRef, streamSyncRef));
-	  ueRrc->TraceConnectWithoutContext ("SendSLSS", MakeBoundCallback (&NotifySendOfSlss, streamSendOfSlss));
+    {
+      Ptr<LteUeRrc> ueRrc =  ueDevs.Get (i)->GetObject<LteUeNetDevice> ()->GetRrc ();
+      ueRrc->TraceConnectWithoutContext ("ChangeOfSyncRef", MakeBoundCallback (&NotifyChangeOfSyncRef, streamSyncRef));
+      ueRrc->TraceConnectWithoutContext ("SendSLSS", MakeBoundCallback (&NotifySendOfSlss, streamSendOfSlss));
 
-  }
+    }
   /* END Synchronization*/
 
 
@@ -418,8 +414,8 @@ int main (int argc, char *argv[])
 
   ApplicationContainer serverApps;
   PacketSinkHelper sidelinkSink ("ns3::UdpSocketFactory", localAddress);
-  serverApps.Add(sidelinkSink.Install (ueNodes.Get (1)));
-  serverApps.Add(sidelinkSink.Install (ueNodes.Get (2)));
+  serverApps.Add (sidelinkSink.Install (ueNodes.Get (1)));
+  serverApps.Add (sidelinkSink.Install (ueNodes.Get (2)));
   serverApps.Start (Seconds (2.0));
 
   //Set Sidelink bearers
@@ -439,7 +435,7 @@ int main (int argc, char *argv[])
       for (uint16_t ac = 0; ac < clientApps.GetN (); ac++)
         {
           Ipv4Address localAddrs =  clientApps.Get (ac)->GetNode ()->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-          std::cout << "Tx address: " << localAddrs << " Node Id "<< clientApps.Get (ac)->GetNode ()->GetId () <<std::endl;
+          std::cout << "Tx address: " << localAddrs << " Node Id " << clientApps.Get (ac)->GetNode ()->GetId () << std::endl;
           oss << "tx\t" << clientApps.Get (ac)->GetNode ()->GetId () << "\t" << clientApps.Get (ac)->GetNode ()->GetDevice (0)->GetObject<LteUeNetDevice> ()->GetImsi ();
           clientApps.Get (ac)->TraceConnect ("TxWithAddresses", oss.str (), MakeBoundCallback (&UePacketTrace, stream, localAddrs));
           oss.str ("");
@@ -449,7 +445,7 @@ int main (int argc, char *argv[])
       for (uint16_t ac = 0; ac < serverApps.GetN (); ac++)
         {
           Ipv4Address localAddrs =  serverApps.Get (ac)->GetNode ()->GetObject<Ipv4L3Protocol> ()->GetAddress (1,0).GetLocal ();
-          std::cout << "Rx address: " << localAddrs << " Node Id "<<serverApps.Get (ac)->GetNode ()->GetId () <<std::endl;
+          std::cout << "Rx address: " << localAddrs << " Node Id " << serverApps.Get (ac)->GetNode ()->GetId () << std::endl;
           oss << "rx\t" << serverApps.Get (ac)->GetNode ()->GetId () << "\t" << serverApps.Get (ac)->GetNode ()->GetDevice (0)->GetObject<LteUeNetDevice> ()->GetImsi ();
           serverApps.Get (ac)->TraceConnect ("RxWithAddresses", oss.str (), MakeBoundCallback (&UePacketTrace, stream, localAddrs));
           oss.str ("");
@@ -462,7 +458,7 @@ int main (int argc, char *argv[])
         {
           clientApps.Get (ac)->GetNode ()->GetObject<Ipv6L3Protocol> ()->AddMulticastAddress (groupAddress6);
           Ipv6Address localAddrs =  clientApps.Get (ac)->GetNode ()->GetObject<Ipv6L3Protocol> ()->GetAddress (1,1).GetAddress ();
-          std::cout << "Tx address: " << localAddrs << " Node Id "<<clientApps.Get (ac)->GetNode ()->GetId ()<< std::endl;
+          std::cout << "Tx address: " << localAddrs << " Node Id " << clientApps.Get (ac)->GetNode ()->GetId () << std::endl;
           oss << "tx\t" << clientApps.Get (ac)->GetNode ()->GetId () << "\t" << clientApps.Get (ac)->GetNode ()->GetDevice (0)->GetObject<LteUeNetDevice> ()->GetImsi ();
           clientApps.Get (ac)->TraceConnect ("TxWithAddresses", oss.str (), MakeBoundCallback (&UePacketTrace, stream, localAddrs));
           oss.str ("");
@@ -473,7 +469,7 @@ int main (int argc, char *argv[])
         {
           serverApps.Get (ac)->GetNode ()->GetObject<Ipv6L3Protocol> ()->AddMulticastAddress (groupAddress6);
           Ipv6Address localAddrs =  serverApps.Get (ac)->GetNode ()->GetObject<Ipv6L3Protocol> ()->GetAddress (1,1).GetAddress ();
-          std::cout << "Rx address: " << localAddrs << " Node Id "<<serverApps.Get (ac)->GetNode ()->GetId () <<std::endl;
+          std::cout << "Rx address: " << localAddrs << " Node Id " << serverApps.Get (ac)->GetNode ()->GetId () << std::endl;
           oss << "rx\t" << serverApps.Get (ac)->GetNode ()->GetId () << "\t" << serverApps.Get (ac)->GetNode ()->GetDevice (0)->GetObject<LteUeNetDevice> ()->GetImsi ();
           serverApps.Get (ac)->TraceConnect ("RxWithAddresses", oss.str (), MakeBoundCallback (&UePacketTrace, stream, localAddrs));
           oss.str ("");
