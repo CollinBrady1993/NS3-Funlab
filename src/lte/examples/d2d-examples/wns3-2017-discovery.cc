@@ -229,34 +229,9 @@ main (int argc, char *argv[])
   ///*** End of application configuration ***///
 
   // Set Discovery Traces
-  /*
-  AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("discovery-out-monitoring.tr");
-  *stream->GetStream () << "Time\tIMSI\tCellId\tRNTI\tProSeAppCode" << std::endl;
-
-  AsciiTraceHelper ascii1;
-  Ptr<OutputStreamWrapper> stream1 = ascii1.CreateFileStream ( "discovery-out-announcement-phy.tr");
-  *stream1->GetStream () << "Time\tIMSI\tCellId\tRNTI\tProSeAppCode" << std::endl;
-
-  AsciiTraceHelper ascii2;
-  Ptr<OutputStreamWrapper> stream2 = ascii1.CreateFileStream ( "discovery-out-announcement-mac.tr");
-  *stream2->GetStream () << "Time\tIMSI\tRNTI\tProSeAppCode" << std::endl;
-
-  std::ostringstream oss;
-  oss.str ("");
-  for (uint32_t i = 0; i < ueDevs.GetN (); ++i)
-    {
-      Ptr<LteUeRrc> ueRrc = DynamicCast<LteUeRrc> ( ueDevs.Get (i)->GetObject<LteUeNetDevice> ()->GetRrc () );
-      ueRrc->TraceConnectWithoutContext ("DiscoveryMonitoring", MakeBoundCallback (&DiscoveryMonitoringTrace, stream));
-      oss << ueDevs.Get (i)->GetObject<LteUeNetDevice> ()->GetImsi ();
-      Ptr<LteUePhy> uePhy = DynamicCast<LteUePhy> ( ueDevs.Get (i)->GetObject<LteUeNetDevice> ()->GetPhy () );
-      uePhy->TraceConnect ("DiscoveryAnnouncement", oss.str (), MakeBoundCallback (&DiscoveryAnnouncementPhyTrace, stream1));
-      Ptr<LteUeMac> ueMac = DynamicCast<LteUeMac> ( ueDevs.Get (i)->GetObject<LteUeNetDevice> ()->GetMac () );
-      ueMac->TraceConnect ("DiscoveryAnnouncement", oss.str (), MakeBoundCallback (&DiscoveryAnnouncementMacTrace, stream2));
-      oss.str ("");
-    }
-  */
-  //lteHelper->EnableTraces();
+  lteHelper->EnableSlRxPhyTraces ();
+  lteHelper->EnableSlPsdchMacTraces ();
+  lteHelper->EnableDiscoveryMonitoringRrcTraces ();
   
   NS_LOG_INFO ("Starting simulation...");
   Simulator::Stop (Seconds (simTime));
