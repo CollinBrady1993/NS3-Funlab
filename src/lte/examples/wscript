@@ -97,6 +97,12 @@ def build(bld):
     obj = bld.create_ns3_program('wns3-2017-synch',
                                  ['lte'])
     obj.source = 'd2d-examples/wns3-2017-synch.cc'
+    obj = bld.create_ns3_program('lte-sl-out-of-covrg-synch',
+                                 ['lte'])
+    obj.source = 'd2d-examples/lte-sl-out-of-covrg-synch.cc'
+    obj = bld.create_ns3_program('lte-sl-out-of-covrg-synch-twotx',
+                                 ['lte'])
+    obj.source = 'd2d-examples/lte-sl-out-of-covrg-synch-twotx.cc'
     
     if bld.env['ENABLE_EMU']:
         obj = bld.create_ns3_program('lena-simple-epc-emu',
