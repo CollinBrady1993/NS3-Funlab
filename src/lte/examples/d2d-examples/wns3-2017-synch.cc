@@ -408,7 +408,7 @@ main (int argc, char *argv[])
   std::ostringstream oss;
 
   std::vector<uint32_t> groupL2Addresses;
-  uint32_t groupL2Address = 0x00;
+  uint32_t groupL2Address = 255;
 
   Ipv4AddressGenerator::Init (Ipv4Address ("225.0.0.0"), Ipv4Mask ("255.0.0.0"));
   Ipv4Address groupRespondersIpv4Address = Ipv4AddressGenerator::NextAddress (Ipv4Mask ("255.0.0.0"));

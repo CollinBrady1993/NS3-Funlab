@@ -3548,6 +3548,9 @@ LteUeRrc::DoDeactivateSidelinkRadioBearer (uint32_t group)
 Ptr<LteSidelinkRadioBearerInfo>
 LteUeRrc::AddSlrb (uint32_t source, uint32_t destination, uint8_t lcid)
 {
+  NS_LOG_FUNCTION (this);
+
+  NS_ABORT_MSG_IF ((source == 0 || destination == 0), "ProSe L2 source or destination Id shouldn't be 0");
   Ptr<LteSidelinkRadioBearerInfo> slbInfo = CreateObject <LteSidelinkRadioBearerInfo> ();
   slbInfo->m_sourceL2Id = source;
   slbInfo->m_destinationL2Id = destination;

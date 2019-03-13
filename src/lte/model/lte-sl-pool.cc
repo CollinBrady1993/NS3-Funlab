@@ -1428,6 +1428,8 @@ SidelinkDiscResourcePool::GetPsdchTransmissions (uint32_t npsdch)
   uint32_t aj;
   uint32_t b1;
 
+  NS_ABORT_MSG_IF (m_lpsdch < n, "No subframe available for retransmission. Check the discovery bitmap");
+
   if (m_type == SidelinkDiscResourcePool::UE_SELECTED)
     {
       for (uint32_t j = 1; j <= n; j++)
