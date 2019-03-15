@@ -97,7 +97,7 @@ UeMemberLteUeCmacSapProvider::UeMemberLteUeCmacSapProvider (LteUeMac* mac)
 {
 }
 
-void 
+void
 UeMemberLteUeCmacSapProvider::ConfigureRach (RachConfig rc)
 {
   m_mac->DoConfigureRach (rc);
@@ -371,21 +371,21 @@ LteUeMac::GetTypeId (void)
 
 LteUeMac::LteUeMac ()
   :  m_bsrPeriodicity (MilliSeconds (1)),
-    // ideal behavior
-    m_bsrLast (MilliSeconds (0)),
-    m_freshUlBsr (false),
-    m_harqProcessId (0),
-    m_rnti (0),
-    m_rachConfigured (false),
-    m_waitingForRaResponse (false),
-    m_slBsrPeriodicity (MilliSeconds (1)),
-    m_slBsrLast (MilliSeconds (0)),
-    m_freshSlBsr (false),
-    m_setTrpIndex (0),
-    m_useSetTrpIndex (false),
-    m_slSynchPendingTxMsg (0),
-     m_slHasDataToTx (false),
-    m_sidelinkEnabled (false)
+  // ideal behavior
+  m_bsrLast (MilliSeconds (0)),
+  m_freshUlBsr (false),
+  m_harqProcessId (0),
+  m_rnti (0),
+  m_rachConfigured (false),
+  m_waitingForRaResponse (false),
+  m_slBsrPeriodicity (MilliSeconds (1)),
+  m_slBsrLast (MilliSeconds (0)),
+  m_freshSlBsr (false),
+  m_setTrpIndex (0),
+  m_useSetTrpIndex (false),
+  m_slSynchPendingTxMsg (0),
+  m_slHasDataToTx (false),
+  m_sidelinkEnabled (false)
 
 {
   NS_LOG_FUNCTION (this);
@@ -481,11 +481,11 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
       NS_ABORT_MSG_IF (m_discPendingTxMsgs.size () > 0, "Currently at most one discovery message per period is supported");
       m_discPendingTxMsgs.push_back (params.pdu);
     }
-  else if (params.sibslMsg)
-   {
-    NS_ASSERT_MSG (m_slSynchPendingTxMsg == 0, "Trying to transmit multiple synchronization messages");
-       m_slSynchPendingTxMsg = params.pdu;    
-   }
+  else if (params.mibslMsg)
+    {
+      NS_ASSERT_MSG (m_slSynchPendingTxMsg == 0, "Trying to transmit multiple synchronization messages");
+      m_slSynchPendingTxMsg = params.pdu;
+    }
   else
     {
       if (params.srcL2Id == 0)
@@ -600,13 +600,13 @@ LteUeMac::SendReportBufferStatus (void)
   if (m_rnti == 0)
     {
       NS_LOG_INFO ("MAC not initialized, BSR deferred");
-      return; 
+      return;
     }
 
   if (m_ulBsrReceived.size () == 0)
     {
       NS_LOG_INFO ("No BSR report to transmit");
-      return; 
+      return;
     }
   MacCeListElement_s bsr;
   bsr.m_rnti = m_rnti;
@@ -709,7 +709,7 @@ LteUeMac::SendSidelinkReportBufferStatus (void)
   m_uePhySapProvider->SendLteControlMessage (msg);
 }
 
-void 
+void
 LteUeMac::RandomlySelectAndSendRaPreamble ()
 {
   NS_LOG_FUNCTION (this);
@@ -731,26 +731,26 @@ LteUeMac::SendRaPreamble (bool contention)
   // m_uePhySapProvider->SendLteControlMessage (msg)) so that it can
   // bypass the m_ulConfigured flag. This is reasonable, since In fact
   // the RACH preamble is sent on 6RB bandwidth so the uplink
-  // bandwidth does not need to be configured. 
+  // bandwidth does not need to be configured.
   NS_ASSERT (m_subframeNo > 0); // sanity check for subframe starting at 1
   m_raRnti = m_subframeNo - 1;
   m_uePhySapProvider->SendRachPreamble (m_raPreambleId, m_raRnti);
   NS_LOG_INFO (this << " sent preamble id " << (uint32_t) m_raPreambleId << ", RA-RNTI " << (uint32_t) m_raRnti);
-  // 3GPP 36.321 5.1.4 
-  Time raWindowBegin = MilliSeconds (3); 
+  // 3GPP 36.321 5.1.4
+  Time raWindowBegin = MilliSeconds (3);
   Time raWindowEnd = MilliSeconds (3 + m_rachConfig.raResponseWindowSize);
   Simulator::Schedule (raWindowBegin, &LteUeMac::StartWaitingForRaResponse, this);
   m_noRaResponseReceivedEvent = Simulator::Schedule (raWindowEnd, &LteUeMac::RaResponseTimeout, this, contention);
 }
 
-void 
+void
 LteUeMac::StartWaitingForRaResponse ()
 {
   NS_LOG_FUNCTION (this);
   m_waitingForRaResponse = true;
 }
 
-void 
+void
 LteUeMac::RecvRaResponse (BuildRarListElement_s raResponse)
 {
   NS_LOG_FUNCTION (this);
@@ -774,7 +774,7 @@ LteUeMac::RecvRaResponse (BuildRarListElement_s raResponse)
   if ((lc0BsrIt != m_ulBsrReceived.end ())
       && (lc0BsrIt->second.txQueueSize > 0))
     {
-      NS_ASSERT_MSG (raResponse.m_grant.m_tbSize > lc0BsrIt->second.txQueueSize, 
+      NS_ASSERT_MSG (raResponse.m_grant.m_tbSize > lc0BsrIt->second.txQueueSize,
                      "segmentation of Message 3 is not allowed");
       // this function can be called only from primary carrier
       if (m_componentCarrierId > 0)
@@ -795,7 +795,7 @@ LteUeMac::RecvRaResponse (BuildRarListElement_s raResponse)
     }
 }
 
-void 
+void
 LteUeMac::RaResponseTimeout (bool contention)
 {
   NS_LOG_FUNCTION (this << contention);
@@ -821,7 +821,7 @@ LteUeMac::RaResponseTimeout (bool contention)
     }
 }
 
-void 
+void
 LteUeMac::DoConfigureRach (LteUeCmacSapProvider::RachConfig rc)
 {
   NS_LOG_FUNCTION (this);
@@ -829,7 +829,7 @@ LteUeMac::DoConfigureRach (LteUeCmacSapProvider::RachConfig rc)
   m_rachConfigured = true;
 }
 
-void 
+void
 LteUeMac::DoStartContentionBasedRandomAccessProcedure ()
 {
   NS_LOG_FUNCTION (this);
@@ -849,7 +849,7 @@ LteUeMac::DoSetRnti (uint16_t rnti)
 }
 
 
-void 
+void
 LteUeMac::DoStartNonContentionBasedRandomAccessProcedure (uint16_t rnti, uint8_t preambleId, uint8_t prachMask)
 {
   NS_LOG_FUNCTION (this << " rnti" << rnti);
@@ -1105,20 +1105,20 @@ LteUeMac::DoReceiveSlSciPhyPdu (Ptr<Packet> p)
   p->PeekHeader (sciHeader);
   LteSlSciTag tag;
   p->PeekPacketTag (tag);
-  
+
   //Keep track of the subframes in which PSSCH receptions can occur so we don't
   //transmit discovery during that time
   std::list <uint32_t>::iterator it;
   for (it = m_sidelinkDestinations.begin (); it != m_sidelinkDestinations.end (); it++)
     {
       if (sciHeader.GetGroupDstId () == ((*it) & 0xFF))
-      {
+        {
           NS_LOG_INFO ("received SCI for group " << (uint32_t)((*it) & 0xFF) << " from rnti " << tag.GetRnti ());
-          
+
           std::list <Ptr<SidelinkRxCommResourcePool> >::iterator poolIt = m_sidelinkRxPools.begin ();
-          
+
           SidelinkCommResourcePool::SubframeInfo tmp = (*poolIt)->GetCurrentScPeriod (m_frameNo, m_subframeNo);
-          std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo> psschTx = (*poolIt)->GetPsschTransmissions (tmp, sciHeader.GetTrp(), sciHeader.GetRbStart(), sciHeader.GetRbLen());
+          std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo> psschTx = (*poolIt)->GetPsschTransmissions (tmp, sciHeader.GetTrp (), sciHeader.GetRbStart (), sciHeader.GetRbLen ());
           std::list<SidelinkCommResourcePool::SidelinkTransmissionInfo>::iterator rxIt;
           for (rxIt = psschTx.begin (); rxIt != psschTx.end (); rxIt++)
             {
@@ -1126,9 +1126,9 @@ LteUeMac::DoReceiveSlSciPhyPdu (Ptr<Packet> p)
               rxIt->subframe.frameNo++;
               rxIt->subframe.subframeNo++;
               NS_LOG_INFO ("Subframe Rx" << rxIt->subframe.frameNo << "/" << rxIt->subframe.subframeNo);
-              m_psschRxSet.insert(rxIt->subframe);
+              m_psschRxSet.insert (rxIt->subframe);
             }
-      }
+        }
     }
 }
 
@@ -1271,7 +1271,7 @@ LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
                                   // for SRB1 (using RLC AM) it's better to
                                   // overestimate RLC overhead rather than
                                   // underestimate it and risk unneeded
-                                  // segmentation which increases delay 
+                                  // segmentation which increases delay
                                   rlcOverhead = 4;
                                 }
                               else
@@ -1301,7 +1301,7 @@ LteUeMac::DoReceiveLteControlMessage (Ptr<LteControlMessage> msg)
                         }
                       else
                         {
-                          if ( ((*itBsr).second.retxQueueSize > 0) || ((*itBsr).second.txQueueSize > 0)) 
+                          if ( ((*itBsr).second.retxQueueSize > 0) || ((*itBsr).second.txQueueSize > 0))
                             {
                               // resend BSR info for updating eNB peer MAC
                               m_freshUlBsr = true;
@@ -1447,7 +1447,7 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
       //Sidelink Synchronization
       if (m_slSynchPendingTxMsg)
-       {
+        {
           LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
           phyParams.channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSBCH;
           phyParams.rbStart = 22;
@@ -1457,8 +1457,8 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
           //clear pending message, but should probably be done after handling discovery/communication
           //to avoid sending messages as well
           m_slSynchPendingTxMsg = NULL;
-       }
-      
+        }
+
       //Sidelink Discovery
       if (m_discTxPool.m_pool != NULL)
         {
@@ -1841,8 +1841,8 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                 }
               //create SCI message
               LteSlSciHeader sciHeader;
-              sciHeader.SetSciFormat0Params (poolIt->second.m_currentGrant.m_hopping, 
-                                             poolIt->second.m_currentGrant.m_rbStart, 
+              sciHeader.SetSciFormat0Params (poolIt->second.m_currentGrant.m_hopping,
+                                             poolIt->second.m_currentGrant.m_rbStart,
                                              poolIt->second.m_currentGrant.m_rbLen,
                                              poolIt->second.m_currentGrant.m_hoppingInfo,
                                              poolIt->second.m_currentGrant.m_iTrp,

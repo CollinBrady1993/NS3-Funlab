@@ -3718,8 +3718,8 @@ LteUeRrc::StopDiscoveryApps (std::list<uint64_t> appCodes, LteSlUeRrc::Discovery
   //m_cmacSapProvider.at (0)->ModifyDiscTxPayloads (m_sidelinkConfiguration->m_announcePayloads);
   //m_cmacSapProvider.at (0)->ModifyDiscRxPayloads (m_sidelinkConfiguration->m_monitorPayloads);
 
-      switch (m_state)
-      {
+  switch (m_state)
+    {
     case IDLE_START:
     case IDLE_CELL_SEARCH:
     case IDLE_WAIT_MIB_SIB1:
@@ -4392,7 +4392,7 @@ LteUeRrc::SendSlss ()
           mibslHeader.SetMessage (mibSl);
           Ptr<Packet> p = Create<Packet>();
           p->AddHeader (mibslHeader);
-          
+
           LteMacSapProvider::TransmitPduParameters params;
           params.rnti = m_rnti;
           params.srcL2Id = 0; //not used for MIB-SL messages
@@ -4401,7 +4401,7 @@ LteUeRrc::SendSlss ()
           params.harqProcessId = 0; //not used for MIB-SL messages
           params.layer = 0; //not used for MIB-SL messages
           params.discMsg = false;
-          params.sibslMsg = true;
+          params.mibslMsg = true;
           params.componentCarrierId = 0;
           params.pdu = p;
 
@@ -4983,7 +4983,7 @@ LteUeRrc::TransmitDiscoveryMessage (LteSlDiscHeader discHeader)
   params.lcid = 0; //not used  for discovery messages
   params.harqProcessId = 0; //not used for discovery messages
   params.discMsg = true;
-  params.sibslMsg = false;
+  params.mibslMsg = false;
   params.componentCarrierId = 0;
   params.pdu = p;
   m_macSapProvider->TransmitPdu (params);
