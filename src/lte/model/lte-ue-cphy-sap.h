@@ -212,11 +212,6 @@ public:
    */
   virtual void SetSlssId (uint64_t slssid) = 0;
   /**
-    * Pass to the PHY entity a SLSS to be sent
-    * \param mibSl The MIB-SL to send
-    */
-  virtual void SendSlss (LteRrcSap::MasterInformationBlockSL mibSl) = 0;
-  /**
    * Notify the PHY entity that a SyncRef has been selected and that it should apply
    * the corresponding change of timing when appropriate
    * \param synchParams The parameters containing the information of the selected SyncRef
@@ -385,7 +380,6 @@ public:
   virtual void AddSlDestination (uint32_t destination);
   virtual void RemoveSlDestination (uint32_t destination);
   virtual void SetSlssId (uint64_t slssid);
-  virtual void SendSlss (LteRrcSap::MasterInformationBlockSL mibSl);
   virtual void SynchronizeToSyncRef (LteSlSyncParams synchParams);
 
   virtual void SetRsrpFilterCoefficient (uint8_t rsrpFilterCoefficient);
@@ -547,13 +541,6 @@ void
 MemberLteUeCphySapProvider<C>::SetSlssId (uint64_t slssid)
 {
   m_owner->DoSetSlssId (slssid);
-}
-
-template <class C>
-void
-MemberLteUeCphySapProvider<C>::SendSlss (LteRrcSap::MasterInformationBlockSL mibSl)
-{
-  //m_owner->DoSendSlss (mibSl);
 }
 
 template <class C>

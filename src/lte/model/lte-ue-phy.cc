@@ -1416,14 +1416,14 @@ LteUePhy::SubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
   if (m_ulConfigured)
     {
-            NS_LOG_INFO ("Discovery Tx Pool initialized" << ". Next period at " << m_discTxPools.m_nextDiscPeriod.frameNo
-                           << "/" << m_discTxPools.m_nextDiscPeriod.subframeNo);
-            NS_LOG_INFO ("At " << Simulator::Now ().GetMilliSeconds ()
-                               << " ms Starting new discovery period for TX pool"
-                               << ". Next period at " << m_discTxPools.m_nextDiscPeriod.frameNo
-                               << "/" << m_discTxPools.m_nextDiscPeriod.subframeNo);
+      NS_LOG_INFO ("Discovery Tx Pool initialized" << ". Next period at " << m_discTxPools.m_nextDiscPeriod.frameNo
+                                                   << "/" << m_discTxPools.m_nextDiscPeriod.subframeNo);
+      NS_LOG_INFO ("At " << Simulator::Now ().GetMilliSeconds ()
+                         << " ms Starting new discovery period for TX pool"
+                         << ". Next period at " << m_discTxPools.m_nextDiscPeriod.frameNo
+                         << "/" << m_discTxPools.m_nextDiscPeriod.subframeNo);
 
-    InitializeDiscRxPool (frameNo, subframeNo);
+      InitializeDiscRxPool (frameNo, subframeNo);
 
       if (m_slTxPoolInfo.m_pool)
         {
@@ -2178,7 +2178,7 @@ LteUePhy::InitializeDiscRxPool (uint32_t frameNo, uint32_t subframeNo)
           it.m_nextDiscPeriod.frameNo++;
           it.m_nextDiscPeriod.subframeNo++;
           NS_LOG_DEBUG ("Total discovery RX pool = " << m_discRxPools.size ());
-          NS_LOG_DEBUG ("At " << Simulator::Now().GetMilliSeconds ()
+          NS_LOG_DEBUG ("At " << Simulator::Now ().GetMilliSeconds ()
                               << " ms Discovery Rx Pool initialized"
                               << ". Next period at " << it.m_nextDiscPeriod.frameNo
                               << "/" << it.m_nextDiscPeriod.subframeNo);
@@ -2827,23 +2827,6 @@ LteUePhy::DoSetSlssId (uint64_t slssid)
   m_uplinkSpectrumPhy->SetSlssid (slssid);
   m_sidelinkSpectrumPhy->SetSlssid (slssid);
 }
-
-/*
-void
-LteUePhy::DoSendSlss (LteRrcSap::MasterInformationBlockSL mibSl)
-{
-  NS_LOG_FUNCTION (this);
-  Ptr<MibSlLteControlMessage> msg = Create<MibSlLteControlMessage> ();
-  msg->SetMibSL (mibSl);
-  NS_LOG_LOGIC ("Adding a MIB-SL to the queue of control messages to be send ");
-  DoSendLteControlMessage (msg);
-  //Notify the SpectrumPhy about the SLSSID used for transmitting
-  //Do it here to have the correct SLSSID in the SpectrumPhy and cover the case in which
-  //the UE reselects a random SLSSID without change of timing, i.e., out-of-coverage and without SyncRef
-  m_uplinkSpectrumPhy->SetSlssid (mibSl.slssid);
-  m_sidelinkSpectrumPhy->SetSlssid ( mibSl.slssid);
-}
-*/
 
 void
 LteUePhy::DoSynchronizeToSyncRef (LteSlSyncParams synchParams)
