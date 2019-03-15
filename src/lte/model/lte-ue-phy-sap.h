@@ -57,7 +57,6 @@ public:
       INVALID_CH
     };                       ///< channel over which the packet needs to be transmitted
     //Common information
-    //Common information
     uint8_t   rbStart {
       std::numeric_limits<uint8_t>::max ()
     };                                                     ///< models rb assignment
