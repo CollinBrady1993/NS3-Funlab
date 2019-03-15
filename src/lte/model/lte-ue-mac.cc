@@ -478,7 +478,6 @@ LteUeMac::DoTransmitPdu (LteMacSapProvider::TransmitPduParameters params)
       tag.SetRnti (params.rnti);
       params.pdu->AddPacketTag (tag);
       //queue message until next discovery period
-      NS_ABORT_MSG_IF (m_discPendingTxMsgs.size () > 0, "Currently at most one discovery message per period is supported");
       m_discPendingTxMsgs.push_back (params.pdu);
     }
   else if (params.mibslMsg)
@@ -952,7 +951,7 @@ LteUeMac::DoSetSlDiscTxPool (Ptr<SidelinkTxDiscResourcePool> pool)
   NS_ABORT_MSG_IF (info.m_nextDiscPeriod.frameNo > 1024 || info.m_nextDiscPeriod.subframeNo > 10,
                    "Invalid frame or subframe number");
 
-  info.m_grantReceived = false;
+  info.m_nextGrants.clear ();
   m_discTxPool = info;
 }
 
@@ -1476,18 +1475,51 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
 
               if (m_discTxPool.m_pool->GetSchedulingType () == SidelinkDiscResourcePool::UE_SELECTED)
                 {
-                  //use txProbability
-                  DiscGrant grant;
-                  double p1 = m_p1UniformVariable->GetValue (0, 1);
-                  double txProbability = m_discTxPool.m_pool->GetTxProbability ();       //calculate txProbability
-                  NS_LOG_DEBUG ("txProbability = " << txProbability << " % ");
-                  if (p1 <= txProbability / 100.0)
+                  //Section 5.15.1.1
+                  //for each MAC PDU, pick a random number to see if the packet will be transmitted
+                  //then pick a random resource amongst those available
+
+                  //set of resources available
+                  std::set <uint32_t> resourcesAvailable;
+                  for (uint32_t i = 0; i < m_discTxPool.m_npsdch; i++)
                     {
-                      grant.m_resPsdch = m_resUniformVariable->GetInteger (0, m_discTxPool.m_npsdch - 1);
-                      grant.m_rnti = m_rnti;
-                      m_discTxPool.m_nextGrant = grant;
-                      m_discTxPool.m_grantReceived = true;
-                      NS_LOG_INFO ("UE selected grant: resource =" << (uint16_t) grant.m_resPsdch << "/" << m_discTxPool.m_npsdch);
+                      resourcesAvailable.insert (i);
+                    }
+
+                  std::list<Ptr<Packet> >::iterator pktIt;
+                  for (pktIt = m_discPendingTxMsgs.begin (); pktIt != m_discPendingTxMsgs.end (); pktIt++)
+                    {
+                      //use txProbability
+                      double p1 = m_p1UniformVariable->GetValue (0, 1);
+                      double txProbability = m_discTxPool.m_pool->GetTxProbability ();   //calculate txProbability
+                      NS_LOG_DEBUG ("txProbability = " << txProbability << " % " << " selected " << (100 * p1));
+                      if (p1 <= txProbability / 100.0)
+                        {
+                          uint32_t randVar = m_resUniformVariable->GetInteger (0, resourcesAvailable.size () - 1);
+                          DiscGrant grant;
+                          std::set <uint32_t>::iterator selectResIt = resourcesAvailable.begin ();
+                          std::advance (selectResIt,randVar);
+                          grant.m_resPsdch = *selectResIt;
+                          grant.m_discMsg = *pktIt;
+                          m_discTxPool.m_nextGrants.push_back (grant);
+                          NS_LOG_INFO ("UE selected grant: resource =" << (uint16_t) grant.m_resPsdch << "/" << m_discTxPool.m_npsdch);
+                          //remove overlapping resources
+                          std::set <uint32_t> conflictingResources = m_discTxPool.m_pool->GetConflictingResources (grant.m_resPsdch);
+                          std::set <uint32_t>::iterator resIt;
+                          for (resIt = conflictingResources.begin (); resIt != conflictingResources.end (); resIt++)
+                            {
+                              resourcesAvailable.erase (*resIt);
+                            }
+                          if (resourcesAvailable.size () == 0)
+                            {
+                              NS_LOG_INFO ("No more resources available for sending additional discovery messages");
+                              break;
+                            }
+                        }
+                      else
+                        {
+                          NS_LOG_INFO ("Discovery packet will not be transmitted due to transmit probability");
+                        }
                     }
                 }
               else   //scheduled
@@ -1497,48 +1529,50 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                 }
 
               //if we received a grant
-              if (m_discTxPool.m_grantReceived)
+              if (m_discTxPool.m_nextGrants.size () > 0)
                 {
-                  m_discTxPool.m_currentGrant = m_discTxPool.m_nextGrant;
-                  NS_LOG_INFO ("Discovery grant received resource " << (uint32_t) m_discTxPool.m_currentGrant.m_resPsdch);
-
+                  m_discTxPool.m_currentGrants = m_discTxPool.m_nextGrants;
                   //move pending message to list of messages to sent in the new period
-                  m_discTxPool.m_discTxMsgs = m_discPendingTxMsgs;
                   m_discPendingTxMsgs.clear ();
 
                   SidelinkDiscResourcePool::SubframeInfo tmp;
                   tmp.frameNo = m_discTxPool.m_currentDiscPeriod.frameNo - 1;
                   tmp.subframeNo = m_discTxPool.m_currentDiscPeriod.subframeNo - 1;
 
-                  m_discTxPool.m_psdchTx = m_discTxPool.m_pool->GetPsdchTransmissions (m_discTxPool.m_currentGrant.m_resPsdch);
-
-                  for (std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator txIt = m_discTxPool.m_psdchTx.begin ();
-                       txIt != m_discTxPool.m_psdchTx.end (); txIt++)
+                  std::list <DiscGrant>::iterator grantIt;
+                  for (grantIt = m_discTxPool.m_currentGrants.begin (); grantIt != m_discTxPool.m_currentGrants.end (); grantIt++)
                     {
-                      txIt->subframe = txIt->subframe + tmp;
-                      //adjust for index starting at 1
-                      txIt->subframe.frameNo++;
-                      txIt->subframe.subframeNo++;
-                      NS_LOG_INFO ("PSDCH: Subframe " << txIt->subframe.frameNo << "/" << txIt->subframe.subframeNo
-                                                      << ": rbStart=" << (uint32_t) txIt->rbStart << ", rbLen=" << (uint32_t) txIt->nbRb);
-                      NS_ABORT_MSG_IF (txIt->subframe.frameNo > 1024 || txIt->subframe.subframeNo > 10,
-                                       "Invalid frame or subframe number");
-                      //Inform PHY: find a way to inform the PHY layer of the resources
-                      m_uePhySapProvider->SetDiscGrantInfo (m_discTxPool.m_currentGrant.m_resPsdch);
-                      //clear the grant
-                      m_discTxPool.m_grantReceived = false;
+
+                      grantIt->m_psdchTx = m_discTxPool.m_pool->GetPsdchTransmissions (grantIt->m_resPsdch);
+
+                      for (std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator txIt = grantIt->m_psdchTx.begin ();
+                           txIt != grantIt->m_psdchTx.end (); txIt++)
+                        {
+                          txIt->subframe = txIt->subframe + tmp;
+                          //adjust for index starting at 1
+                          txIt->subframe.frameNo++;
+                          txIt->subframe.subframeNo++;
+                          NS_LOG_INFO ("PSDCH: Subframe " << txIt->subframe.frameNo << "/" << txIt->subframe.subframeNo
+                                                          << ": rbStart=" << (uint32_t) txIt->rbStart << ", rbLen=" << (uint32_t) txIt->nbRb);
+                          NS_ABORT_MSG_IF (txIt->subframe.frameNo > 1024 || txIt->subframe.subframeNo > 10,
+                                           "Invalid frame or subframe number");
+                        }
                     }
+                  m_discTxPool.m_nextGrants.clear ();
+
                 }
             }
 
-          std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator allocIt;
           //check if we need to transmit PSDCH
-          allocIt = m_discTxPool.m_psdchTx.begin ();
-          if (allocIt != m_discTxPool.m_psdchTx.end () && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
+          std::list <DiscGrant>::iterator grantIt;
+          for (grantIt = m_discTxPool.m_currentGrants.begin (); grantIt != m_discTxPool.m_currentGrants.end (); grantIt++)
             {
-              NS_LOG_INFO (this << "PSDCH transmission");
-              for (std::list< Ptr<Packet> >::iterator discMsg =  m_discTxPool.m_discTxMsgs.begin (); discMsg !=  m_discTxPool.m_discTxMsgs.end (); ++discMsg)
+              std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo>::iterator allocIt;
+              allocIt = grantIt->m_psdchTx.begin ();
+              if (allocIt != grantIt->m_psdchTx.end () && (*allocIt).subframe.frameNo == frameNo && (*allocIt).subframe.subframeNo == subframeNo)
                 {
+                  NS_LOG_INFO (this << "PSDCH transmission");
+
                   //Create Discovery message for each discovery payload announcing
                   NS_LOG_INFO ("discovery message sent by " << m_rnti);
 
@@ -1566,27 +1600,27 @@ LteUeMac::DoSubframeIndication (uint32_t frameNo, uint32_t subframeNo)
                   stats_dch_params.m_timestamp = Simulator::Now ().GetMilliSeconds ();
 
                   LteSlDiscHeader discHeader;
-                  (*discMsg)->PeekHeader (discHeader);
+                  grantIt->m_discMsg->PeekHeader (discHeader);
                   m_slPsdchScheduling (stats_dch_params, discHeader);
-
 
                   LteUePhySapProvider::TransmitSlPhySduParameters phyParams;
                   phyParams.channel = LteUePhySapProvider::TransmitSlPhySduParameters::PSDCH;
                   phyParams.rbStart = (*allocIt).rbStart;
                   phyParams.rbLen = (*allocIt).nbRb;
-                  phyParams.resNo = m_discTxPool.m_currentGrant.m_resPsdch;
-                  uint8_t rv = m_discTxPool.m_psdchTx.size () % (m_discTxPool.m_pool->GetNumRetx () + 1);
+                  phyParams.resNo =  grantIt->m_resPsdch;
+                  uint8_t rv = grantIt->m_psdchTx.size () % (m_discTxPool.m_pool->GetNumRetx () + 1);
                   phyParams.rv = rv == 0 ? rv : m_discTxPool.m_pool->GetNumRetx () + 1 - rv;
 
-                  m_uePhySapProvider->SendSlMacPdu (*discMsg, phyParams);
+                  m_uePhySapProvider->SendSlMacPdu (grantIt->m_discMsg, phyParams);
+                  grantIt->m_psdchTx.erase (allocIt);
+                  if (grantIt->m_psdchTx.empty ())
+                    {
+                      NS_LOG_INFO ("was last transmission for this discovery message.");
+                      grantIt = m_discTxPool.m_currentGrants.erase (grantIt);
+                    }
                 }
-              m_discTxPool.m_psdchTx.erase (allocIt);
-              if (m_discTxPool.m_psdchTx.empty ())
-                {
-                  NS_LOG_INFO ("was last transmission, clear messages");
-                  m_discTxPool.m_discTxMsgs.clear ();
-                }
-            }
+
+            } //end loop throught discovery grants
         }
       //Sidelink Communication
       if ((Simulator::Now () >= m_slBsrLast + m_slBsrPeriodicity) && (m_freshSlBsr == true))

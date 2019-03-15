@@ -114,14 +114,6 @@ public:
    */
   virtual void SendRachPreamble (uint32_t prachId, uint32_t raRnti) = 0;
 
-  //Sidelink Communication
-
-  /**
-   * Set grant for discovery
-   * \param resPsdch The resource to use in the discovery pool
-   */
-  virtual void SetDiscGrantInfo (uint8_t resPsdch) = 0;
-
 };
 
 

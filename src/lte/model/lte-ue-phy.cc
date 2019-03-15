@@ -91,7 +91,6 @@ public:
   virtual void SendSlMacPdu (Ptr<Packet> p, TransmitSlPhySduParameters params);
   virtual void SendLteControlMessage (Ptr<LteControlMessage> msg);
   virtual void SendRachPreamble (uint32_t prachId, uint32_t raRnti);
-  virtual void SetDiscGrantInfo (uint8_t resPsdch);
 
 private:
   LteUePhy* m_phy; ///< the Phy
@@ -124,12 +123,6 @@ void
 UeMemberLteUePhySapProvider::SendRachPreamble (uint32_t prachId, uint32_t raRnti)
 {
   m_phy->DoSendRachPreamble (prachId, raRnti);
-}
-
-void
-UeMemberLteUePhySapProvider::SetDiscGrantInfo (uint8_t resPsdch)
-{
-  m_phy->DoSetDiscGrantInfo (resPsdch);
 }
 
 
@@ -2199,13 +2192,6 @@ LteUePhy::InitializeDiscRxPool (uint32_t frameNo, uint32_t subframeNo)
                               << "/" << it.m_nextDiscPeriod.subframeNo);
         }
     }
-}
-
-void
-LteUePhy::DoSetDiscGrantInfo (uint8_t resPsdch)
-{
-  NS_LOG_FUNCTION (this << resPsdch);
-  m_discResPsdch = resPsdch;
 }
 
 void

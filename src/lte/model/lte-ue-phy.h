@@ -553,12 +553,6 @@ private:
    * Remove Sidelink Discovery Tx Pool function
    */
   void DoRemoveSlDiscTxPool ();
-  /**
-   * Set discovery grant information function
-   *
-   * \param resPsdch A randomly chosen resource index from the PSDCH resource pool by UE MAC
-   */
-  void DoSetDiscGrantInfo (uint8_t resPsdch);
 
   //communication
   /**
@@ -840,7 +834,7 @@ private:
   };
 
   TxPoolInfo m_slTxPoolInfo; ///< Sidelink pool information
-  
+
   /// Sidelink Rx pool information
   struct RxPoolInfo
   {

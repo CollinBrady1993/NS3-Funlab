@@ -475,8 +475,9 @@ private:
   /// Sidelink discovery grant related variables
   struct DiscGrant
   {
-    uint16_t m_rnti; ///< RNTI of the UE
     uint8_t m_resPsdch; ///< A randomly chosen resource index from the PSDCH resource pool
+    Ptr<Packet> m_discMsg; ///< The discovery message to send in the selected resource
+    std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx; ///< List of PSDCH transmissions within the pool
   };
 
   /// Sidelink discovery pool information
@@ -484,17 +485,12 @@ private:
   {
     Ptr<SidelinkTxDiscResourcePool> m_pool; ///< The Sidelink discovery transmission pool
     SidelinkDiscResourcePool::SubframeInfo m_currentDiscPeriod; ///< Start of the current discovery period
-    DiscGrant m_currentGrant; ///< Grant for the next discovery period
+    std::list <DiscGrant> m_currentGrants; ///< Grants for the current discovery period
     SidelinkDiscResourcePool::SubframeInfo m_nextDiscPeriod; ///< Start of next discovery period
 
     uint32_t m_npsdch; ///< Number of PSDCH available in the pool
 
-    bool m_grantReceived; ///< True if UE received the grant
-    DiscGrant m_nextGrant; ///< Grant received for the next discovery period
-
-    std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> m_psdchTx; ///< List of PSDCH transmissions within the pool
-
-    std::list< Ptr<Packet> > m_discTxMsgs; ///< List of discovery messages to send within the period
+    std::list <DiscGrant> m_nextGrants; ///< Grants received for the next discovery period
   };
 
   DiscPoolInfo m_discTxPool; ///< Sidelink discovery transmission pool

@@ -4981,6 +4981,7 @@ LteUeRrc::TransmitDiscoveryMessage (LteSlDiscHeader discHeader)
   params.srcL2Id = 0; //not used for discovery messages
   params.dstL2Id = 0; //not used for discovery messages
   params.lcid = 0; //not used  for discovery messages
+  params.layer = 0; //not used  for discovery messages
   params.harqProcessId = 0; //not used for discovery messages
   params.discMsg = true;
   params.mibslMsg = false;

@@ -646,6 +646,13 @@ public:
    */
   static LteRrcSap::TxProbability TxProbabilityFromInt (uint32_t p);
 
+  /**
+   * \brief Returns the list of resources that conflict with the given resource
+   * \param res The resource number
+   * \return The list of resources that conflict with the given resource res
+   */
+  std::set<uint32_t> GetConflictingResources (uint32_t res);
+
 protected:
   /**
    * Initialize the PSDCH pool
@@ -683,6 +690,7 @@ private:
   uint32_t m_rbpsdch; ///< Total number of RBs belong to a PSDCH pool
   std::vector <uint32_t> m_rbpsdchVector;   ///< List of RBs that belong to PSDCH pool
   uint32_t m_nPsdchResources;   ///< Number of resources in the PSDCH pools
+  std::vector < std::set <uint32_t> > m_resourceConflictsVector; ///< Matrix indicating resources using the same subframes
   bool m_preconfigured;   ///< Indicates if the pool is preconfigured
 };
 
