@@ -555,8 +555,11 @@ SidelinkDiscPoolTestSuite::SidelinkDiscPoolTestSuite ()
 
   //SidlelinkDiscPoolOverlapResourcesTestCase Input Format:
   //pfactory,psdchResourceNo 1,psdchResourceNo 2, expected overlap
-
-  //create a discovery pool with 4 resources
+  //These tests check that the function to detect that discovery resources overlap in time is working
+  //properly. Each discovery resource maps to a set of subframes and resource blocks in the discovery pool.
+  //Within a sidelink period, the UE MAC must select resources that do not overlap in time (see TS 36.321 5.15.1.1)
+  //even if they use different resource blocks.
+  //For this test, we create a discovery pool with 4 resources
   // layout is
   // resource 0 on first subframe and RBs 10/11
   // resource 1 on second subframe and RBs 10/11
@@ -565,9 +568,13 @@ SidelinkDiscPoolTestSuite::SidelinkDiscPoolTestSuite ()
   pfactory.SetDiscPrbNum (2);
   pfactory.SetDiscPrbStart (10);
   pfactory.SetDiscPrbEnd (13);
+  //The same resource will overlap with itself
   AddTestCase (new SidlelinkDiscPoolOverlapResourcesTestCase (pfactory, 0, 0, true),TestCase::QUICK);
+  //Resources 0 and 1 are on the same RBs but different subframes, so they don't overlap
   AddTestCase (new SidlelinkDiscPoolOverlapResourcesTestCase (pfactory, 0, 1, false),TestCase::QUICK);
+  //Resources 0 and 2 are on different RBs but same subframe, so they overlap
   AddTestCase (new SidlelinkDiscPoolOverlapResourcesTestCase (pfactory, 0, 2, true),TestCase::QUICK);
+  //Resources 1 and 3 are on different RBs but same subframe, so they overlap
   AddTestCase (new SidlelinkDiscPoolOverlapResourcesTestCase (pfactory, 1, 3, true),TestCase::QUICK);
 
 }

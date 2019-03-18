@@ -54,18 +54,14 @@ using namespace ns3;
  *
  * This example simulates an in-coverage discovery. There are two UEs, which are attached
  * to an eNB. One UEs is configured to announce one or more the discovery messages.
- * This example uses the default Sidelink pool of LteSlDiscResourcePoolFactory.
- *
- * The resource pool has 3 subframes in length and only 1 transmission of discovery messages per period
- * therefore a maximum of 3 applications can be broadcasted per period
+ * This example uses a resource pool that has 2 resources per subframes, 3 subframes in length 
+ * and only 1 transmission of discovery messages per period. Therefore even though there are 6 discovery
+ * resources per period, a maximum of 3 applications can be broadcasted by a UE per period.
+ * The UEs are close enough that packets can be received without error.
  * 
- * Hint: A user should pay extra attention to the error model configuration, as it
- * influences the reception of the discovery signals, e.g., dropping the collided TBs,
- * use of PSDCH BLER curves to compute the BLER.
- *
  * The example can be run as follows:
  *
- * ./waf --run "lte-sl-in-covrg-discovery-multi --simTme=6"
+ * ./waf --run "lte-sl-in-covrg-discovery-multi --simTime=6 --nbApps=2"
  */
 
 NS_LOG_COMPONENT_DEFINE ("LteSlInCovrgDiscovery");
