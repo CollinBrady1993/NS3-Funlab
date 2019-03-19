@@ -1335,13 +1335,18 @@ SidelinkDiscResourcePool::Initialize ()
 {
   NS_LOG_FUNCTION (this);
   ComputeNumberOfPsdchResources ();
+  BuildListOfConflictingResources ();
+}
 
+void
+SidelinkDiscResourcePool::BuildListOfConflictingResources ()
+{
   //build the list of resources that uses the same subframes
   std::vector < std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> > txInfoVector;
   for (uint32_t i = 0; i < m_nPsdchResources; i++)
     {
       NS_LOG_DEBUG ("  Checking resource " << i);
-      std::set <uint32_t> emptySet;
+      std::unordered_set <uint32_t> emptySet;
       m_resourceConflictsVector.push_back (emptySet);
       //get transmission information for resource i
       std::list<SidelinkDiscResourcePool::SidelinkTransmissionInfo> txInfo = GetPsdchTransmissions (i);
@@ -1654,7 +1659,7 @@ SidelinkDiscResourcePool::TxProbabilityFromInt (uint32_t p)
   return prob;
 }
 
-std::set<uint32_t>
+std::unordered_set<uint32_t>
 SidelinkDiscResourcePool::GetConflictingResources (uint32_t res)
 {
   NS_LOG_FUNCTION (this << res);
