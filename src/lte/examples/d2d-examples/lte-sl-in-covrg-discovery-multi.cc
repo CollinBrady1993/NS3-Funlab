@@ -55,7 +55,7 @@ using namespace ns3;
  * This example simulates an in-coverage discovery. There are two UEs, which are attached
  * to an eNB. One UEs is configured to announce one or more the discovery messages.
  * This example uses a resource pool that has 2 resources per subframes, 3 subframes in length 
- * and only 1 transmission of discovery messages per period (i.e. no HARQ retransmission of discovery 
+ * and only 1 transmission of each discovery message per period (i.e. no HARQ retransmission of discovery
  * message). Therefore even though there are 6 discovery resources per period, a maximum of 
  * 3 applications can be broadcasted by a UE per period.
  * The UEs are close enough that packets can be received without error.

@@ -648,9 +648,11 @@ public:
   static LteRrcSap::TxProbability TxProbabilityFromInt (uint32_t p);
 
   /**
-   * \brief Returns the list of resources that conflict with the given resource
+   * \brief Returns the list of resources that conflict with the given resource in time, i.e.,
+   * the resources using the same subframe.
+   *
    * \param res The resource number
-   * \return The list of resources that conflict with the given resource res
+   * \return The list of resources that conflict with the given resource
    */
   std::unordered_set<uint32_t> GetConflictingResources (uint32_t res);
 
@@ -687,7 +689,8 @@ private:
   void ComputeNumberOfPsdchResources ();
 
   /**
-   * Compute and build a list of resources that overlap in time
+   * \brief Compute and build a list of resources that overlap in time, i.e.,
+   * the resources using the same subframe.
    */
   void BuildListOfConflictingResources ();
 
