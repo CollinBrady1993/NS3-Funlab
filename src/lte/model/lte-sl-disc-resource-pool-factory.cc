@@ -58,8 +58,7 @@ LteSlDiscResourcePoolFactory::LteSlDiscResourcePoolFactory ()
     m_rsrpBased (true),
     m_rsrpThreshLow (0),
     m_rsrpThreshHigh (7),
-    m_discTxProb ("p100"),
-    m_rxParam(false)
+    m_discTxProb ("p100")
 {
   NS_LOG_FUNCTION (this);
 }
@@ -113,7 +112,7 @@ LteSlDiscResourcePoolFactory::CreatePool ()
   m_pool.tfResourceConfig.prbStart = m_discPrbStart;
   m_pool.tfResourceConfig.prbEnd = m_discPrbEnd;
   m_pool.tfResourceConfig.offsetIndicator.offset = m_discOffset;
-  m_pool.tfResourceConfig.subframeBitmap.bitmap = std::bitset<40> (m_discBitmapValue);
+  m_pool.tfResourceConfig.subframeBitmap.bitmap = std::bitset<400> (m_discBitmapValue);
   m_pool.haveTxParameters = m_txParam;
   if (m_txAlpha == "al0")
     {
@@ -194,10 +193,6 @@ LteSlDiscResourcePoolFactory::CreatePool ()
     {
       NS_FATAL_ERROR ("UNSUPPORTED DISCOVERY PROBABILITY");
     }
-
-  m_pool.haveRxParameters = m_rxParam;
-  //todo: add other Rx parameters
-  
   return m_pool;
 }
 

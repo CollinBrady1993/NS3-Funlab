@@ -134,7 +134,7 @@ LteSlResourcePoolFactory::CreatePool ()
   m_pool.scTfResourceConfig.prbStart = m_scPrbStart;
   m_pool.scTfResourceConfig.prbEnd = m_scPrbEnd;
   m_pool.scTfResourceConfig.offsetIndicator.offset = m_scOffset;
-  m_pool.scTfResourceConfig.subframeBitmap.bitmap = std::bitset<40> (m_scBitmapValue);
+  m_pool.scTfResourceConfig.subframeBitmap.bitmap = std::bitset<320> (m_scBitmapValue);
 
   // Data
   if (m_dataCpLen == "NORMAL")
@@ -196,7 +196,7 @@ LteSlResourcePoolFactory::CreatePool ()
       m_pool.ueSelectedResourceConfig.dataTfResourceConfig.prbStart = m_dataPrbStart;
       m_pool.ueSelectedResourceConfig.dataTfResourceConfig.prbEnd = m_dataPrbEnd;
       m_pool.ueSelectedResourceConfig.dataTfResourceConfig.offsetIndicator.offset = m_dataOffset;
-      m_pool.ueSelectedResourceConfig.dataTfResourceConfig.subframeBitmap.bitmap = std::bitset<40> (m_dataBitmapValue);
+      m_pool.ueSelectedResourceConfig.dataTfResourceConfig.subframeBitmap.bitmap = std::bitset<320> (m_dataBitmapValue);
     }
 
   // Tx Parameters

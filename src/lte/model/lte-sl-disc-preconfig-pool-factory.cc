@@ -107,7 +107,7 @@ LteSlDiscPreconfigPoolFactory::CreatePool ()
   m_pool.tfResourceConfig.prbStart = m_discPrbStart;
   m_pool.tfResourceConfig.prbEnd = m_discPrbEnd;
   m_pool.tfResourceConfig.offsetIndicator.offset = m_discOffset;
-  m_pool.tfResourceConfig.subframeBitmap.bitmap = std::bitset<40> (m_discBitmapValue);
+  m_pool.tfResourceConfig.subframeBitmap.bitmap = std::bitset<400> (m_discBitmapValue);
   if (m_txAlpha == "al0")
     {
       m_pool.txParameters.txParametersGeneral.alpha = LteRrcSap::SlTxParameters::al0;
