@@ -315,10 +315,6 @@ main (int argc, char *argv[])
   lteHelper->SetAttribute ("UseSidelink", BooleanValue (true));
   NetDeviceContainer ueRespondersDevs = topoHelper->DropUEsUniformlyPerSector (ueResponders);
 
-  //Fix the random number stream
-  uint16_t randomStream = 1;
-  randomStream += lteHelper->AssignStreams (ueRespondersDevs, randomStream);
-
 
   // Save the nodes positions
   std::ofstream m_outFile;
@@ -408,7 +404,7 @@ main (int argc, char *argv[])
   std::ostringstream oss;
 
   std::vector<uint32_t> groupL2Addresses;
-  uint32_t groupL2Address = 255;
+  uint32_t groupL2Address = 0x00;
 
   Ipv4AddressGenerator::Init (Ipv4Address ("225.0.0.0"), Ipv4Mask ("255.0.0.0"));
   Ipv4Address groupRespondersIpv4Address = Ipv4AddressGenerator::NextAddress (Ipv4Mask ("255.0.0.0"));
@@ -521,7 +517,7 @@ main (int argc, char *argv[])
   preconfiguration.preconfigComm.pools[0].dataTfResourceConfig.prbStart = 0;
   preconfiguration.preconfigComm.pools[0].dataTfResourceConfig.prbEnd = 49;
   preconfiguration.preconfigComm.pools[0].dataTfResourceConfig.offsetIndicator.offset = pscchLength; //allow for control frames
-  preconfiguration.preconfigComm.pools[0].dataTfResourceConfig.subframeBitmap.bitmap = std::bitset<40> (0xFFFFFFFFFF);
+  preconfiguration.preconfigComm.pools[0].dataTfResourceConfig.subframeBitmap.bitmap = std::bitset<400> (0xFFFFFFFFFF);
 
   preconfiguration.preconfigComm.pools[0].scTxParameters.alpha = LteRrcSap::SlTxParameters::al09;
   preconfiguration.preconfigComm.pools[0].scTxParameters.p0 = -40;
